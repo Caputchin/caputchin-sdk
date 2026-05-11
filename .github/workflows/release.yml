@@ -54,7 +54,7 @@ jobs:
       - run: pnpm build
 
       - name: Dry run (pack)
-        if: inputs.dry_run == true
+        if: inputs.dry_run == 'true'
         run: |
           if [ "${{ inputs.package }}" = "all" ]; then
             pnpm -r exec npm pack
@@ -63,7 +63,7 @@ jobs:
           fi
 
       - name: Publish
-        if: inputs.dry_run == false
+        if: inputs.dry_run == 'false'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |

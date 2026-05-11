@@ -27,8 +27,6 @@ jobs:
 
       - run: pnpm build
 
-      - run: pnpm -r --if-present test
-
       - name: Coverage
         run: pnpm coverage
 
