@@ -18,11 +18,23 @@
     "./dist/widget.js"
   ],
   "scripts": {
+    "prebuild": "node scripts/build-iframe-runtime.mjs",
     "build": "tsup",
+    "build:prod": "CAPUTCHIN_API_HOST=https://api.caputchin.com tsup --minify",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@cap.js/widget": "~0.1.50"
+  },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.21.0",
+    "happy-dom": "^14.0.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.4.0",
-    "tsup": "^8.0.0"
+    "vitest": "^2.0.0"
   }
 }
