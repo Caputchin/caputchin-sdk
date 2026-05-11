@@ -1,22 +1,77 @@
 # @caputchin/mcp
 
-MCP (Model Context Protocol) server for managing Caputchin resources — sites, API keys, and game configuration — via AI agents and MCP-compatible tools.
+Model Context Protocol server for Caputchin — exposes the Management API and
+offline developer helpers over stdio. Works with Claude Desktop, Cursor, Claude
+Code, and any other MCP client that speaks stdio.
 
-## Usage
+## Install + run
 
 ```sh
 npx @caputchin/mcp
 ```
 
-Or install globally and run:
+Set two env vars before launching:
+
+| Env var | Required | Default | Notes |
+|---|---|---|---|
+| `CAPUTCHIN_TOKEN` | yes (default mode) | — | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
+| `CAPUTCHIN_API_URL` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. |
+
+Run in local-only mode (no token, no bridge tools — just the snippet generators):
 
 ```sh
-npm install -g @caputchin/mcp
-caputchin-mcp
+npx @caputchin/mcp --local-only
 ```
+
+## Claude Desktop config
+
+```json
+{
+  "mcpServers": {
+    "caputchin": {
+      "command": "npx",
+      "args": ["-y", "@caputchin/mcp"],
+      "env": {
+        "CAPUTCHIN_TOKEN": "cpt_pat_..."
+      }
+    }
+  }
+}
+```
+
+## Tool surface
+
+### Bridge tools (require `CAPUTCHIN_TOKEN`)
+
+Each maps 1:1 to the [Management API](../../docs/management-api.md). The hosted
+platform exposes the same surface at `/api/mcp` over HTTP — pick whichever
+transport your client supports.
+
+| Tool | Description |
+|---|---|
+| `caputchin_ping` | Health check; proves the token + base URL work. |
+| `caputchin_list_sites` | List all site keys owned by the account. |
+| `caputchin_create_site` | Create a new site key (secret returned ONCE). |
+| `caputchin_get_site` | Fetch one site by id. |
+| `caputchin_update_site` | Update name / allowed_domains / tier / disabled. |
+| `caputchin_delete_site` | Delete a site permanently. |
+| `caputchin_rotate_site_secret` | Issue a fresh site secret; old one stops verifying. |
+| `caputchin_site_stats` | Aggregate counters per site. |
+| `caputchin_list_tokens` | List management tokens (metadata only). |
+| `caputchin_create_token` | Mint a management token (value returned ONCE). |
+| `caputchin_revoke_token` | Revoke a management token by id. |
+| `caputchin_get_hosted_verification` | Fetch hosted-verification config for a site. |
+| `caputchin_set_hosted_verification` | Set hosted-verification config (paid tier). |
+
+### Local tools (no network)
+
+| Tool | Description |
+|---|---|
+| `caputchin_widget_snippet` | Generate an HTML snippet that mounts the widget. |
+| `caputchin_siteverify_example` | Copy-paste backend `/siteverify` snippet (node, python, go, php, curl). |
 
 ## Full reference
 
-[docs/management-api.md](../../docs/management-api.md) — available tools and resource schema.
-
-[docs/architecture.md](../../docs/architecture.md) — how the MCP server fits into the Caputchin platform.
+- [docs/management-api.md](../../docs/management-api.md) — Management API surface
+- [docs/api.md](../../docs/api.md) — Runtime endpoints (browser-side + customer backend)
+- [docs/architecture.md](../../docs/architecture.md) — How this fits into Caputchin

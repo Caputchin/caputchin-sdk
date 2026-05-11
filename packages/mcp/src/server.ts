@@ -1,8 +1,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { apiRequest, readManagementConfig, type ManagementApiConfig } from './api.js';
+import { LOCAL_TOOLS, type LocalTool } from './local-tools.js';
 import { TOOLS, type ToolDef } from './tools.js';
 
-function toolHandler(cfg: ManagementApiConfig, def: ToolDef) {
+function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
   return async (args: Record<string, unknown>) => {
     const path = def.call.path(args);
     const body = def.call.body ? def.call.body(args) : undefined;
@@ -24,19 +25,52 @@ function toolHandler(cfg: ManagementApiConfig, def: ToolDef) {
   };
 }
 
-export function createServer(env: NodeJS.ProcessEnv = process.env): McpServer {
-  const cfg = readManagementConfig(env);
+function localHandler(def: LocalTool) {
+  return async (args: Record<string, unknown>) => {
+    try {
+      const text = await def.handler(args);
+      return { content: [{ type: 'text' as const, text }] };
+    } catch (err) {
+      return {
+        isError: true,
+        content: [
+          { type: 'text' as const, text: err instanceof Error ? err.message : String(err) },
+        ],
+      };
+    }
+  };
+}
 
+export type CreateServerOptions = {
+  /** When true, omit bridge tools and skip reading CAPUTCHIN_TOKEN. */
+  localOnly?: boolean;
+};
+
+export function createServer(
+  env: NodeJS.ProcessEnv = process.env,
+  options: CreateServerOptions = {},
+): McpServer {
   const server = new McpServer(
     { name: 'caputchin', version: '0.1.0' },
     { capabilities: { tools: {} } },
   );
 
-  for (const def of TOOLS) {
+  if (!options.localOnly) {
+    const cfg = readManagementConfig(env);
+    for (const def of TOOLS) {
+      server.registerTool(
+        def.name,
+        { description: def.description, inputSchema: def.inputSchema as never },
+        bridgeHandler(cfg, def) as never,
+      );
+    }
+  }
+
+  for (const def of LOCAL_TOOLS) {
     server.registerTool(
       def.name,
       { description: def.description, inputSchema: def.inputSchema as never },
-      toolHandler(cfg, def) as never,
+      localHandler(def) as never,
     );
   }
 
@@ -44,3 +78,4 @@ export function createServer(env: NodeJS.ProcessEnv = process.env): McpServer {
 }
 
 export { TOOLS } from './tools.js';
+export { LOCAL_TOOLS } from './local-tools.js';
