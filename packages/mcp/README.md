@@ -4,6 +4,11 @@ Model Context Protocol server for Caputchin — exposes the Management API and
 offline developer helpers over stdio. Works with Claude Desktop, Cursor, Claude
 Code, and any other MCP client that speaks stdio.
 
+Transport: stdio. The hosted platform also mounts the same management surface
+over HTTP at `/api/mcp` (JSON-RPC 2.0) for clients that prefer streaming HTTP —
+this package is for stdio-only clients and adds local-only snippet generators
+that need no Caputchin account.
+
 ## Install + run
 
 ```sh

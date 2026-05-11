@@ -3,7 +3,7 @@ import { apiRequest, readManagementConfig, type ManagementApiConfig } from './ap
 import { LOCAL_TOOLS, type LocalTool } from './local-tools.js';
 import { TOOLS, type ToolDef } from './tools.js';
 
-function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
+export function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
   return async (args: Record<string, unknown>) => {
     const path = def.call.path(args);
     const body = def.call.body ? def.call.body(args) : undefined;
@@ -25,7 +25,7 @@ function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
   };
 }
 
-function localHandler(def: LocalTool) {
+export function localHandler(def: LocalTool) {
   return async (args: Record<string, unknown>) => {
     try {
       const text = await def.handler(args);

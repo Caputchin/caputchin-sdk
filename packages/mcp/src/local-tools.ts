@@ -18,7 +18,7 @@ const WIDGET_CDN_URL = 'https://cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/wi
 export const WidgetSnippetInput = z.object({
   sitekey: z
     .string()
-    .min(1)
+    .regex(/^cpt_pub_[A-Za-z0-9_-]+$/, 'site key must match `^cpt_pub_[A-Za-z0-9_-]+$`')
     .describe('Public site key (cpt_pub_...) from the Caputchin dashboard.'),
   game: z
     .string()
