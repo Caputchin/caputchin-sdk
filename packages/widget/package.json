@@ -44,7 +44,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^2.1.9",
-    "esbuild": "^0.21.0",
+    "esbuild": "^0.28.0",
     "happy-dom": "^14.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",

@@ -68,8 +68,8 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@20.19.40)(happy-dom@14.12.3))
       esbuild:
-        specifier: ^0.21.0
-        version: 0.21.5
+        specifier: ^0.28.0
+        version: 0.28.0
       happy-dom:
         specifier: ^14.0.0
         version: 14.12.3
