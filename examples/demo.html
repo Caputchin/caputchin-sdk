@@ -135,13 +135,22 @@
 
   function log(widgetId, eventName, detail) {
     const ts = new Date().toISOString().slice(11, 23);
-    const cls = 'ev-' + eventName;
     const line = document.createElement('div');
-    line.innerHTML =
-      '<span class="ts">[' + ts + ']</span> ' +
-      '<span class="' + cls + '">' + eventName + '</span> ' +
-      '#' + widgetId + ' ' +
-      JSON.stringify(detail ?? {});
+
+    const tsSpan = document.createElement('span');
+    tsSpan.className = 'ts';
+    tsSpan.textContent = '[' + ts + ']';
+
+    const evSpan = document.createElement('span');
+    evSpan.className = 'ev-' + eventName;
+    evSpan.textContent = eventName;
+
+    const rest = document.createTextNode(' #' + widgetId + ' ' + JSON.stringify(detail ?? {}));
+
+    line.appendChild(tsSpan);
+    line.appendChild(document.createTextNode(' '));
+    line.appendChild(evSpan);
+    line.appendChild(rest);
     logEl.appendChild(line);
     logEl.scrollTop = logEl.scrollHeight;
   }
