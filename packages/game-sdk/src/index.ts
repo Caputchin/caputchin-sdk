@@ -1,24 +1,29 @@
+export interface Bridge {
+  complete(result: { score: number; durationMs?: number }): void;
+  error(err: { code: string; message?: string }): void;
+}
+
 export type GameFactory = (
   container: HTMLElement,
-  onComplete: (result: { score: number }) => void,
+  bridge: Bridge,
 ) => (() => void) | void;
 
+type Caputchin = { games: Record<string, GameFactory> };
+
 export function register(id: string, factory: GameFactory): void {
-  const caputchin = (globalThis as Record<string, unknown>)['Caputchin'] as
-    | { games?: Record<string, GameFactory> }
-    | undefined;
+  const g = globalThis as Record<string, unknown>;
 
-  if (!caputchin) {
-    console.warn('[caputchin/game-sdk] Caputchin global not found — ensure @caputchin/widget is loaded first');
-    return;
+  if (!g['Caputchin']) {
+    console.warn(
+      '[caputchin/game-sdk] Caputchin global not found — was the SDK loaded outside a Caputchin iframe?',
+    );
+    g['Caputchin'] = { games: {} } satisfies Caputchin;
   }
 
-  if (!caputchin.games) {
-    caputchin.games = {};
-  }
+  const caputchin = g['Caputchin'] as Caputchin;
 
   if (Object.prototype.hasOwnProperty.call(caputchin.games, id)) {
-    console.warn(`[caputchin/game-sdk] duplicate game id "${id}" — overwriting`);
+    console.warn(`[caputchin/game-sdk] duplicate game id "${id}" — last-write-wins`);
   }
 
   caputchin.games[id] = factory;
