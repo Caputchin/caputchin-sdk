@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to release
+        type: choice
+        options: [widget, game-sdk, mcp, all]
+        required: true
+      dry_run:
+        description: Dry run (pack only, no publish)
+        type: boolean
+        default: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm -r --if-present test
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+          always-auth: true
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Dry run (pack)
+        if: inputs.dry_run == true
+        run: |
+          if [ "${{ inputs.package }}" = "all" ]; then
+            pnpm -r exec npm pack
+          else
+            pnpm --filter @caputchin/${{ inputs.package }} exec npm pack
+          fi
+
+      - name: Publish
+        if: inputs.dry_run == false
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ inputs.package }}" = "all" ]; then
+            pnpm -r publish --access public --no-git-checks
+          else
+            pnpm --filter @caputchin/${{ inputs.package }} publish --access public --no-git-checks
+          fi
