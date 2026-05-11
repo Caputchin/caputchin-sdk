@@ -1,5 +1,5 @@
 {
-  "name": "caputchin-js",
+  "name": "caputchin-sdk",
   "private": true,
   "packageManager": "pnpm@10.33.3",
   "scripts": {

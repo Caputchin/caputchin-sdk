@@ -1,4 +1,4 @@
-# caputchin-js qa-notes
+# caputchin-sdk qa-notes
 
 ## T-platform-root — root scaffold (pnpm workspace, tsconfig.base, .gitignore, .npmrc, README, LICENSE, packages/* placeholders)
 
