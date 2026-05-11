@@ -6,6 +6,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
+    "test": "pnpm -r --if-present test",
+    "verify": "pnpm -r typecheck && pnpm -r --if-present test",
     "coverage": "pnpm -r --if-present coverage",
     "size": "size-limit",
     "size:why": "size-limit --why",

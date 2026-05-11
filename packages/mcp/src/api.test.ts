@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { apiRequest, readManagementConfig } from './api.js';
 
 describe('readManagementConfig', () => {
@@ -23,7 +23,7 @@ describe('readManagementConfig', () => {
 
 describe('apiRequest', () => {
   const cfg = { baseUrl: 'https://api.test', token: 'cpt_pat_test' };
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
