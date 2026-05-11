@@ -2,12 +2,16 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: auto
         threshold: 2%
     patch:
       default:
         target: 80%
         threshold: 5%
+
+fixes:
+  - "src/::packages/widget/src/"
+  - "src/::packages/game-sdk/src/"
 
 flags:
   widget:

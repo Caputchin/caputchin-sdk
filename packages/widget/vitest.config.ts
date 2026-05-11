@@ -9,6 +9,7 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/env.d.ts', 'src/iframe/runtime.iife.ts'],
+      thresholds: { statements: 68, branches: 80, functions: 80, lines: 68 },
     },
   },
 });
