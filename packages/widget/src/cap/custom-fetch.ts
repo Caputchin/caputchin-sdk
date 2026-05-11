@@ -73,8 +73,6 @@ export function installCustomFetch(): void {
   if (customFetchInstalled) return;
   customFetchInstalled = true;
 
-  const originalFetch = window.fetch.bind(window);
-
   window.CAP_CUSTOM_FETCH = async (
     input: RequestInfo | URL,
     init?: RequestInit
@@ -83,7 +81,7 @@ export function installCustomFetch(): void {
     const isChallenge = urlStr.endsWith('/challenge');
     const isRedeem = urlStr.endsWith('/redeem');
 
-    if (!isChallenge && !isRedeem) return originalFetch(input, init);
+    if (!isChallenge && !isRedeem) return window.fetch(input, init);
 
     const apiHost = __CAPUTCHIN_API_HOST__;
     const el = _activeSolvingEl;
@@ -93,7 +91,7 @@ export function installCustomFetch(): void {
 
     if (isChallenge) {
       const body = JSON.stringify(ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody);
-      return originalFetch(`${apiHost}/api/v1/game/start`, { ...init, method: 'POST', body, headers });
+      return window.fetch(`${apiHost}/api/v1/game/start`, { ...init, method: 'POST', body, headers });
     }
 
     let platform: Record<string, unknown> = {};
@@ -102,7 +100,7 @@ export function installCustomFetch(): void {
       if (gate) platform = await gate.promise;
     }
 
-    const response = await originalFetch(`${apiHost}/api/v1/game/complete`, {
+    const response = await window.fetch(`${apiHost}/api/v1/game/complete`, {
       ...init,
       method: 'POST',
       body: JSON.stringify({ ...parsedBody, platform }),
