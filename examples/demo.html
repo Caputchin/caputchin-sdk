@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caputchin Widget — Dev Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f8f7ff;
+      color: #1a0a2e;
+    }
+
+    h1 { color: #3d2a5e; margin-bottom: 0.25rem; }
+    p.subtitle { color: #888; margin-top: 0; margin-bottom: 2rem; font-size: 0.9rem; }
+
+    .section {
+      background: #fff;
+      border: 1px solid #e0d9f5;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section h2 { margin-top: 0; font-size: 1rem; color: #6a4c93; }
+    .section p  { font-size: 0.85rem; color: #555; margin-top: 0; }
+
+    caputchin-widget { display: block; margin-top: 0.75rem; }
+
+    .fake-form input[type="text"] {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+      margin-right: 0.5rem;
+    }
+
+    .fake-form button[type="submit"],
+    .btn-row button {
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #6a4c93;
+      background: #6a4c93;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .btn-row button { background: #f5f0ff; color: #3d2a5e; }
+
+    #log {
+      background: #1a0a2e;
+      color: #c8b8f5;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      min-height: 5rem;
+      max-height: 14rem;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 1.5rem;
+    }
+
+    #log .ts { color: #888; }
+    #log .ev-start    { color: #82cfff; }
+    #log .ev-complete { color: #6fe86f; }
+    #log .ev-nickname { color: #f5c842; }
+    #log .ev-error    { color: #ff7070; }
+  </style>
+</head>
+<body>
+
+<h1>Caputchin Widget — Dev Demo</h1>
+<p class="subtitle">
+  All widgets use <code>sitekey="cpt_pub_demo"</code>. Platform routes are stubbed 501 today —
+  expect <code>cap-solve-failed</code> errors in the log.
+</p>
+
+<!-- 1. Invisible / auto mode -->
+<div class="section">
+  <h2>1 — Invisible (auto mode, no game)</h2>
+  <p>Cap-only PoW verification runs on mount. No game UI shown.</p>
+  <caputchin-widget id="w-invisible" sitekey="cpt_pub_demo"></caputchin-widget>
+</div>
+
+<!-- 2. form-submit mode -->
+<div class="section">
+  <h2>2 — form-submit mode</h2>
+  <p>Widget arms on the parent form. Verification runs when the form submits.</p>
+  <form id="fake-form" class="fake-form">
+    <input type="text" placeholder="Name" />
+    <input type="text" placeholder="Email" />
+    <button type="submit">Submit</button>
+    <caputchin-widget id="w-form" sitekey="cpt_pub_demo" mode="form-submit"></caputchin-widget>
+  </form>
+</div>
+
+<!-- 3. manual mode -->
+<div class="section">
+  <h2>3 — manual mode</h2>
+  <p>
+    <code>start()</code> triggers verification. <code>complete()</code> releases the gate early.
+    <code>setNickname()</code> is post-MVP and throws.
+  </p>
+  <caputchin-widget id="w-manual" sitekey="cpt_pub_demo" mode="manual"></caputchin-widget>
+  <div class="btn-row" id="manual-btns">
+    <button data-action="start">widget.start()</button>
+    <button data-action="complete">widget.complete({score:0.5})</button>
+    <button data-action="nickname">widget.setNickname('ABC')</button>
+  </div>
+</div>
+
+<!-- 4. customer-hosted game via game-src -->
+<div class="section">
+  <h2>4 — customer-hosted game (game-src)</h2>
+  <p>
+    The widget loads <code>examples/simple-game.js</code> in an opaque-origin iframe.
+    Click the button three times to call <code>bridge.complete()</code>.
+  </p>
+  <caputchin-widget id="w-game" sitekey="cpt_pub_demo" game-src="/examples/simple-game.js"></caputchin-widget>
+</div>
+
+<!-- shared event log -->
+<div id="log"><span class="ts">[ready]</span> event log — subscribe to all four widgets</div>
+
+<script src="/packages/widget/dist/widget.global.js"></script>
+<script>
+  const logEl = document.getElementById('log');
+
+  function log(widgetId, eventName, detail) {
+    const ts = new Date().toISOString().slice(11, 23);
+    const cls = 'ev-' + eventName;
+    const line = document.createElement('div');
+    line.innerHTML =
+      '<span class="ts">[' + ts + ']</span> ' +
+      '<span class="' + cls + '">' + eventName + '</span> ' +
+      '#' + widgetId + ' ' +
+      JSON.stringify(detail ?? {});
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const widgetIds = ['w-invisible', 'w-form', 'w-manual', 'w-game'];
+  const events = ['start', 'complete', 'nickname', 'error'];
+
+  widgetIds.forEach(function (id) {
+    const el = document.getElementById(id);
+    events.forEach(function (ev) {
+      el.addEventListener(ev, function (e) {
+        log(id, ev, e.detail);
+      });
+    });
+  });
+
+  document.getElementById('fake-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    log('w-form', 'submit', { note: 'form#fake submitted' });
+  });
+
+  document.getElementById('manual-btns').addEventListener('click', function (e) {
+    const action = e.target.dataset.action;
+    const w = document.getElementById('w-manual');
+    if (action === 'start') {
+      w.start();
+    } else if (action === 'complete') {
+      w.complete({ score: 0.5, durationMs: 1000 });
+    } else if (action === 'nickname') {
+      try {
+        w.setNickname('ABC');
+      } catch (err) {
+        log('w-manual', 'error', { code: 'setNickname-threw', message: String(err) });
+      }
+    }
+  });
+</script>
+</body>
+</html>
