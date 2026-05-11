@@ -14,6 +14,10 @@ if (fs.existsSync(metaPath)) {
   };
   iframeRuntime = meta.code;
   iframeRuntimeSha256 = meta.sha256;
+} else {
+  throw new Error(
+    `[widget] dist/.iframe-runtime-meta.json not found. Run 'node scripts/build-iframe-runtime.mjs' first (or use 'pnpm build' which runs prebuild automatically).`
+  );
 }
 
 export default defineConfig({

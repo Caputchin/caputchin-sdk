@@ -2,7 +2,9 @@ import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
 import type { IframeToWidget } from '../protocol/messages.js';
 
-const LOAD_TIMEOUT_MS = 10_000;
+// srcdoc iframes always fire `load` for the wrapper document — even on CSP block or 404.
+// The real readiness signal is `game-started` postMessage from the runtime.
+const KICKOFF_ACK_TIMEOUT_MS = 10_000;
 
 export class IframeHost {
   private readonly gameUrl: string | null;
@@ -13,7 +15,8 @@ export class IframeHost {
 
   private iframe: HTMLIFrameElement | null = null;
   private unlisten: (() => void) | null = null;
-  private loadTimer: ReturnType<typeof setTimeout> | null = null;
+  private kickoffAckTimer: ReturnType<typeof setTimeout> | null = null;
+  private onLoadFailed: ((code: 'iframe-load-failed', message: string) => void) | null = null;
 
   constructor(
     gameUrl: string | null,
@@ -51,26 +54,15 @@ export class IframeHost {
     if (!this.iframe) this.build();
     const iframe = this.iframe!;
 
-    this.unlisten = listen(iframe, this.hostEl, this.onMessage);
+    this.onLoadFailed = onLoadFailed;
 
-    this.loadTimer = setTimeout(() => {
-      onLoadFailed('iframe-load-failed', 'Iframe load timed out after 10s');
-    }, LOAD_TIMEOUT_MS);
-
-    iframe.onload = () => {
-      if (this.loadTimer !== null) {
-        clearTimeout(this.loadTimer);
-        this.loadTimer = null;
+    // Wrap the upstream onMessage to intercept game-started and clear the ack timer.
+    this.unlisten = listen(iframe, this.hostEl, (msg) => {
+      if (msg.kind === 'game-started') {
+        this.clearKickoffAckTimer();
       }
-    };
-
-    iframe.onerror = () => {
-      if (this.loadTimer !== null) {
-        clearTimeout(this.loadTimer);
-        this.loadTimer = null;
-      }
-      onLoadFailed('iframe-load-failed', 'Iframe failed to load');
-    };
+      this.onMessage(msg);
+    });
 
     container.appendChild(iframe);
   }
@@ -86,13 +78,23 @@ export class IframeHost {
       sitekey,
       apiHost,
     });
+
+    // Start ack timer after kickoff is sent — waiting for game-started postMessage.
+    this.kickoffAckTimer = setTimeout(() => {
+      this.kickoffAckTimer = null;
+      this.onLoadFailed?.('iframe-load-failed', 'Game did not send game-started within 10s');
+    }, KICKOFF_ACK_TIMEOUT_MS);
+  }
+
+  private clearKickoffAckTimer(): void {
+    if (this.kickoffAckTimer !== null) {
+      clearTimeout(this.kickoffAckTimer);
+      this.kickoffAckTimer = null;
+    }
   }
 
   dispose(): void {
-    if (this.loadTimer !== null) {
-      clearTimeout(this.loadTimer);
-      this.loadTimer = null;
-    }
+    this.clearKickoffAckTimer();
     if (this.iframe) {
       send(this.iframe, { kind: 'dispose', seq: -1 });
       this.iframe.remove();

@@ -29,7 +29,10 @@ export function createManualMode(
       });
 
       Object.defineProperty(el, 'setNickname', {
-        value(_letters: string): void {},
+        // Post-MVP: nickname endpoint not yet implemented server-side.
+        value(_letters: string): void {
+          throw new Error('setNickname is not implemented in this build (Post-MVP)');
+        },
         configurable: true,
         writable: false,
         enumerable: false,

@@ -54,6 +54,6 @@ export interface CaputchinElementShape extends HTMLElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    caputchin: CaputchinElementShape;
+    'caputchin-widget': CaputchinElementShape;
   }
 }

@@ -92,6 +92,11 @@
     }
   });
 
+  document.addEventListener('securitypolicyviolation', (event: SecurityPolicyViolationEvent) => {
+    const msg = `${event.violatedDirective}: ${event.blockedURI}`.slice(0, 200);
+    postError('iframe-script-blocked', msg);
+  });
+
   window.addEventListener('error', (event: ErrorEvent) => {
     const msg = event.message ? String(event.message).slice(0, 200) : 'Script error';
     postError('game-error-relayed', msg);

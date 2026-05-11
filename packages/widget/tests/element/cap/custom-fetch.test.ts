@@ -129,4 +129,23 @@ describe('CAP_CUSTOM_FETCH', () => {
     await capFetch()('https://example.com/other', {});
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://example.com/other');
   });
+
+  it('onWrappedToken is called before fetch resolves (synchronous relative to solve)', async () => {
+    const onWrappedToken = vi.fn();
+    const ctx: SessionContext = { platform: {}, onWrappedToken };
+    registerElement(el, ctx);
+    setActiveSolvingEl(el);
+    armRedeemGate(el);
+    releaseRedeemGate(el, {});
+
+    await capFetch()('https://api.cap.dev/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ token: 'cap-tok', solutions: [] }),
+    });
+
+    expect(onWrappedToken).toHaveBeenCalledOnce();
+    expect(onWrappedToken.mock.calls[0]![0].token).toBe('tok');
+    expect(onWrappedToken.mock.calls[0]![0].score).toBe(10);
+    expect(onWrappedToken.mock.calls[0]![0].durationMs).toBe(500);
+  });
 });

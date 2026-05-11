@@ -17,6 +17,9 @@ describe('validateGameUrl', () => {
   it('rejects URL with double-quote', () => expect(validateGameUrl('https://example.com/game".js')).not.toBeNull());
   it('rejects URL with whitespace', () => expect(validateGameUrl('https://example.com/game .js')).not.toBeNull());
   it('rejects URL with control char', () => expect(validateGameUrl('https://example.com/game\x00.js')).not.toBeNull());
+  it('rejects URL with semicolon (CSP directive injection)', () => expect(validateGameUrl('https://evil.com/x;script-src https://atk.com')).not.toBeNull());
+  it('rejects URL with comma (CSP source list injection)', () => expect(validateGameUrl('https://evil.com/x,https://atk.com')).not.toBeNull());
+  it('rejects URL with backtick', () => expect(validateGameUrl('https://evil.com/x`y')).not.toBeNull());
 });
 
 describe('validateConfig', () => {

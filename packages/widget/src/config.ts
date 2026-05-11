@@ -14,17 +14,26 @@ export interface InvalidConfig {
 }
 
 const BLOCKED_SCHEMES = /^(javascript|data|vbscript):/i;
-const UNSAFE_CHARS = /["'\s\x00-\x1f]/;
+// Reject chars that could break out of a CSP directive (;,`) or HTML attr ("'<>) or be control chars.
+const UNSAFE_CHARS = /["'`;,<>\s\x00-\x1f]/;
 
 export function validateGameUrl(url: string): string | null {
   if (BLOCKED_SCHEMES.test(url)) {
     return `game-src blocked scheme: "${url}"`;
   }
-  if (!url.startsWith('https://')) {
-    return `game-src must be HTTPS: "${url}"`;
-  }
+  // Check raw input for unsafe chars before parsing — the URL constructor encodes/strips them.
   if (UNSAFE_CHARS.test(url)) {
     return `game-src contains unsafe characters: "${url}"`;
+  }
+  // Rebuild from parsed URL to prevent path-confusion and normalise encoding.
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return `game-src is not a valid URL: "${url}"`;
+  }
+  if (parsed.protocol !== 'https:') {
+    return `game-src must be HTTPS: "${url}"`;
   }
   return null;
 }

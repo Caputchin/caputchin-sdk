@@ -41,4 +41,14 @@ describe('manual mode', () => {
 
     el.remove();
   });
+
+  it('setNickname throws — Post-MVP not implemented', () => {
+    const el = getTestElement({ sitekey: 'k', mode: 'manual' });
+    document.body.appendChild(el);
+
+    const setNicknameFn = (el as Record<string, unknown>)['setNickname'] as (s: string) => void;
+    expect(() => setNicknameFn('AAA')).toThrow('not implemented');
+
+    el.remove();
+  });
 });

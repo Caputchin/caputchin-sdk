@@ -3,8 +3,8 @@ import { CaputchinElement } from './element.js';
 
 installCustomFetch();
 
-if (!customElements.get('caputchin')) {
-  customElements.define('caputchin', CaputchinElement);
+if (!customElements.get('caputchin-widget')) {
+  customElements.define('caputchin-widget', CaputchinElement);
 }
 
 export type { CaputchinEventMap, StartEventDetail, CompleteEventDetail, NicknameEventDetail, ErrorEventDetail, CaputchinElementShape } from './types.js';

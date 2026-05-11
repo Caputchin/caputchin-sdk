@@ -1,4 +1,4 @@
-import type { WrappedToken } from '../token.js';
+import { assembleWrappedToken, type WrappedToken } from '../token.js';
 
 export interface SessionContext {
   platform: Record<string, unknown>;
@@ -108,16 +108,19 @@ export function installCustomFetch(): void {
     });
 
     if (ctx && response.ok) {
-      response.clone().json().then((data: unknown) => {
-        const d = data as Record<string, unknown>;
-        if (d && typeof d['token'] === 'string') {
-          ctx.onWrappedToken({
-            token: d['token'],
-            score: typeof d['score'] === 'number' ? d['score'] : null,
-            durationMs: typeof d['durationMs'] === 'number' ? d['durationMs'] : null,
-          });
+      // Await body parse synchronously before returning so solve() sees the token immediately.
+      try {
+        const data = await response.clone().json() as Record<string, unknown>;
+        if (data && typeof data['token'] === 'string') {
+          ctx.onWrappedToken(assembleWrappedToken({
+            token: data['token'] as string,
+            score: typeof data['score'] === 'number' ? data['score'] : null,
+            durationMs: typeof data['durationMs'] === 'number' ? data['durationMs'] : null,
+          }));
         }
-      }).catch(() => {});
+      } catch {
+        // Body parse failure — token will be absent; element.ts fires cap-redeem-failed.
+      }
     }
 
     return response;
