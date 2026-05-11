@@ -87,7 +87,9 @@ export function installCustomFetch(): void {
     const el = _activeSolvingEl;
     const ctx = el ? sessionContexts.get(el) : undefined;
     const parsedBody = parseBody(init);
-    const headers = { 'Content-Type': 'application/json', ...((init?.headers as Record<string, string>) ?? {}) };
+    const merged = new Headers(init?.headers);
+    merged.set('content-type', 'application/json');
+    const headers = Object.fromEntries(merged.entries());
 
     if (isChallenge) {
       const body = JSON.stringify(ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody);

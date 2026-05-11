@@ -1,3 +1,4 @@
+// M6: happy-dom prints AbortError to stderr on teardown when fetch is in-flight; no clean suppression path.
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({

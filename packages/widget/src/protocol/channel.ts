@@ -3,7 +3,7 @@ import { isIframeToWidget } from './messages.js';
 import { fireError } from '../errors.js';
 
 export function send(iframe: HTMLIFrameElement, msg: WidgetToIframe): void {
-  iframe.contentWindow?.postMessage(msg, '*');
+  iframe.contentWindow?.postMessage(msg, 'null');
 }
 
 export function listen(

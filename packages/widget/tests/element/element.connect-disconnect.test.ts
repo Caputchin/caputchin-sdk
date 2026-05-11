@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { CaputchinElement } from '../../src/element.js';
 import { installCustomFetch } from '../../src/cap/custom-fetch.js';
 import { getTestElement } from '../fixtures/test-element.js';
@@ -49,5 +51,12 @@ describe('CaputchinElement lifecycle', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
     el.remove();
     warnSpy.mockRestore();
+  });
+
+  it('start event deferred to game-started postMessage when game configured (M3)', () => {
+    const src = readFileSync(resolve(__dirname, '../../src/element.ts'), 'utf-8');
+    expect(src).toContain('dispatchStart()');
+    expect(src).toContain('host.mount(this,');
+    expect(src).toContain('}, dispatchStart)');
   });
 });

@@ -93,6 +93,14 @@ export class CaputchinElement extends HTMLElement {
     this.capClient = client;
     ctx.capClient = client;
 
+    const dispatchStart = (): void => {
+      this.dispatchEvent(new CustomEvent('start', {
+        detail: { gameId },
+        bubbles: true,
+        composed: true,
+      }));
+    };
+
     if (gameId !== null || gameUrl !== null) {
       const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
         if (msg.kind === 'game-complete') {
@@ -110,19 +118,14 @@ export class CaputchinElement extends HTMLElement {
         fireError(el, code, message);
         client.dispose();
         this.iframeHost = null;
-      });
+      }, dispatchStart);
 
       host.kickoff(1, sitekey, apiHost);
       this.iframeHost = host;
     } else {
       client.releaseGate({ score: null, durationMs: null });
+      dispatchStart();
     }
-
-    this.dispatchEvent(new CustomEvent('start', {
-      detail: { gameId },
-      bubbles: true,
-      composed: true,
-    }));
 
     try {
       await client.solve();

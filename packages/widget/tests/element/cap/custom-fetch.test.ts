@@ -130,6 +130,19 @@ describe('CAP_CUSTOM_FETCH', () => {
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://example.com/other');
   });
 
+  it('Headers instance init passes through with content-type set (M1)', async () => {
+    const ctx: SessionContext = { platform: { sitekey: 'k' }, onWrappedToken: vi.fn() };
+    registerElement(el, ctx);
+    setActiveSolvingEl(el);
+
+    const initHeaders = new Headers({ 'x-custom': 'val' });
+    await capFetch()('https://api.cap.dev/challenge', { method: 'POST', headers: initHeaders });
+
+    const sentHeaders = fetchSpy.mock.calls[0]![1]!.headers as Record<string, string>;
+    expect(sentHeaders['content-type']).toBe('application/json');
+    expect(sentHeaders['x-custom']).toBe('val');
+  });
+
   it('onWrappedToken is called before fetch resolves (synchronous relative to solve)', async () => {
     const onWrappedToken = vi.fn();
     const ctx: SessionContext = { platform: {}, onWrappedToken };

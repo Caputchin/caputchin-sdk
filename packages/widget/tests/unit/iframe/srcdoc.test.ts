@@ -89,4 +89,10 @@ describe('buildSrcdoc', () => {
     const html = buildSrcdoc({ ...base, gameUrl: 'https://cdn.example.com/g.js', gameId: 'a&b' });
     expect(html).toContain('&amp;b');
   });
+
+  it("escapes single-quote in gameId attribute", () => {
+    const html = buildSrcdoc({ ...base, gameUrl: 'https://cdn.example.com/g.js', gameId: "a'b" });
+    expect(html).not.toContain("a'b");
+    expect(html).toContain('&#39;');
+  });
 });

@@ -51,4 +51,18 @@ describe('manual mode', () => {
 
     el.remove();
   });
+
+  it('complete() warns and no-ops when called before start() (M4)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = getTestElement({ sitekey: 'k', mode: 'manual' });
+    document.body.appendChild(el);
+
+    const completeFn = (el as Record<string, unknown>)['complete'] as (p: { score: null; durationMs: null }) => void;
+    completeFn({ score: null, durationMs: null });
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('widget.complete() called before widget.start()'));
+
+    warnSpy.mockRestore();
+    el.remove();
+  });
 });

@@ -49,7 +49,8 @@ export class IframeHost {
 
   mount(
     container: HTMLElement,
-    onLoadFailed: (code: 'iframe-load-failed', message: string) => void
+    onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
+    onGameStarted?: () => void
   ): void {
     if (!this.iframe) this.build();
     const iframe = this.iframe!;
@@ -60,6 +61,7 @@ export class IframeHost {
     this.unlisten = listen(iframe, this.hostEl, (msg) => {
       if (msg.kind === 'game-started') {
         this.clearKickoffAckTimer();
+        onGameStarted?.();
       }
       this.onMessage(msg);
     });

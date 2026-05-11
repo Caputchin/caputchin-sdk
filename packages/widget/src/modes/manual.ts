@@ -21,6 +21,10 @@ export function createManualMode(
 
       Object.defineProperty(el, 'complete', {
         value(payload: { score: number | null; durationMs: number | null }): void {
+          if (!started) {
+            console.warn('[caputchin] widget.complete() called before widget.start(); ignoring');
+            return;
+          }
           ctx.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
         },
         configurable: true,
