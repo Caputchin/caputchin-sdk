@@ -1,6 +1,17 @@
 {
   "name": "@caputchin/widget",
   "version": "0.0.0",
+  "description": "Customer-facing CAPTCHA web component for the Caputchin platform",
+  "keywords": ["captcha", "widget", "web-component", "verification", "caputchin"],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "MIT",
   "type": "module",
   "publishConfig": {
     "access": "public"

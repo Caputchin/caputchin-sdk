@@ -1,6 +1,17 @@
 {
   "name": "@caputchin/game-sdk",
   "version": "0.0.0",
+  "description": "TypeScript helpers and types for building Caputchin games",
+  "keywords": ["caputchin", "game-sdk", "captcha", "game", "register"],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "MIT",
   "type": "module",
   "publishConfig": {
     "access": "public"
