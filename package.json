@@ -6,9 +6,34 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
+    "coverage": "pnpm -r --if-present coverage",
+    "size": "size-limit",
+    "size:why": "size-limit --why",
     "dev:demo": "http-server -p 4000 -c-1 -s ."
   },
+  "size-limit": [
+    {
+      "name": "widget (ESM)",
+      "path": "packages/widget/dist/widget.js",
+      "limit": "25 kB",
+      "gzip": true
+    },
+    {
+      "name": "widget (IIFE)",
+      "path": "packages/widget/dist/widget.global.js",
+      "limit": "80 kB",
+      "gzip": true
+    },
+    {
+      "name": "game-sdk (ESM)",
+      "path": "packages/game-sdk/dist/index.js",
+      "limit": "2 kB",
+      "gzip": true
+    }
+  ],
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "http-server": "^14.1.1",
+    "size-limit": "^12.1.0"
   }
 }
