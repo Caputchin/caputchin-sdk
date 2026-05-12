@@ -8,7 +8,9 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r --if-present test",
     "verify": "pnpm -r typecheck && pnpm -r --if-present test",
+    "verify:fast": "pnpm --filter @caputchin/mcp --filter @caputchin/game-sdk typecheck && pnpm --filter @caputchin/mcp --filter @caputchin/game-sdk --if-present test",
     "coverage": "pnpm -r --if-present coverage",
+    "prepare": "husky",
     "size": "size-limit",
     "size:why": "size-limit --why",
     "dev:demo": "http-server -p 4000 -c-1 -s ."
@@ -36,6 +38,7 @@
   "devDependencies": {
     "@size-limit/preset-small-lib": "^12.1.0",
     "http-server": "^14.1.1",
+    "husky": "^9.1.7",
     "size-limit": "^12.1.0"
   }
 }
