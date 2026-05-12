@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TOOLS } from '../src/tools.js';
+import { SiteCreateInput, TOOLS } from '../src/tools.js';
 
 const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
   caputchin_check_auth: {},
@@ -81,6 +81,11 @@ describe('TOOLS catalog — body() factories', () => {
     const tool = TOOLS.find((t) => t.name === 'caputchin_create_site')!;
     const body = tool.call.body!({ name: 'x' });
     expect(body).toMatchObject({ name: 'x', allowed_domains: [] });
+  });
+
+  it('SiteCreateInput schema defaults tier to free when omitted', () => {
+    const parsed = SiteCreateInput.parse({ name: 'x' });
+    expect(parsed.tier).toBe('free');
   });
 
   it('caputchin_update_site body strips id from request payload', () => {

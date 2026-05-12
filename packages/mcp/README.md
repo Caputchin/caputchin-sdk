@@ -48,9 +48,8 @@ npx @caputchin/mcp --local-only
 
 ### Bridge tools (require `CAPUTCHIN_TOKEN`)
 
-Each maps 1:1 to the [Management API](../../docs/management-api.md). The hosted
-platform exposes the same surface at `/api/mcp` over HTTP — pick whichever
-transport your client supports.
+Each maps 1:1 to the [Management API](../../docs/management-api.md). A future
+hosted HTTP mount at `/api/mcp` is planned — this package is the stdio path.
 
 | Tool | Description |
 |---|---|
@@ -73,7 +72,7 @@ transport your client supports.
 | Tool | Description |
 |---|---|
 | `caputchin_widget_snippet` | Generate an HTML snippet that mounts the widget. |
-| `caputchin_siteverify_example` | Copy-paste backend `/siteverify` snippet (node, python, go, php, curl). |
+| `caputchin_siteverify_example` | Copy-paste backend `/siteverify` snippet (node, javascript, typescript, python, go, php, curl). |
 
 ## Full reference
 
