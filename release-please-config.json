@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "chore: release main",
+  "packages": {
+    "packages/game-sdk": {
+      "component": "game-sdk",
+      "package-name": "@caputchin/game-sdk"
+    },
+    "packages/widget": {
+      "component": "widget",
+      "package-name": "@caputchin/widget"
+    },
+    "packages/mcp": {
+      "component": "mcp",
+      "package-name": "@caputchin/mcp"
+    }
+  }
+}

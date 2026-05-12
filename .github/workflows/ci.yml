@@ -28,7 +28,12 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      # release-please release PRs bump package.json versions without refreshing
+      # pnpm-lock.yaml; running `pnpm install` (no --frozen-lockfile) lets CI
+      # reconcile on those PRs. Trade-off: dev PRs lose the "forgot-to-commit
+      # lockfile" guard. Restore --frozen-lockfile if release-please ever gains
+      # pnpm-lock support.
+      - run: pnpm install
 
       - run: pnpm typecheck
 

@@ -1,41 +1,34 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      package:
-        description: Package to release
-        type: choice
-        options: [widget, game-sdk, mcp, all]
-        required: true
-      dry_run:
-        description: Dry run (pack only, no publish)
-        type: boolean
-        default: true
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  validate:
+  release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      game_sdk_released: ${{ steps.release.outputs['packages/game-sdk--release_created'] }}
+      widget_released: ${{ steps.release.outputs['packages/widget--release_created'] }}
+      mcp_released: ${{ steps.release.outputs['packages/mcp--release_created'] }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          version: 10.33.3
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm build
-      - run: pnpm -r --if-present test
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    needs: validate
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -50,25 +43,20 @@ jobs:
           registry-url: https://registry.npmjs.org
           always-auth: true
 
-      - run: pnpm install --frozen-lockfile
+      # release-please bumps package.json versions but does not refresh
+      # pnpm-lock.yaml, so the lockfile drifts on the release commit.
+      # `pnpm install` (no --frozen-lockfile) reconciles before publish.
+      - run: pnpm install
       - run: pnpm build
 
-      - name: Dry run (pack)
-        if: inputs.dry_run == 'true'
-        run: |
-          if [ "${{ inputs.package }}" = "all" ]; then
-            pnpm -r exec npm pack
-          else
-            pnpm --filter @caputchin/${{ inputs.package }} exec npm pack
-          fi
+      - name: Publish @caputchin/game-sdk
+        if: ${{ needs.release-please.outputs.game_sdk_released == 'true' }}
+        run: pnpm --filter @caputchin/game-sdk publish --access public --no-git-checks
 
-      - name: Publish
-        if: inputs.dry_run == 'false'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ "${{ inputs.package }}" = "all" ]; then
-            pnpm -r publish --access public --no-git-checks
-          else
-            pnpm --filter @caputchin/${{ inputs.package }} publish --access public --no-git-checks
-          fi
+      - name: Publish @caputchin/widget
+        if: ${{ needs.release-please.outputs.widget_released == 'true' }}
+        run: pnpm --filter @caputchin/widget publish --access public --no-git-checks
+
+      - name: Publish @caputchin/mcp
+        if: ${{ needs.release-please.outputs.mcp_released == 'true' }}
+        run: pnpm --filter @caputchin/mcp publish --access public --no-git-checks
