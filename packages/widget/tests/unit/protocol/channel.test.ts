@@ -8,7 +8,7 @@ describe('channel.send', () => {
       contentWindow: { postMessage: postMessageSpy },
     } as unknown as HTMLIFrameElement;
 
-    send(iframe, { kind: 'kickoff', seq: 1, gameId: null, gameUrl: null, integrity: null, sitekey: 's', apiHost: 'h' });
+    send(iframe, { kind: 'kickoff', seq: 1, gameId: null });
 
     expect(postMessageSpy).toHaveBeenCalledOnce();
     expect(postMessageSpy.mock.calls[0]![1]).toBe('null');

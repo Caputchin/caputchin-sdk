@@ -65,7 +65,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
-    host.kickoff(1, 'sk', 'https://api.test.com');
+    host.kickoff(1);
     expect(onLoadFailed).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(10_001);
@@ -80,7 +80,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
-    host.kickoff(1, 'sk', 'https://api.test.com');
+    host.kickoff(1);
     capturedListener?.({ kind: 'game-started', seq: 1 });
     vi.advanceTimersByTime(15_000);
 
@@ -94,7 +94,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     const container = mountHost(host);
 
-    host.kickoff(1, 'sk', 'https://api.test.com');
+    host.kickoff(1);
     host.dispose();
 
     expect(sendSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ kind: 'dispose' }));
@@ -106,7 +106,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
-    host.kickoff(1, 'sk', 'https://api.test.com');
+    host.kickoff(1);
     host.dispose();
     vi.advanceTimersByTime(15_000);
 

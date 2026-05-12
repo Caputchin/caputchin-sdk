@@ -38,6 +38,12 @@ describe('validation error events', () => {
     el.remove();
   });
 
+  it('manual + games emits invalid-config', () => {
+    const { errors, el } = mountEl({ sitekey: 'k', games: 'a,b,c', mode: 'manual' });
+    expect(errors[0]?.detail.code).toBe('invalid-config');
+    el.remove();
+  });
+
   it('invalid game-src scheme emits invalid-config', () => {
     const { errors, el } = mountEl({ sitekey: 'k', 'game-src': 'http://x.com/g.js' });
     expect(errors[0]?.detail.code).toBe('invalid-config');

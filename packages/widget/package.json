@@ -43,6 +43,7 @@
     "@cap.js/widget": "~0.1.50"
   },
   "devDependencies": {
+    "@caputchin/game-sdk": "workspace:*",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^2.1.9",
     "esbuild": "^0.21.0",

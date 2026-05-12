@@ -53,10 +53,10 @@ export function validateConfig(cfg: ParsedConfig): InvalidConfig | null {
   if (!cfg.sitekey) {
     return { code: 'invalid-config', message: 'sitekey attribute is required' };
   }
-  if (cfg.mode === 'manual' && (cfg.game || cfg.gameSrc)) {
+  if (cfg.mode === 'manual' && (cfg.game || cfg.games || cfg.gameSrc)) {
     return {
       code: 'invalid-config',
-      message: 'manual mode is incompatible with game / game-src attributes',
+      message: 'manual mode is incompatible with game / games / game-src attributes',
     };
   }
   if (cfg.gameSrc) {

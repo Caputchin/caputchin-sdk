@@ -1,6 +1,13 @@
 import { parseAttributes, validateConfig } from './config.js';
-import { fireError } from './errors.js';
+import { fireError, type ErrorCode } from './errors.js';
 import { fetchMarketplaceResolution } from './resolver.js';
+
+const IFRAME_FORWARDABLE_CODES: ReadonlySet<ErrorCode> = new Set([
+  'game-not-registered',
+  'iframe-script-blocked',
+  'game-error-relayed',
+]);
+
 import { pickFromGamesAttr } from './pool.js';
 import { injectHiddenInput } from './form.js';
 import { IframeHost } from './iframe/host.js';
@@ -108,7 +115,10 @@ export class CaputchinElement extends HTMLElement {
           sessionCtx.platform['durationMs'] = msg.durationMs;
           client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
         } else if (msg.kind === 'game-error') {
-          fireError(el, 'game-error-relayed', msg.message);
+          const known = IFRAME_FORWARDABLE_CODES.has(msg.code as ErrorCode);
+          const code: ErrorCode = known ? (msg.code as ErrorCode) : 'game-error-relayed';
+          const message = known ? msg.message : `[${msg.code}] ${msg.message}`;
+          fireError(el, code, message);
           client.releaseGate({ score: null, durationMs: null });
         }
       });
@@ -120,7 +130,7 @@ export class CaputchinElement extends HTMLElement {
         this.iframeHost = null;
       }, dispatchStart);
 
-      host.kickoff(1, sitekey, apiHost);
+      host.kickoff(1);
       this.iframeHost = host;
     } else {
       client.releaseGate({ score: null, durationMs: null });

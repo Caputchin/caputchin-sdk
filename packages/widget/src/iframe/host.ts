@@ -69,16 +69,12 @@ export class IframeHost {
     container.appendChild(iframe);
   }
 
-  kickoff(seq: number, sitekey: string, apiHost: string): void {
+  kickoff(seq: number): void {
     if (!this.iframe) return;
     send(this.iframe, {
       kind: 'kickoff',
       seq,
       gameId: this.gameId,
-      gameUrl: this.gameUrl,
-      integrity: this.integrity,
-      sitekey,
-      apiHost,
     });
 
     // Start ack timer after kickoff is sent — waiting for game-started postMessage.

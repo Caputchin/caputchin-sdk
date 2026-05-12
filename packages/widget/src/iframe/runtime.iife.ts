@@ -1,14 +1,9 @@
-// Self-contained iframe bootstrap. No external imports.
+// Self-contained iframe bootstrap. Only types imported — they erase at compile time.
 // Runs inside srcdoc iframe — opaque origin. communicates with host page via postMessage.
 
+import type { Bridge, GameFactory } from '@caputchin/game-sdk';
+
 (function () {
-  type Bridge = {
-    complete(payload: { score: number | null; durationMs: number | null }): void;
-    error(code: string, message: string): void;
-  };
-
-  type GameFactory = (container: HTMLElement, bridge: Bridge) => (() => void) | void;
-
   interface CaputchinGlobal {
     games: Record<string, GameFactory>;
   }
@@ -62,10 +57,15 @@
 
       const bridge: Bridge = {
         complete({ score, durationMs }) {
-          postToParent({ kind: 'game-complete', seq, score, durationMs });
+          postToParent({
+            kind: 'game-complete',
+            seq,
+            score,
+            durationMs: durationMs ?? null,
+          });
         },
-        error(code, message) {
-          postError(code, message);
+        error({ code, message }) {
+          postError(code, message ?? '');
         },
       };
 

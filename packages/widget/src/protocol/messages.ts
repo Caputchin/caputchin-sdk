@@ -2,10 +2,6 @@ export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
   gameId: string | null;
-  gameUrl: string | null;
-  integrity: string | null;
-  sitekey: string;
-  apiHost: string;
 }
 
 export interface DisposeMessage {
