@@ -17,6 +17,7 @@ export interface NicknameEventDetail {
 export interface ErrorEventDetail {
   code: ErrorCode;
   message: string;
+  originalCode?: string;
 }
 
 export interface CaputchinEventMap {

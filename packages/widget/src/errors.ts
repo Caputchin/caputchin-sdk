@@ -23,10 +23,30 @@ export const RECOVERABLE: Record<ErrorCode, boolean> = {
   'form-not-found': false,
 };
 
-export function fireError(el: HTMLElement, code: ErrorCode, message: string): void {
+const IFRAME_FORWARDABLE_CODES: ReadonlySet<ErrorCode> = new Set([
+  'game-not-registered',
+  'iframe-script-blocked',
+  'game-error-relayed',
+]);
+
+export function mapIframeErrorCode(rawCode: string): { code: ErrorCode; originalCode?: string } {
+  if (IFRAME_FORWARDABLE_CODES.has(rawCode as ErrorCode)) {
+    return { code: rawCode as ErrorCode };
+  }
+  return { code: 'game-error-relayed', originalCode: rawCode };
+}
+
+export function fireError(
+  el: HTMLElement,
+  code: ErrorCode,
+  message: string,
+  originalCode?: string,
+): void {
+  const detail: { code: ErrorCode; message: string; originalCode?: string } = { code, message };
+  if (originalCode !== undefined) detail.originalCode = originalCode;
   el.dispatchEvent(
     new CustomEvent('error', {
-      detail: { code, message },
+      detail,
       bubbles: true,
       composed: true,
     })
