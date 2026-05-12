@@ -3,7 +3,10 @@
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@caputchin/game-sdk": ["../game-sdk/src/index.ts"]
+    }
   },
   "include": ["src", "scripts"]
 }
