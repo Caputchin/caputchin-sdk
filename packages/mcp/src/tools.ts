@@ -66,10 +66,10 @@ export type ToolDef = {
 
 export const TOOLS: ToolDef[] = [
   {
-    name: 'caputchin_ping',
-    description: 'Health check — returns pong if the management token + API base URL are valid.',
+    name: 'caputchin_check_auth',
+    description: 'Verify the management token and API host are valid; returns the site list on success.',
     inputSchema: NoArgs,
-    call: { method: 'GET', path: () => '/api/v1/management/sites' }, // 200 list (possibly empty) proves auth works
+    call: { method: 'GET', path: () => '/api/v1/management/sites' },
   },
   {
     name: 'caputchin_list_sites',
@@ -87,7 +87,7 @@ export const TOOLS: ToolDef[] = [
       body: (a) => ({
         name: a.name,
         allowed_domains: a.allowed_domains ?? [],
-        tier: a.tier ?? 'free',
+        tier: a.tier,
       }),
     },
   },

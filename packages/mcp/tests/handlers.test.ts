@@ -11,11 +11,11 @@ describe('bridgeHandler', () => {
   afterEach(() => fetchSpy.mockReset());
 
   it('returns a content block on 2xx', async () => {
-    const ping = TOOLS.find((t) => t.name === 'caputchin_ping')!;
+    const checkAuth = TOOLS.find((t) => t.name === 'caputchin_check_auth')!;
     fetchSpy.mockResolvedValueOnce(
       new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } })
     );
-    const handler = bridgeHandler(cfg, ping);
+    const handler = bridgeHandler(cfg, checkAuth);
     const res = await handler({});
     expect(res.content).toEqual([{ type: 'text', text: JSON.stringify([], null, 2) }]);
     expect('isError' in res).toBe(false);
@@ -70,6 +70,33 @@ describe('bridgeHandler', () => {
     await handler({ id: 'site_a' });
     const [url] = fetchSpy.mock.calls[0]!;
     expect(url).toBe('https://api.caputchin.com/api/v1/management/sites/site_a/stats');
+  });
+
+  it('redacts Bearer tokens from error text', async () => {
+    const list = TOOLS.find((t) => t.name === 'caputchin_list_sites')!;
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: 'invalid-token', auth: 'Bearer cpt_pat_secret123' }),
+        { status: 401, headers: { 'content-type': 'application/json' } }
+      )
+    );
+    const handler = bridgeHandler(cfg, list);
+    const res = await handler({});
+    expect(res).toMatchObject({ isError: true });
+    const text = res.content[0]?.text ?? '';
+    expect(text).not.toContain('cpt_pat_secret123');
+    expect(text).toContain('[REDACTED]');
+  });
+
+  it('marks isError on network failure', async () => {
+    const list = TOOLS.find((t) => t.name === 'caputchin_list_sites')!;
+    fetchSpy.mockRejectedValueOnce(new TypeError('network unreachable'));
+    const handler = bridgeHandler(cfg, list);
+    const res = await handler({});
+    expect(res).toMatchObject({ isError: true });
+    const text = res.content[0]?.text ?? '';
+    expect(text).toContain('HTTP 0');
+    expect(text).toContain('network');
   });
 });
 

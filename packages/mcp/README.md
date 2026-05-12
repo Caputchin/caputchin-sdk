@@ -4,10 +4,10 @@ Model Context Protocol server for Caputchin — exposes the Management API and
 offline developer helpers over stdio. Works with Claude Desktop, Cursor, Claude
 Code, and any other MCP client that speaks stdio.
 
-Transport: stdio. The hosted platform also mounts the same management surface
-over HTTP at `/api/mcp` (JSON-RPC 2.0) for clients that prefer streaming HTTP —
-this package is for stdio-only clients and adds local-only snippet generators
-that need no Caputchin account.
+Transport: stdio. A future hosted HTTP transport at `/api/mcp` (JSON-RPC 2.0)
+is planned for clients that prefer streaming HTTP — this package is the
+stdio-only distribution and adds local-only snippet generators that need no
+Caputchin account.
 
 ## Install + run
 
@@ -20,7 +20,7 @@ Set two env vars before launching:
 | Env var | Required | Default | Notes |
 |---|---|---|---|
 | `CAPUTCHIN_TOKEN` | yes (default mode) | — | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
-| `CAPUTCHIN_API_URL` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. |
+| `CAPUTCHIN_API_HOST` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. |
 
 Run in local-only mode (no token, no bridge tools — just the snippet generators):
 
@@ -54,7 +54,7 @@ transport your client supports.
 
 | Tool | Description |
 |---|---|
-| `caputchin_ping` | Health check; proves the token + base URL work. |
+| `caputchin_check_auth` | Verify the management token and API host; returns the site list on success. |
 | `caputchin_list_sites` | List all site keys owned by the account. |
 | `caputchin_create_site` | Create a new site key (secret returned ONCE). |
 | `caputchin_get_site` | Fetch one site by id. |

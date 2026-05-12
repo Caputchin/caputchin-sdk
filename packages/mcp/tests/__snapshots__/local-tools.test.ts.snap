@@ -1,0 +1,86 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderSiteverifyExample > snapshot: curl 1`] = `
+"curl -sS -X POST https://api.caputchin.com/api/v1/siteverify \\
+  -H "content-type: application/json" \\
+  -d "{\\"secret\\":\\"$CAPUTCHIN_SECRET\\",\\"response\\":\\"$TOKEN\\"}""
+`;
+
+exports[`renderSiteverifyExample > snapshot: go 1`] = `
+"body, _ := json.Marshal(map[string]string{
+    "secret":   os.Getenv("CAPUTCHIN_SECRET"),
+    "response": token,
+})
+res, err := http.Post(
+    "https://api.caputchin.com/api/v1/siteverify",
+    "application/json",
+    bytes.NewReader(body),
+)
+if err != nil { return err }
+defer res.Body.Close()
+var verdict struct{ Success bool \`json:"success"\` }
+json.NewDecoder(res.Body).Decode(&verdict)
+if !verdict.Success { return fmt.Errorf("captcha failed") }"
+`;
+
+exports[`renderSiteverifyExample > snapshot: javascript 1`] = `
+"// Node 18+ (built-in fetch)
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),
+});
+const verdict = await res.json();
+if (!verdict.success) throw new Error(verdict["error-codes"].join(","));"
+`;
+
+exports[`renderSiteverifyExample > snapshot: node 1`] = `
+"// Node 18+ (built-in fetch)
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),
+});
+const verdict = await res.json();
+if (!verdict.success) throw new Error(verdict["error-codes"].join(","));"
+`;
+
+exports[`renderSiteverifyExample > snapshot: php 1`] = `
+"$res = file_get_contents('https://api.caputchin.com/api/v1/siteverify', false, stream_context_create([
+    'http' => [
+        'method'  => 'POST',
+        'header'  => 'content-type: application/json',
+        'content' => json_encode([
+            'secret'   => getenv('CAPUTCHIN_SECRET'),
+            'response' => $token,
+        ]),
+    ],
+]));
+$verdict = json_decode($res, true);
+if (!$verdict['success']) {
+    throw new Exception(implode(',', $verdict['error-codes']));
+}"
+`;
+
+exports[`renderSiteverifyExample > snapshot: python 1`] = `
+"import os, requests
+res = requests.post(
+    "https://api.caputchin.com/api/v1/siteverify",
+    json={"secret": os.environ["CAPUTCHIN_SECRET"], "response": token},
+    timeout=10,
+)
+verdict = res.json()
+if not verdict.get("success"):
+    raise RuntimeError(verdict.get("error-codes"))"
+`;
+
+exports[`renderSiteverifyExample > snapshot: typescript 1`] = `
+"// Node 18+ (built-in fetch)
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),
+});
+const verdict = await res.json();
+if (!verdict.success) throw new Error(verdict["error-codes"].join(","));"
+`;

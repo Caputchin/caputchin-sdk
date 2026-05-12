@@ -11,7 +11,7 @@ describe('readManagementConfig', () => {
   it('strips trailing slashes from base URL', () => {
     const cfg = readManagementConfig({
       CAPUTCHIN_TOKEN: 'cpt_pat_test',
-      CAPUTCHIN_API_URL: 'https://x.example.com///',
+      CAPUTCHIN_API_HOST: 'https://x.example.com///',
     } as NodeJS.ProcessEnv);
     expect(cfg.baseUrl).toBe('https://x.example.com');
   });
@@ -97,5 +97,17 @@ describe('apiRequest', () => {
     const result = await apiRequest(cfg, 'DELETE', '/x');
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data).toBeNull();
+  });
+
+  it('returns ok:false with status 0 and network code on fetch throw', async () => {
+    fetchSpy.mockRejectedValueOnce(new TypeError('fetch failed'));
+    const cfg = { baseUrl: 'https://x', token: 't' };
+    const result = await apiRequest(cfg, 'GET', '/x');
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(0);
+    if (!result.ok) {
+      expect(result.error).toMatchObject({ code: 'network' });
+      expect((result.error as { message: string }).message).toContain('fetch failed');
+    }
   });
 });

@@ -2,7 +2,7 @@
  * Thin HTTP client for the Caputchin Management API.
  *
  * Auth: management token (cpt_pat_*) via the `CAPUTCHIN_TOKEN` env var.
- * Base URL: `CAPUTCHIN_API_URL` (default https://api.caputchin.com).
+ * Base URL: `CAPUTCHIN_API_HOST` (default https://api.caputchin.com).
  *
  * Errors are surfaced verbatim so MCP tool callers see the raw API response
  * shape — easier to debug for AI agents than re-translated messages.
@@ -13,7 +13,7 @@ export type ManagementApiConfig = {
 };
 
 export function readManagementConfig(env: NodeJS.ProcessEnv = process.env): ManagementApiConfig {
-  const baseUrl = (env.CAPUTCHIN_API_URL ?? 'https://api.caputchin.com').replace(/\/+$/, '');
+  const baseUrl = (env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com').replace(/\/+$/, '');
   const token = env.CAPUTCHIN_TOKEN;
   if (!token) {
     throw new Error('CAPUTCHIN_TOKEN env var is required (management token starting with `cpt_pat_`).');
@@ -42,7 +42,12 @@ export async function apiRequest<T>(
   if (body !== undefined) {
     init.body = JSON.stringify(body);
   }
-  const res = await fetch(`${cfg.baseUrl}${path}`, init);
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}${path}`, init);
+  } catch (err) {
+    return { ok: false, status: 0, error: { code: 'network', message: String(err) } };
+  }
   const text = await res.text();
   let parsed: unknown = text;
   try {

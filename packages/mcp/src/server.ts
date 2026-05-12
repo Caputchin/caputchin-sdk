@@ -3,6 +3,12 @@ import { apiRequest, readManagementConfig, type ManagementApiConfig } from './ap
 import { LOCAL_TOOLS, type LocalTool } from './local-tools.js';
 import { TOOLS, type ToolDef } from './tools.js';
 
+const REDACT_RE = /(Bearer\s+\S+|cpt_pat_[A-Za-z0-9_-]+)/g;
+
+function redactTokens(text: string): string {
+  return text.replace(REDACT_RE, '[REDACTED]');
+}
+
 export function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
   return async (args: Record<string, unknown>) => {
     const path = def.call.path(args);
@@ -18,7 +24,7 @@ export function bridgeHandler(cfg: ManagementApiConfig, def: ToolDef) {
       content: [
         {
           type: 'text' as const,
-          text: `HTTP ${result.status}: ${JSON.stringify(result.error)}`,
+          text: redactTokens(`HTTP ${result.status}: ${JSON.stringify(result.error)}`),
         },
       ],
     };

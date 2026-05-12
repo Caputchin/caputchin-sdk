@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TOOLS } from '../src/tools.js';
 
 const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
-  caputchin_ping: {},
+  caputchin_check_auth: {},
   caputchin_list_sites: {},
   caputchin_create_site: {
     name: 'demo',
@@ -77,10 +77,10 @@ describe('TOOLS catalog — body() factories', () => {
     });
   }
 
-  it('caputchin_create_site body defaults allowed_domains to [] and tier to free', () => {
+  it('caputchin_create_site body defaults allowed_domains to []', () => {
     const tool = TOOLS.find((t) => t.name === 'caputchin_create_site')!;
     const body = tool.call.body!({ name: 'x' });
-    expect(body).toEqual({ name: 'x', allowed_domains: [], tier: 'free' });
+    expect(body).toMatchObject({ name: 'x', allowed_domains: [] });
   });
 
   it('caputchin_update_site body strips id from request payload', () => {

@@ -77,6 +77,18 @@ describe('renderSiteverifyExample', () => {
     const out = renderSiteverifyExample({ language: 'curl' });
     expect(out).toContain('curl -sS -X POST https://api.caputchin.com/api/v1/siteverify');
   });
+
+  it.each([
+    ['node'],
+    ['javascript'],
+    ['typescript'],
+    ['python'],
+    ['go'],
+    ['php'],
+    ['curl'],
+  ] as const)('snapshot: %s', (lang) => {
+    expect(renderSiteverifyExample({ language: lang })).toMatchSnapshot();
+  });
 });
 
 describe('LOCAL_TOOLS catalog', () => {

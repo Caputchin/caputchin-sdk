@@ -24,7 +24,7 @@ describe('tool exports', () => {
     const names = TOOLS.map((t) => t.name);
     expect(names).toEqual(
       expect.arrayContaining([
-        'caputchin_ping',
+        'caputchin_check_auth',
         'caputchin_list_sites',
         'caputchin_create_site',
         'caputchin_get_site',
