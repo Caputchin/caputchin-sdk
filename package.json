@@ -16,13 +16,13 @@
   "size-limit": [
     {
       "name": "widget (ESM)",
-      "path": "packages/widget/dist/widget.js",
+      "path": "packages/widget/dist/widget.mjs",
       "limit": "25 kB",
       "gzip": true
     },
     {
       "name": "widget (IIFE)",
-      "path": "packages/widget/dist/widget.global.js",
+      "path": "packages/widget/dist/widget.js",
       "limit": "80 kB",
       "gzip": true
     },

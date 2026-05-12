@@ -11,7 +11,7 @@ npm install @caputchin/widget
 Or via CDN (no bundler required):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/widget.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/widget.js" async defer></script>
 ```
 
 ## Usage

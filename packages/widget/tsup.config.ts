@@ -28,6 +28,11 @@ export default defineConfig({
   target: 'es2020',
   minify: false,
   clean: true,
+  outExtension({ format }) {
+    if (format === 'esm') return { js: '.mjs' };
+    if (format === 'iife') return { js: '.js' };
+    return { js: '.js' };
+  },
   define: {
     __CAPUTCHIN_API_HOST__: JSON.stringify(
       process.env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com'

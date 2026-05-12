@@ -19,13 +19,14 @@
   "exports": {
     ".": {
       "types": "./dist/widget.d.ts",
-      "import": "./dist/widget.js"
+      "import": "./dist/widget.mjs"
     }
   },
   "files": [
     "dist"
   ],
   "sideEffects": [
+    "./dist/widget.mjs",
     "./dist/widget.js"
   ],
   "scripts": {
