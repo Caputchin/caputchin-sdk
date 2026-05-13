@@ -20,7 +20,7 @@ describe('createServer', () => {
 });
 
 describe('tool exports', () => {
-  it('TOOLS catalog has the 13 bridge tools', () => {
+  it('TOOLS catalog includes every bridge tool', () => {
     const names = TOOLS.map((t) => t.name);
     expect(names).toEqual(
       expect.arrayContaining([
@@ -37,6 +37,10 @@ describe('tool exports', () => {
         'caputchin_revoke_token',
         'caputchin_get_hosted_verification',
         'caputchin_set_hosted_verification',
+        'caputchin_get_account',
+        'caputchin_change_email',
+        'caputchin_list_sessions',
+        'caputchin_revoke_session',
       ]),
     );
   });

@@ -53,6 +53,14 @@ export const HostedVerificationPutInput = z.object({
   email_to: z.string().email().nullable().optional(),
 });
 
+export const ChangeEmailInput = z.object({
+  new_email: z.string().min(3).describe('New email address for the authed account.'),
+});
+
+export const SessionIdInput = z.object({
+  id: z.string().min(1).describe('Dashboard session id.'),
+});
+
 export type ToolDef = {
   name: string;
   description: string;
@@ -173,6 +181,43 @@ export const TOOLS: ToolDef[] = [
         const { site_id: _siteId, ...rest } = a;
         return rest;
       },
+    },
+  },
+  // me/* — account-self surfaces. Account-PAT or session cookie only;
+  // team-PATs (when typing ships per ADR-0024) must be refused. See ADR-0027.
+  {
+    name: 'caputchin_get_account',
+    description:
+      "Fetch the authed account's metadata (id, email, created_at). Use this before proposing an email change so the new address differs from the current one.",
+    inputSchema: NoArgs,
+    call: { method: 'GET', path: () => '/api/v1/management/me/account' },
+  },
+  {
+    name: 'caputchin_change_email',
+    description:
+      'Request an email change for the authed account. Sends a single-use confirmation link to the new address; the change applies only after the user clicks that link. This tool does NOT commit the change — the email is unchanged on return.',
+    inputSchema: ChangeEmailInput,
+    call: {
+      method: 'PATCH',
+      path: () => '/api/v1/management/me/email',
+      body: (a) => ({ newEmail: a.new_email }),
+    },
+  },
+  {
+    name: 'caputchin_list_sessions',
+    description:
+      "List the authed account's active dashboard sessions (server-minted name, timestamps). PAT callers see `current: false` everywhere (no session-cookie concept).",
+    inputSchema: NoArgs,
+    call: { method: 'GET', path: () => '/api/v1/management/me/sessions' },
+  },
+  {
+    name: 'caputchin_revoke_session',
+    description:
+      'Revoke one dashboard session by id. Ownership-enforced server-side: revoking another account\'s id returns 404. The session is signed out on its next request.',
+    inputSchema: SessionIdInput,
+    call: {
+      method: 'DELETE',
+      path: (a) => `/api/v1/management/me/sessions/${encodeURIComponent(String(a.id))}`,
     },
   },
 ];

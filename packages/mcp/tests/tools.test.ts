@@ -25,6 +25,10 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
     webhook_secret: 'shh',
     email_to: 'alerts@example.com',
   },
+  caputchin_get_account: {},
+  caputchin_change_email: { new_email: 'new@example.com' },
+  caputchin_list_sessions: {},
+  caputchin_revoke_session: { id: 'sess_abc' },
 };
 
 describe('TOOLS catalog — path() factories', () => {
@@ -120,7 +124,31 @@ describe('TOOLS catalog — shape', () => {
     }
   });
 
-  it('exposes 13 management tools', () => {
-    expect(TOOLS.length).toBe(13);
+  it('exposes 17 management tools (sites/tokens/hosted-verification/me)', () => {
+    expect(TOOLS.length).toBe(17);
+  });
+
+  it('me/* tools target /api/v1/management/me/* paths', () => {
+    const me = TOOLS.filter((t) => t.call.path(SAMPLE_ARGS[t.name] ?? {}).startsWith('/api/v1/management/me/'));
+    const names = me.map((t) => t.name).sort();
+    expect(names).toEqual([
+      'caputchin_change_email',
+      'caputchin_get_account',
+      'caputchin_list_sessions',
+      'caputchin_revoke_session',
+    ]);
+  });
+
+  it('caputchin_change_email body renames new_email → newEmail to match the route contract', () => {
+    const tool = TOOLS.find((t) => t.name === 'caputchin_change_email')!;
+    const body = tool.call.body!({ new_email: 'next@example.com' });
+    expect(body).toEqual({ newEmail: 'next@example.com' });
+  });
+
+  it('caputchin_revoke_session URL-encodes the session id', () => {
+    const tool = TOOLS.find((t) => t.name === 'caputchin_revoke_session')!;
+    expect(tool.call.path({ id: 'sess/with?slash' })).toBe(
+      '/api/v1/management/me/sessions/sess%2Fwith%3Fslash'
+    );
   });
 });
