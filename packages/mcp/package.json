@@ -1,14 +1,8 @@
 {
   "name": "@caputchin/mcp",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "MCP server for managing Caputchin resources via AI agents",
-  "keywords": [
-    "caputchin",
-    "mcp",
-    "model-context-protocol",
-    "ai",
-    "management"
-  ],
+  "keywords": ["caputchin", "mcp", "model-context-protocol", "ai", "management"],
   "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
   "repository": {
     "type": "git",
