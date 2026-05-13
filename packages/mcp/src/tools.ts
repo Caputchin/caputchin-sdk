@@ -71,8 +71,16 @@ export const CapConfigPatchInput = z.object({
   block_non_browser_ua: z.boolean().nullable().optional(),
   required_headers: z.array(z.string()).nullable().optional()
     .describe('Headers Cap requires on every request. Any header name accepted.'),
-  ratelimit_max: z.number().int().min(1).max(10000).nullable().optional(),
-  ratelimit_duration_ms: z.number().int().min(1000).max(3_600_000).nullable().optional(),
+  ratelimit_max: z
+    .number()
+    .int()
+    .min(1)
+    .max(10000)
+    .nullable()
+    .optional()
+    .describe(
+      "Maximum requests per minute (window is platform-locked at 1 minute). Plan-capped — requests above the plan ceiling are rejected."
+    ),
   cors_origins: z.array(z.string()).nullable().optional(),
 });
 

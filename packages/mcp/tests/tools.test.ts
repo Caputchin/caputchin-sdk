@@ -17,7 +17,6 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
     id: 'site_abc',
     difficulty: 6,
     ratelimit_max: 100,
-    ratelimit_duration_ms: 60000,
     required_headers: ['sec-ch-ua'],
   },
   caputchin_list_tokens: {},
