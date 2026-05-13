@@ -57,7 +57,7 @@ hosted HTTP mount at `/api/mcp` is planned — this package is the stdio path.
 | `caputchin_list_sites` | List all site keys owned by the account. |
 | `caputchin_create_site` | Create a new site key (secret returned ONCE). |
 | `caputchin_get_site` | Fetch one site by id. |
-| `caputchin_update_site` | Update name / allowed_domains / tier / disabled. |
+| `caputchin_update_site` | Update name / tier / disabled. Origin allowlist (`cors_origins`) is managed via `caputchin_update_site_cap_config`. |
 | `caputchin_delete_site` | Delete a site permanently. |
 | `caputchin_rotate_site_secret` | Issue a fresh site secret; old one stops verifying. |
 | `caputchin_site_stats` | Aggregate counters per site. |

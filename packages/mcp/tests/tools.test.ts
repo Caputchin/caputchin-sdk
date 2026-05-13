@@ -6,7 +6,6 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
   caputchin_list_sites: {},
   caputchin_create_site: {
     name: 'demo',
-    allowed_domains: ['example.com'],
     tier: 'free',
   },
   caputchin_get_site: { id: 'site_abc' },
@@ -88,10 +87,11 @@ describe('TOOLS catalog — body() factories', () => {
     });
   }
 
-  it('caputchin_create_site body defaults allowed_domains to []', () => {
+  it('caputchin_create_site body forwards just name + tier (origin allowlist managed via cap-config)', () => {
     const tool = TOOLS.find((t) => t.name === 'caputchin_create_site')!;
     const body = tool.call.body!({ name: 'x' });
-    expect(body).toMatchObject({ name: 'x', allowed_domains: [] });
+    expect(body).toMatchObject({ name: 'x' });
+    expect(body).not.toHaveProperty('allowed_domains');
   });
 
   it('SiteCreateInput schema defaults tier to free when omitted', () => {
