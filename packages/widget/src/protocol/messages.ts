@@ -1,3 +1,5 @@
+import type { Layout } from '@caputchin/game-sdk';
+
 export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
@@ -9,7 +11,13 @@ export interface DisposeMessage {
   seq: number;
 }
 
-export type WidgetToIframe = KickoffMessage | DisposeMessage;
+export interface LayoutContextMessage {
+  kind: 'layout-context';
+  seq: number;
+  layout: Layout;
+}
+
+export type WidgetToIframe = KickoffMessage | DisposeMessage | LayoutContextMessage;
 
 export interface GameStartedMessage {
   kind: 'game-started';
@@ -30,9 +38,20 @@ export interface GameErrorMessage {
   message: string;
 }
 
-export type IframeToWidget = GameStartedMessage | GamePassMessage | GameErrorMessage;
+export interface ManifestMessage {
+  kind: 'manifest';
+  seq: number;
+  gameId: string | null;
+  preferredLayout: Layout | null;
+}
 
-const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error']);
+export type IframeToWidget =
+  | GameStartedMessage
+  | GamePassMessage
+  | GameErrorMessage
+  | ManifestMessage;
+
+const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest']);
 
 export function isIframeToWidget(msg: unknown): msg is IframeToWidget {
   if (typeof msg !== 'object' || msg === null) return false;

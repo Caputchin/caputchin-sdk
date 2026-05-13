@@ -1,6 +1,7 @@
 import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
-import type { IframeToWidget } from '../protocol/messages.js';
+import type { IframeToWidget, ManifestMessage } from '../protocol/messages.js';
+import type { Layout } from '@caputchin/game-sdk';
 
 // srcdoc iframes always fire `load` for the wrapper document — even on CSP block or 404.
 // The real readiness signal is `game-started` postMessage from the runtime.
@@ -17,6 +18,11 @@ export class IframeHost {
   private unlisten: (() => void) | null = null;
   private kickoffAckTimer: ReturnType<typeof setTimeout> | null = null;
   private onLoadFailed: ((code: 'iframe-load-failed', message: string) => void) | null = null;
+
+  private manifestResolver: ((m: ManifestMessage | null) => void) | null = null;
+  private manifestTimer: ReturnType<typeof setTimeout> | null = null;
+  private manifestSettled = false;
+  private bufferedManifest: ManifestMessage | null = null;
 
   constructor(
     gameUrl: string | null,
@@ -57,8 +63,11 @@ export class IframeHost {
 
     this.onLoadFailed = onLoadFailed;
 
-    // Wrap the upstream onMessage to intercept game-started and clear the ack timer.
     this.unlisten = listen(iframe, this.hostEl, (msg) => {
+      if (msg.kind === 'manifest') {
+        this.handleManifest(msg);
+        return;
+      }
       if (msg.kind === 'game-started') {
         this.clearKickoffAckTimer();
         onGameStarted?.();
@@ -67,6 +76,59 @@ export class IframeHost {
     });
 
     container.appendChild(iframe);
+  }
+
+  /** Returns the iframe element for re-parenting by external presenters. */
+  getIframe(): HTMLIFrameElement | null {
+    return this.iframe;
+  }
+
+  /**
+   * Wait for the iframe runtime to post its manifest. Resolves to the message
+   * if received within `timeoutMs`, or `null` on timeout. Safe to call multiple
+   * times — subsequent calls reuse the buffered manifest.
+   */
+  waitManifest(timeoutMs: number): Promise<ManifestMessage | null> {
+    if (this.bufferedManifest) {
+      return Promise.resolve(this.bufferedManifest);
+    }
+    if (this.manifestSettled) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      this.manifestResolver = resolve;
+      this.manifestTimer = setTimeout(() => {
+        this.manifestTimer = null;
+        this.settleManifest(null);
+      }, timeoutMs);
+    });
+  }
+
+  private handleManifest(msg: ManifestMessage): void {
+    if (this.manifestSettled) return;
+    if (this.manifestResolver) {
+      this.settleManifest(msg);
+    } else {
+      this.bufferedManifest = msg;
+    }
+  }
+
+  private settleManifest(msg: ManifestMessage | null): void {
+    if (this.manifestSettled) return;
+    this.manifestSettled = true;
+    if (this.manifestTimer !== null) {
+      clearTimeout(this.manifestTimer);
+      this.manifestTimer = null;
+    }
+    if (this.manifestResolver) {
+      this.manifestResolver(msg);
+      this.manifestResolver = null;
+    }
+  }
+
+  setLayoutContext(layout: Layout): void {
+    if (!this.iframe) return;
+    send(this.iframe, { kind: 'layout-context', seq: 0, layout });
   }
 
   kickoff(seq: number): void {
@@ -93,6 +155,14 @@ export class IframeHost {
 
   dispose(): void {
     this.clearKickoffAckTimer();
+    if (this.manifestTimer !== null) {
+      clearTimeout(this.manifestTimer);
+      this.manifestTimer = null;
+    }
+    if (this.manifestResolver) {
+      this.manifestResolver(null);
+      this.manifestResolver = null;
+    }
     if (this.iframe) {
       send(this.iframe, { kind: 'dispose', seq: -1 });
       this.iframe.remove();

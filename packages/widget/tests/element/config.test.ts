@@ -24,62 +24,62 @@ describe('validateGameUrl', () => {
 
 describe('validateConfig', () => {
   it('missing sitekey → invalid-config', () => {
-    const cfg = { sitekey: '', game: null, games: null, gameSrc: null, mode: 'auto' as const };
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: null, mode: 'auto' as const, layout: null };
     expect(validateConfig(cfg)?.code).toBe('invalid-config');
   });
 
   it('manual + game → invalid-config', () => {
-    const cfg = { sitekey: 'k', game: '@org/g', games: null, gameSrc: null, mode: 'manual' as const };
+    const cfg = { sitekey: 'k', game: '@org/g', games: null, gameSrc: null, mode: 'manual' as const, layout: null };
     expect(validateConfig(cfg)?.code).toBe('invalid-config');
   });
 
   it('manual + game-src → invalid-config', () => {
-    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'https://example.com/g.js', mode: 'manual' as const };
+    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'https://example.com/g.js', mode: 'manual' as const, layout: null };
     expect(validateConfig(cfg)?.code).toBe('invalid-config');
   });
 
   it('invalid game-src → invalid-config', () => {
-    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'http://example.com/g.js', mode: 'auto' as const };
+    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'http://example.com/g.js', mode: 'auto' as const, layout: null };
     expect(validateConfig(cfg)?.code).toBe('invalid-config');
   });
 
   it('valid auto config with game', () => {
-    const cfg = { sitekey: 'k', game: '@org/g', games: null, gameSrc: null, mode: 'auto' as const };
+    const cfg = { sitekey: 'k', game: '@org/g', games: null, gameSrc: null, mode: 'auto' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('valid form-submit config with game-src', () => {
-    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'https://example.com/g.js', mode: 'form-submit' as const };
+    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: 'https://example.com/g.js', mode: 'form-submit' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('valid manual config with no game', () => {
-    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: null, mode: 'manual' as const };
+    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: null, mode: 'manual' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('valid invisible default', () => {
-    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: null, mode: 'auto' as const };
+    const cfg = { sitekey: 'k', game: null, games: null, gameSrc: null, mode: 'auto' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('game-only with empty sitekey is valid', () => {
-    const cfg = { sitekey: '', game: '@org/g', games: null, gameSrc: null, mode: 'game-only' as const };
+    const cfg = { sitekey: '', game: '@org/g', games: null, gameSrc: null, mode: 'game-only' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('game-only with game-src is valid', () => {
-    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'https://x.com/g.js', mode: 'game-only' as const };
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'https://x.com/g.js', mode: 'game-only' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('game-only with no game/games/game-src is valid (becomes inert noop)', () => {
-    const cfg = { sitekey: '', game: null, games: null, gameSrc: null, mode: 'game-only' as const };
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: null, mode: 'game-only' as const, layout: null };
     expect(validateConfig(cfg)).toBeNull();
   });
 
   it('game-only with invalid game-src still rejects via URL validator', () => {
-    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'http://x.com/g.js', mode: 'game-only' as const };
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'http://x.com/g.js', mode: 'game-only' as const, layout: null };
     expect(validateConfig(cfg)?.code).toBe('invalid-config');
   });
 });
@@ -161,6 +161,42 @@ describe('parseAttributes', () => {
     const cfg = parseAttributes(el);
     expect(cfg.mode).toBe('game-only');
     expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+});
+
+describe('parseAttributes — layout attr', () => {
+  it('defaults layout to null when attr absent', () => {
+    const el = makeEl({ sitekey: 'k' });
+    expect(parseAttributes(el).layout).toBeNull();
+  });
+
+  it('parses layout="inline"', () => {
+    const el = makeEl({ sitekey: 'k', layout: 'inline' });
+    expect(parseAttributes(el).layout).toBe('inline');
+  });
+
+  it('parses layout="modal"', () => {
+    const el = makeEl({ sitekey: 'k', layout: 'modal' });
+    expect(parseAttributes(el).layout).toBe('modal');
+  });
+
+  it('parses layout="fullscreen"', () => {
+    const el = makeEl({ sitekey: 'k', layout: 'fullscreen' });
+    expect(parseAttributes(el).layout).toBe('fullscreen');
+  });
+
+  it('parses layout="auto"', () => {
+    const el = makeEl({ sitekey: 'k', layout: 'auto' });
+    expect(parseAttributes(el).layout).toBe('auto');
+  });
+
+  it('warns and falls back to null on invalid layout value', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ sitekey: 'k', layout: 'bogus' });
+    const cfg = parseAttributes(el);
+    expect(cfg.layout).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid layout'));
     warnSpy.mockRestore();
   });
 });

@@ -8,7 +8,8 @@ export type ErrorCode =
   | 'postmessage-bad-origin'
   | 'cap-solve-failed'
   | 'cap-redeem-failed'
-  | 'form-not-found';
+  | 'form-not-found'
+  | 'manifest-timeout';
 
 export const RECOVERABLE: Record<ErrorCode, boolean> = {
   'invalid-config': false,
@@ -21,6 +22,7 @@ export const RECOVERABLE: Record<ErrorCode, boolean> = {
   'cap-solve-failed': true,
   'cap-redeem-failed': true,
   'form-not-found': false,
+  'manifest-timeout': true,
 };
 
 const IFRAME_FORWARDABLE_CODES: ReadonlySet<ErrorCode> = new Set([

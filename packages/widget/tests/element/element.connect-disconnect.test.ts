@@ -56,7 +56,11 @@ describe('CaputchinElement lifecycle', () => {
   it('start event deferred to game-started postMessage when game configured (M3)', () => {
     const src = readFileSync(resolve(__dirname, '../../src/element.ts'), 'utf-8');
     expect(src).toContain('dispatchStart()');
-    expect(src).toContain('host.mount(this,');
-    expect(src).toContain('}, dispatchStart)');
+    expect(src).toContain('installLayout(');
+    expect(src).toContain('dispatchStart,');
+  });
+
+  it('observedAttributes includes layout', () => {
+    expect(CaputchinElement.observedAttributes).toContain('layout');
   });
 });

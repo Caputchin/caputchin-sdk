@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 type CapturedMessage = Record<string, unknown>;
 
 const posted: CapturedMessage[] = [];
+let manifestOnBoot: CapturedMessage | null = null;
 
 beforeAll(async () => {
   vi.spyOn(window, 'postMessage').mockImplementation((msg) => {
@@ -12,6 +13,8 @@ beforeAll(async () => {
   document.body.innerHTML = '<div id="cpt-root"></div>';
 
   await import('../../../src/iframe/runtime.iife.ts');
+
+  manifestOnBoot = posted.find((m) => m['kind'] === 'manifest') ?? null;
 });
 
 beforeEach(() => {
@@ -107,6 +110,77 @@ describe('iframe runtime — bridge.pass contract', () => {
     expect(done).toEqual({ kind: 'game-pass', seq: 4, score: 1.0, durationMs: null });
     expect(Object.prototype.hasOwnProperty.call(done, 'durationMs')).toBe(true);
     expect(done!['durationMs']).toBeNull();
+  });
+});
+
+describe('iframe runtime — manifest posted on boot', () => {
+  it('manifest message posted at boot', () => {
+    expect(manifestOnBoot).not.toBeNull();
+    expect(manifestOnBoot!['kind']).toBe('manifest');
+  });
+
+  it('manifest has gameId=null when no data-game-id script tag in test env', () => {
+    expect(manifestOnBoot!['gameId']).toBeNull();
+  });
+
+  it('manifest has preferredLayout=null when no opts registered for gameId', () => {
+    expect(manifestOnBoot!['preferredLayout']).toBeNull();
+  });
+});
+
+describe('iframe runtime — layout-context msg', () => {
+  it('bridge.layout reflects layout-context msg sent before kickoff', () => {
+    let captured: { layout: unknown } | null = null;
+    registerGame('lc-1', (_root, bridge) => {
+      captured = bridge as { layout: unknown };
+    });
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { kind: 'layout-context', seq: 0, layout: 'fullscreen' },
+        source: window,
+      }),
+    );
+    dispatchKickoff('lc-1', 100);
+
+    expect(captured).not.toBeNull();
+    expect(captured!.layout).toBe('fullscreen');
+  });
+
+  it('bridge.layout reflects layout-context msg sent after kickoff', () => {
+    let captured: { layout: unknown } | null = null;
+    registerGame('lc-2', (_root, bridge) => {
+      captured = bridge as { layout: unknown };
+    });
+
+    dispatchKickoff('lc-2', 101);
+    expect(captured).not.toBeNull();
+    expect(captured!.layout).toBe('fullscreen'); // still last value set
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { kind: 'layout-context', seq: 0, layout: 'modal' },
+        source: window,
+      }),
+    );
+    expect(captured!.layout).toBe('modal');
+  });
+
+  it('invalid layout-context value is rejected', () => {
+    let captured: { layout: unknown } | null = null;
+    registerGame('lc-3', (_root, bridge) => {
+      captured = bridge as { layout: unknown };
+    });
+
+    dispatchKickoff('lc-3', 102);
+    const before = captured!.layout;
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { kind: 'layout-context', seq: 0, layout: 'bogus' },
+        source: window,
+      }),
+    );
+    expect(captured!.layout).toBe(before);
   });
 });
 

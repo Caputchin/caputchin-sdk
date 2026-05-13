@@ -72,6 +72,7 @@
     #log .ev-pass     { color: #6fe86f; }
     #log .ev-nickname { color: #f5c842; }
     #log .ev-error    { color: #ff7070; }
+    #log .ev-layout-resolved { color: #c8b8f5; }
   </style>
 </head>
 <body>
@@ -147,6 +148,79 @@
   <caputchin-widget id="w-gameonly-nokey" game-src="/examples/simple-game.js"></caputchin-widget>
 </div>
 
+<!-- 7. explicit inline layout -->
+<div class="section">
+  <h2>7 — layout="inline" (explicit)</h2>
+  <p>Game renders inline in the page flow. No trigger checkbox; iframe is visible immediately.</p>
+  <caputchin-widget
+    id="w-layout-inline"
+    mode="game-only"
+    game-src="/examples/simple-game.js"
+    layout="inline"
+  ></caputchin-widget>
+</div>
+
+<!-- 8. modal layout -->
+<div class="section">
+  <h2>8 — layout="modal"</h2>
+  <p>
+    Trigger checkbox renders inline; clicking it opens a centered dialog containing
+    the game iframe. Close via backdrop click or <kbd>Esc</kbd>.
+  </p>
+  <caputchin-widget
+    id="w-layout-modal"
+    mode="game-only"
+    game-src="/examples/simple-game.js"
+    layout="modal"
+  ></caputchin-widget>
+</div>
+
+<!-- 9. fullscreen layout -->
+<div class="section">
+  <h2>9 — layout="fullscreen"</h2>
+  <p>
+    Trigger checkbox renders inline; clicking it takes over the full viewport. Close
+    via the top-right <strong>X</strong> button (always shown) or <kbd>Esc</kbd> on desktop.
+  </p>
+  <caputchin-widget
+    id="w-layout-fullscreen"
+    mode="game-only"
+    game-src="/examples/simple-game.js"
+    layout="fullscreen"
+  ></caputchin-widget>
+</div>
+
+<!-- 10. auto layout -->
+<div class="section">
+  <h2>10 — layout="auto" (responsive)</h2>
+  <p>
+    Resolves to <code>modal</code> at ≥768px viewport width, <code>fullscreen</code> below.
+    Evaluated once at mount; resize requires a reload to re-evaluate.
+  </p>
+  <caputchin-widget
+    id="w-layout-auto"
+    mode="game-only"
+    game-src="/examples/simple-game.js"
+    layout="auto"
+  ></caputchin-widget>
+</div>
+
+<!-- 11. resolution-order example: attr wins over game's preferredLayout -->
+<div class="section">
+  <h2>11 — resolution order (attr beats game preferredLayout)</h2>
+  <p>
+    If the game declared <code>preferredLayout: 'modal'</code> via <code>register(id, factory, { preferredLayout })</code>,
+    setting <code>layout="inline"</code> on the widget overrides it. Check the
+    <code>layout-resolved</code> event in the log — <code>source</code> should be <code>"attr"</code>.
+  </p>
+  <caputchin-widget
+    id="w-layout-override"
+    mode="game-only"
+    game-src="/examples/simple-game.js"
+    layout="inline"
+  ></caputchin-widget>
+</div>
+
 <!-- shared event log -->
 <div id="log"><span class="ts">[ready]</span> event log — subscribe to all six widgets</div>
 
@@ -176,8 +250,20 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  const widgetIds = ['w-invisible', 'w-form', 'w-manual', 'w-game', 'w-gameonly', 'w-gameonly-nokey'];
-  const events = ['start', 'pass', 'nickname', 'error'];
+  const widgetIds = [
+    'w-invisible',
+    'w-form',
+    'w-manual',
+    'w-game',
+    'w-gameonly',
+    'w-gameonly-nokey',
+    'w-layout-inline',
+    'w-layout-modal',
+    'w-layout-fullscreen',
+    'w-layout-auto',
+    'w-layout-override',
+  ];
+  const events = ['start', 'pass', 'nickname', 'error', 'layout-resolved'];
 
   widgetIds.forEach(function (id) {
     const el = document.getElementById(id);

@@ -1,4 +1,5 @@
 import type { ErrorCode } from './errors.js';
+import type { Layout, LayoutAttr, LayoutSource } from './layout/types.js';
 
 export interface StartEventDetail {
   gameId: string | null;
@@ -20,11 +21,19 @@ export interface ErrorEventDetail {
   originalCode?: string;
 }
 
+export interface LayoutResolvedEventDetail {
+  layout: Layout;
+  source: LayoutSource;
+}
+
+export type { Layout, LayoutAttr, LayoutSource };
+
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;
   pass: CustomEvent<PassEventDetail>;
   nickname: CustomEvent<NicknameEventDetail>;
   error: CustomEvent<ErrorEventDetail>;
+  'layout-resolved': CustomEvent<LayoutResolvedEventDetail>;
 }
 
 export interface CaputchinElementShape extends HTMLElement {

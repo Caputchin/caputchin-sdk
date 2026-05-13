@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Bridge, GameFactory } from '../src/index';
+import type { Bridge, GameFactory, RegisterOptions } from '../src/index';
 import { register } from '../src/index';
 
-type CapGlobal = { games: Record<string, GameFactory> };
+type CapGlobal = {
+  games: Record<string, GameFactory>;
+  gameOpts: Record<string, RegisterOptions>;
+};
 
 function capGlobal(): CapGlobal {
   return (globalThis as Record<string, unknown>)['Caputchin'] as CapGlobal;
@@ -13,7 +16,7 @@ function setCapGlobal(value: unknown): void {
 }
 
 function makeBridge(): Bridge {
-  return { pass: vi.fn(), error: vi.fn() };
+  return { pass: vi.fn(), error: vi.fn(), layout: null };
 }
 
 function makeFactory(): GameFactory {
@@ -26,7 +29,7 @@ beforeEach(() => {
 
 describe('register()', () => {
   it('writes factory to globalThis.Caputchin.games[id]', () => {
-    setCapGlobal({ games: {} });
+    setCapGlobal({ games: {}, gameOpts: {} });
     const factory = makeFactory();
     register('my-game', factory);
     expect(capGlobal().games['my-game']).toBe(factory);
@@ -42,7 +45,7 @@ describe('register()', () => {
   });
 
   it('logs warn on duplicate id and last-write-wins', () => {
-    setCapGlobal({ games: {} });
+    setCapGlobal({ games: {}, gameOpts: {} });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = makeFactory();
     const second = makeFactory();
@@ -51,6 +54,18 @@ describe('register()', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('duplicate game id'));
     expect(capGlobal().games['dup-game']).toBe(second);
     warnSpy.mockRestore();
+  });
+
+  it('stores opts.preferredLayout under gameOpts[id]', () => {
+    setCapGlobal({ games: {}, gameOpts: {} });
+    register('mod-game', makeFactory(), { preferredLayout: 'modal' });
+    expect(capGlobal().gameOpts['mod-game']).toEqual({ preferredLayout: 'modal' });
+  });
+
+  it('omitted opts → no entry in gameOpts', () => {
+    setCapGlobal({ games: {}, gameOpts: {} });
+    register('no-opts', makeFactory());
+    expect(capGlobal().gameOpts['no-opts']).toBeUndefined();
   });
 
   it('Bridge type shape compiles and is callable', () => {
@@ -63,8 +78,13 @@ describe('register()', () => {
     expect(bridge.error).toHaveBeenCalledTimes(2);
   });
 
+  it('Bridge.layout is readable', () => {
+    const bridge = makeBridge();
+    expect(bridge.layout).toBeNull();
+  });
+
   it('factory return value cleanup contract preserved', () => {
-    setCapGlobal({ games: {} });
+    setCapGlobal({ games: {}, gameOpts: {} });
     const cleanup = vi.fn();
     const factoryWithCleanup: GameFactory = (_container, _bridge) => cleanup;
     const factoryVoid: GameFactory = (_container, _bridge) => {};
@@ -75,7 +95,7 @@ describe('register()', () => {
     const container = document.createElement('div');
     const bridge = makeBridge();
 
-    expect(typeof capGlobal().games['with-cleanup'](container, bridge)).toBe('function');
-    expect(capGlobal().games['void-factory'](container, bridge)).toBeUndefined();
+    expect(typeof capGlobal().games['with-cleanup']!(container, bridge)).toBe('function');
+    expect(capGlobal().games['void-factory']!(container, bridge)).toBeUndefined();
   });
 });

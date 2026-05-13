@@ -48,7 +48,7 @@ describe('game-only mode', () => {
     document.body.appendChild(el);
     await flush();
 
-    expect(el.querySelector('iframe')).not.toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull();
 
     el.remove();
   });
@@ -63,7 +63,7 @@ describe('game-only mode', () => {
     await flush();
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('no game configured'));
-    expect(el.querySelector('iframe')).toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).toBeNull();
     expect(errors).toHaveLength(0);
 
     warnSpy.mockRestore();
@@ -102,10 +102,10 @@ describe('game-only mode', () => {
     const el = getTestElement({ sitekey: 'k', mode: 'game-only', 'game-src': 'https://x.com/g.js' });
     document.body.appendChild(el);
     await flush();
-    expect(el.querySelector('iframe')).not.toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull();
 
     el.remove();
-    expect(el.querySelector('iframe')).toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).toBeNull();
   });
 });
 
@@ -121,7 +121,7 @@ describe('game-only mode: sitekey-absent coercion', () => {
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('coercing mode="auto" to "game-only"'));
     expect(errors).toHaveLength(0);
-    expect(el.querySelector('iframe')).not.toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull();
 
     warnSpy.mockRestore();
     el.remove();
@@ -174,7 +174,7 @@ describe('game-only mode: sitekey-absent coercion', () => {
     );
     expect(coercionCalls).toHaveLength(0);
     expect(errors).toHaveLength(0);
-    expect(el.querySelector('iframe')).not.toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull();
 
     warnSpy.mockRestore();
     el.remove();
@@ -281,7 +281,8 @@ describe('game-only mode: channel-driven behavior', () => {
     const el = getTestElement({ mode: 'game-only', 'game-src': 'https://x.com/g.js' });
     el.addEventListener('error', (e) => errors.push(e as CustomEvent));
     document.body.appendChild(el);
-    await vi.advanceTimersByTimeAsync(0);
+    // Drain manifest wait (2s) before kickoff fires.
+    await vi.advanceTimersByTimeAsync(2_001);
 
     expect(errors).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(10_001);
@@ -308,7 +309,7 @@ describe('game-only mode: marketplace path', () => {
     document.body.appendChild(el);
 
     await vi.waitFor(() => {
-      expect(el.querySelector('iframe')).not.toBeNull();
+      expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull();
     });
 
     const resolveCalled = fetchSpy.mock.calls.some((c) =>
@@ -331,7 +332,7 @@ describe('game-only mode: marketplace path', () => {
     await vi.waitFor(() => expect(errors.length).toBeGreaterThan(0));
 
     expect(errors[0]?.detail.code).toBe('resolve-failed');
-    expect(el.querySelector('iframe')).toBeNull();
+    expect((el.shadowRoot ?? el).querySelector('iframe')).toBeNull();
 
     el.remove();
     vi.unstubAllGlobals();
@@ -344,7 +345,7 @@ describe('game-only mode: marketplace path', () => {
     const el = getTestElement({ mode: 'game-only', game: '@org/g' });
     document.body.appendChild(el);
 
-    await vi.waitFor(() => expect(el.querySelector('iframe')).not.toBeNull());
+    await vi.waitFor(() => expect((el.shadowRoot ?? el).querySelector('iframe')).not.toBeNull());
 
     const urls = fetchSpy.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('/cap/'))).toBe(false);
