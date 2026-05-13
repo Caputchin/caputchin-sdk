@@ -129,4 +129,83 @@ describe('IframeHost', () => {
     host.dispose();
     container.remove();
   });
+
+  it('getIframe returns the iframe after build', () => {
+    const host = makeHost();
+    host.build();
+    expect(host.getIframe()).not.toBeNull();
+    expect(host.getIframe()?.tagName).toBe('IFRAME');
+  });
+
+  it('manifest msg is intercepted — not forwarded to onMessage', () => {
+    const onMessage = vi.fn();
+    const host = new IframeHost(null, null, 'g1', document.createElement('div'), onMessage);
+    mountHost(host);
+
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal' });
+    expect(onMessage).not.toHaveBeenCalled();
+
+    host.dispose();
+  });
+
+  it('waitManifest resolves when manifest arrives', async () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const promise = host.waitManifest(5_000);
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal' });
+    await vi.runAllTimersAsync();
+
+    const result = await promise;
+    expect(result).not.toBeNull();
+    expect(result?.preferredLayout).toBe('modal');
+
+    host.dispose();
+  });
+
+  it('waitManifest uses buffered manifest if it arrived before the await', async () => {
+    const host = makeHost();
+    mountHost(host);
+
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'fullscreen' });
+    const result = await host.waitManifest(5_000);
+    expect(result?.preferredLayout).toBe('fullscreen');
+
+    host.dispose();
+  });
+
+  it('waitManifest resolves null after timeout when no manifest arrives', async () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const promise = host.waitManifest(2_000);
+    vi.advanceTimersByTime(2_001);
+    const result = await promise;
+    expect(result).toBeNull();
+
+    host.dispose();
+  });
+
+  it('setLayoutContext sends a layout-context message', () => {
+    const host = makeHost();
+    mountHost(host);
+
+    host.setLayoutContext('fullscreen');
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ kind: 'layout-context', layout: 'fullscreen' }),
+    );
+
+    host.dispose();
+  });
+
+  it('dispose settles a pending waitManifest with null', async () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const promise = host.waitManifest(5_000);
+    host.dispose();
+    const result = await promise;
+    expect(result).toBeNull();
+  });
 });

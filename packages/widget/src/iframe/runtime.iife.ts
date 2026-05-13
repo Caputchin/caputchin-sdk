@@ -1,22 +1,30 @@
 // Self-contained iframe bootstrap. Only types imported — they erase at compile time.
 // Runs inside srcdoc iframe — opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameFactory } from '@caputchin/game-sdk';
+import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/game-sdk';
 
 (function () {
   interface CaputchinGlobal {
     games: Record<string, GameFactory>;
+    gameOpts: Record<string, RegisterOptions>;
   }
 
   (window as unknown as Record<string, unknown>)['Caputchin'] = {
     games: {},
+    gameOpts: {},
   } satisfies CaputchinGlobal;
 
   const W = window as unknown as Record<string, unknown>;
 
+  // Read embedded game id from the runtime script tag (srcdoc sets data-game-id).
+  const runtimeScript = document.querySelector('script[data-game-id]');
+  const embeddedRaw = runtimeScript ? runtimeScript.getAttribute('data-game-id') : null;
+  const embeddedGameId: string | null = embeddedRaw && embeddedRaw.length > 0 ? embeddedRaw : null;
+
   let seq = -1;
   let cleanup: (() => void) | void = undefined;
-  let gameId: string | null = null;
+  let kickoffGameId: string | null = null;
+  let currentLayout: Layout | null = null;
 
   function postToParent(msg: Record<string, unknown>): void {
     window.parent.postMessage(msg, '*');
@@ -26,15 +34,43 @@ import type { Bridge, GameFactory } from '@caputchin/game-sdk';
     postToParent({ kind: 'game-error', seq, code, message });
   }
 
+  function postManifest(): void {
+    const opts =
+      embeddedGameId !== null
+        ? (W['Caputchin'] as CaputchinGlobal).gameOpts[embeddedGameId]
+        : undefined;
+    postToParent({
+      kind: 'manifest',
+      seq: 0,
+      gameId: embeddedGameId,
+      preferredLayout: opts?.preferredLayout ?? null,
+    });
+  }
+
+  // Defer manifest until all body scripts have run so register() has populated gameOpts.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', postManifest, { once: true });
+  } else {
+    postManifest();
+  }
+
   window.addEventListener('message', (event: MessageEvent) => {
     if (event.source !== window.parent) return;
 
     const data = event.data as Record<string, unknown>;
     if (typeof data !== 'object' || data === null) return;
 
+    if (data['kind'] === 'layout-context') {
+      const raw = data['layout'];
+      if (raw === 'inline' || raw === 'modal' || raw === 'fullscreen') {
+        currentLayout = raw;
+      }
+      return;
+    }
+
     if (data['kind'] === 'kickoff') {
       seq = data['seq'] as number;
-      gameId = (data['gameId'] as string | null) ?? null;
+      kickoffGameId = (data['gameId'] as string | null) ?? null;
 
       const root = document.getElementById('cpt-root');
       if (!root) {
@@ -42,16 +78,16 @@ import type { Bridge, GameFactory } from '@caputchin/game-sdk';
         return;
       }
 
-      if (gameId === null) {
+      if (kickoffGameId === null) {
         postToParent({ kind: 'game-started', seq });
         return;
       }
 
       const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
 
-      const factory = registry[gameId];
+      const factory = registry[kickoffGameId];
       if (!factory) {
-        postError('game-not-registered', `No game registered for id "${gameId}"`);
+        postError('game-not-registered', `No game registered for id "${kickoffGameId}"`);
         return;
       }
 
@@ -66,6 +102,9 @@ import type { Bridge, GameFactory } from '@caputchin/game-sdk';
         },
         error({ code, message }) {
           postError(code, message ?? '');
+        },
+        get layout(): Layout | null {
+          return currentLayout;
         },
       };
 

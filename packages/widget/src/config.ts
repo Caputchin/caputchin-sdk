@@ -1,3 +1,6 @@
+import type { LayoutAttr } from './layout/types.js';
+import { isLayoutAttr } from './layout/types.js';
+
 export type WidgetMode = 'auto' | 'form-submit' | 'manual' | 'game-only';
 
 export interface ParsedConfig {
@@ -6,6 +9,7 @@ export interface ParsedConfig {
   games: string | null;
   gameSrc: string | null;
   mode: WidgetMode;
+  layout: LayoutAttr | null;
 }
 
 export interface InvalidConfig {
@@ -44,6 +48,7 @@ export function parseAttributes(el: HTMLElement): ParsedConfig {
   const games = el.getAttribute('games');
   const gameSrc = el.getAttribute('game-src');
   const rawMode = el.getAttribute('mode');
+  const rawLayout = el.getAttribute('layout');
 
   const explicitMode: WidgetMode | null =
     rawMode === 'auto' ||
@@ -64,7 +69,18 @@ export function parseAttributes(el: HTMLElement): ParsedConfig {
     mode = 'game-only';
   }
 
-  return { sitekey, game, games, gameSrc, mode };
+  let layout: LayoutAttr | null = null;
+  if (rawLayout !== null) {
+    if (isLayoutAttr(rawLayout)) {
+      layout = rawLayout;
+    } else {
+      console.warn(
+        `[caputchin] invalid layout="${rawLayout}" — expected one of inline|modal|fullscreen|auto. Falling back to default resolution.`,
+      );
+    }
+  }
+
+  return { sitekey, game, games, gameSrc, mode, layout };
 }
 
 export function validateConfig(cfg: ParsedConfig): InvalidConfig | null {
