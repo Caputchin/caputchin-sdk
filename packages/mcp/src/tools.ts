@@ -17,7 +17,6 @@ export const SitesListInput = z.object({}).strict();
 
 export const SiteCreateInput = z.object({
   name: z.string().min(1).describe('Human-readable label for the site.'),
-  allowed_domains: z.array(z.string()).optional().describe('Origin allowlist for the widget.'),
   tier: z.enum(['free', 'paid']).optional().default('free'),
 });
 
@@ -28,7 +27,6 @@ export const SiteIdInput = z.object({
 export const SiteUpdateInput = z.object({
   id: z.string().min(1),
   name: z.string().optional(),
-  allowed_domains: z.array(z.string()).optional(),
   tier: z.enum(['free', 'paid']).optional(),
   disabled: z.boolean().optional().describe('When true the site stops accepting verification.'),
 });
@@ -104,14 +102,14 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'caputchin_create_site',
-    description: 'Create a new site key. The site secret is returned ONCE — store it.',
+    description:
+      'Create a new site key. The site secret is returned ONCE — store it. Origin allowlist (cors_origins) is managed separately via caputchin_update_site_cap_config.',
     inputSchema: SiteCreateInput,
     call: {
       method: 'POST',
       path: () => '/api/v1/management/sites',
       body: (a) => ({
         name: a.name,
-        allowed_domains: a.allowed_domains ?? [],
         tier: a.tier,
       }),
     },
@@ -124,7 +122,8 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'caputchin_update_site',
-    description: 'Update a site (name, allowed_domains, tier, disabled). Only supplied fields change.',
+    description:
+      'Update a site (name, tier, disabled). Only supplied fields change. Origin allowlist (cors_origins) is managed separately via caputchin_update_site_cap_config.',
     inputSchema: SiteUpdateInput,
     call: {
       method: 'PATCH',
