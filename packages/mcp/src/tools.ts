@@ -79,7 +79,7 @@ export const CapConfigPatchInput = z.object({
     .nullable()
     .optional()
     .describe(
-      "Maximum requests per minute (window is platform-locked at 1 minute). Plan-capped — requests above the plan ceiling are rejected."
+      "Maximum requests per second (window is platform-locked at 1 second). Plan-capped — requests above the plan ceiling are rejected."
     ),
   cors_origins: z.array(z.string()).nullable().optional(),
 });
