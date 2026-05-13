@@ -12,8 +12,15 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
   caputchin_get_site: { id: 'site_abc' },
   caputchin_update_site: { id: 'site_abc', name: 'renamed', disabled: false },
   caputchin_delete_site: { id: 'site_abc' },
-  caputchin_rotate_site_secret: { id: 'site_abc' },
-  caputchin_site_stats: { id: 'site_abc' },
+  caputchin_rotate_site_secret: { id: 'site_abc' },  caputchin_site_stats: { id: 'site_abc' },
+  caputchin_get_site_cap_config: { id: 'site_abc' },
+  caputchin_update_site_cap_config: {
+    id: 'site_abc',
+    difficulty: 6,
+    ratelimit_max: 100,
+    ratelimit_duration_ms: 60000,
+    required_headers: ['sec-ch-ua'],
+  },
   caputchin_list_tokens: {},
   caputchin_create_token: { name: 'pat-1' },
   caputchin_revoke_token: { id: 'tok_abc' },
@@ -124,8 +131,8 @@ describe('TOOLS catalog — shape', () => {
     }
   });
 
-  it('exposes 17 management tools (sites/tokens/hosted-verification/me)', () => {
-    expect(TOOLS.length).toBe(17);
+  it('exposes 19 management tools (sites/tokens/hosted-verification/cap-config/me)', () => {
+    expect(TOOLS.length).toBe(19);
   });
 
   it('me/* tools target /api/v1/management/me/* paths', () => {

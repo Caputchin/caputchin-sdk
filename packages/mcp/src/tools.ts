@@ -61,6 +61,23 @@ export const SessionIdInput = z.object({
   id: z.string().min(1).describe('Dashboard session id.'),
 });
 
+export const CapConfigPatchInput = z.object({
+  id: z.string().min(1).describe('Site id.'),
+  difficulty: z.number().int().min(1).max(8).optional()
+    .describe('PoW leading-zero target.'),
+  challenge_count: z.number().int().min(1).max(500).optional()
+    .describe('PoW challenges per request.'),
+  obfuscation_level: z.number().int().min(1).max(10).optional()
+    .describe('Instrumentation bundle obfuscation strength.'),
+  block_automated_browsers: z.boolean().optional(),
+  block_non_browser_ua: z.boolean().nullable().optional(),
+  required_headers: z.array(z.string()).nullable().optional()
+    .describe('Headers Cap requires on every request. Any header name accepted.'),
+  ratelimit_max: z.number().int().min(1).max(10000).nullable().optional(),
+  ratelimit_duration_ms: z.number().int().min(1000).max(3_600_000).nullable().optional(),
+  cors_origins: z.array(z.string()).nullable().optional(),
+});
+
 export type ToolDef = {
   name: string;
   description: string;
@@ -138,6 +155,30 @@ export const TOOLS: ToolDef[] = [
     description: 'Aggregate counts: sessions_started, sessions_client_completed, sessions_server_verified.',
     inputSchema: SiteIdInput,
     call: { method: 'GET', path: (a) => `/api/v1/management/sites/${encodeURIComponent(String(a.id))}/stats` },
+  },
+  {
+    name: 'caputchin_get_site_cap_config',
+    description:
+      'Read the Cap-side config for a site (PoW difficulty/count, instrumentation obfuscation level, security filters, per-site rate limit, CORS).',
+    inputSchema: SiteIdInput,
+    call: {
+      method: 'GET',
+      path: (a) => `/api/v1/management/sites/${encodeURIComponent(String(a.id))}/cap-config`,
+    },
+  },
+  {
+    name: 'caputchin_update_site_cap_config',
+    description:
+      'Update Cap-side config for a site. Partial — only supplied fields change. `instrumentation` is platform-locked ON and cannot be set; `name` is set at mint and not customer-tunable.',
+    inputSchema: CapConfigPatchInput,
+    call: {
+      method: 'PATCH',
+      path: (a) => `/api/v1/management/sites/${encodeURIComponent(String(a.id))}/cap-config`,
+      body: (a) => {
+        const { id: _id, ...rest } = a;
+        return rest;
+      },
+    },
   },
   {
     name: 'caputchin_list_tokens',
