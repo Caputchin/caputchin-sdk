@@ -45,7 +45,11 @@ export class CaputchinElement extends HTMLElement {
       ctx.gameId = raw.game;
     }
 
-    this.mode = createModeStrategy(raw.mode, this, () => this.runVerification(ctx));
+    const runner =
+      raw.mode === 'game-only'
+        ? (): Promise<void> => this.runGameOnly(ctx)
+        : (): Promise<void> => this.runVerification(ctx);
+    this.mode = createModeStrategy(raw.mode, this, runner);
     this.mode.activate(ctx);
   }
 
@@ -153,5 +157,60 @@ export class CaputchinElement extends HTMLElement {
       bubbles: true,
       composed: true,
     }));
+  }
+
+  private async runGameOnly(ctx: VerificationContext): Promise<void> {
+    const el = this as HTMLElement;
+    const { apiHost } = ctx;
+
+    let gameUrl: string | null = ctx.gameUrl;
+    let integrity: string | null = null;
+    const gameId: string | null = ctx.gameId;
+
+    if (gameId === null && gameUrl === null) {
+      console.warn(
+        '[caputchin] game-only mode with no game configured — widget is inert',
+      );
+      return;
+    }
+
+    if (gameId && !gameUrl) {
+      const resolution = await fetchMarketplaceResolution(gameId, apiHost);
+      if (!resolution.ok) {
+        fireError(el, resolution.code, resolution.message);
+        return;
+      }
+      gameUrl = resolution.url;
+      integrity = resolution.integrity;
+    }
+
+    const dispatchStart = (): void => {
+      this.dispatchEvent(new CustomEvent('start', {
+        detail: { gameId },
+        bubbles: true,
+        composed: true,
+      }));
+    };
+
+    const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
+      if (msg.kind === 'game-complete') {
+        this.dispatchEvent(new CustomEvent('complete', {
+          detail: { token: null, score: msg.score, durationMs: msg.durationMs },
+          bubbles: true,
+          composed: true,
+        }));
+      } else if (msg.kind === 'game-error') {
+        const { code, originalCode } = mapIframeErrorCode(msg.code);
+        fireError(el, code, msg.message, originalCode);
+      }
+    });
+
+    host.mount(this, (code, message) => {
+      fireError(el, code, message);
+      this.iframeHost = null;
+    }, dispatchStart);
+
+    host.kickoff(1);
+    this.iframeHost = host;
   }
 }

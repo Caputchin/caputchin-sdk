@@ -126,8 +126,29 @@
   <caputchin-widget id="w-game" sitekey="cpt_pub_demo" game-src="/examples/simple-game.js"></caputchin-widget>
 </div>
 
+<!-- 5. game-only mode (Cap disabled) -->
+<div class="section">
+  <h2>5 — game-only mode</h2>
+  <p>
+    Cap is disabled entirely. The widget hosts the game iframe and surfaces
+    <code>start</code> / <code>complete</code> events with <code>token: null</code>.
+    No network requests to <code>/game/start</code> or <code>/game/complete</code>.
+  </p>
+  <caputchin-widget id="w-gameonly" sitekey="cpt_pub_demo" mode="game-only" game-src="/examples/simple-game.js"></caputchin-widget>
+</div>
+
+<!-- 6. game-only via sitekey-absent shorthand -->
+<div class="section">
+  <h2>6 — game-only via sitekey-absent shorthand</h2>
+  <p>
+    Same as #5 but no <code>sitekey</code> attribute. Omitting <code>sitekey</code>
+    is shorthand for <code>mode="game-only"</code>.
+  </p>
+  <caputchin-widget id="w-gameonly-nokey" game-src="/examples/simple-game.js"></caputchin-widget>
+</div>
+
 <!-- shared event log -->
-<div id="log"><span class="ts">[ready]</span> event log — subscribe to all four widgets</div>
+<div id="log"><span class="ts">[ready]</span> event log — subscribe to all six widgets</div>
 
 <script src="/packages/widget/dist/widget.js"></script>
 <script>
@@ -155,7 +176,7 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  const widgetIds = ['w-invisible', 'w-form', 'w-manual', 'w-game'];
+  const widgetIds = ['w-invisible', 'w-form', 'w-manual', 'w-game', 'w-gameonly', 'w-gameonly-nokey'];
   const events = ['start', 'complete', 'nickname', 'error'];
 
   widgetIds.forEach(function (id) {

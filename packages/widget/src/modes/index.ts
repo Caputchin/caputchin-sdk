@@ -2,6 +2,7 @@ import type { CapClient } from '../cap/client.js';
 import type { WidgetMode } from '../config.js';
 import { createAutoMode } from './auto.js';
 import { createFormSubmitMode } from './form-submit.js';
+import { createGameOnlyMode } from './game-only.js';
 import { createManualMode } from './manual.js';
 
 export interface VerificationContext {
@@ -30,5 +31,7 @@ export function createModeStrategy(
       return createFormSubmitMode(el, runVerification);
     case 'manual':
       return createManualMode(el, runVerification);
+    case 'game-only':
+      return createGameOnlyMode(runVerification);
   }
 }

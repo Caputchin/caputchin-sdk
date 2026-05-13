@@ -1,4 +1,4 @@
-export type WidgetMode = 'auto' | 'form-submit' | 'manual';
+export type WidgetMode = 'auto' | 'form-submit' | 'manual' | 'game-only';
 
 export interface ParsedConfig {
   sitekey: string;
@@ -44,13 +44,31 @@ export function parseAttributes(el: HTMLElement): ParsedConfig {
   const games = el.getAttribute('games');
   const gameSrc = el.getAttribute('game-src');
   const rawMode = el.getAttribute('mode');
-  const mode: WidgetMode =
-    rawMode === 'form-submit' || rawMode === 'manual' ? rawMode : 'auto';
+
+  const explicitMode: WidgetMode | null =
+    rawMode === 'auto' ||
+    rawMode === 'form-submit' ||
+    rawMode === 'manual' ||
+    rawMode === 'game-only'
+      ? rawMode
+      : null;
+
+  let mode: WidgetMode = explicitMode ?? 'auto';
+
+  if (!sitekey) {
+    if (explicitMode && explicitMode !== 'game-only') {
+      console.warn(
+        `[caputchin] no sitekey — coercing mode="${explicitMode}" to "game-only"`,
+      );
+    }
+    mode = 'game-only';
+  }
+
   return { sitekey, game, games, gameSrc, mode };
 }
 
 export function validateConfig(cfg: ParsedConfig): InvalidConfig | null {
-  if (!cfg.sitekey) {
+  if (cfg.mode !== 'game-only' && !cfg.sitekey) {
     return { code: 'invalid-config', message: 'sitekey attribute is required' };
   }
   if (cfg.mode === 'manual' && (cfg.game || cfg.games || cfg.gameSrc)) {

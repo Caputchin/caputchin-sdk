@@ -20,8 +20,22 @@ function mountEl(attrs: Record<string, string>) {
 }
 
 describe('validation error events', () => {
-  it('missing sitekey emits invalid-config', () => {
+  it('missing sitekey coerces to game-only and emits no error event', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { errors, el } = mountEl({});
+    expect(errors).toHaveLength(0);
+    warnSpy.mockRestore();
+    el.remove();
+  });
+
+  it('missing sitekey + mode="game-only" + marketplace game is valid', () => {
+    const { errors, el } = mountEl({ mode: 'game-only', game: '@org/g' });
+    expect(errors).toHaveLength(0);
+    el.remove();
+  });
+
+  it('missing sitekey + mode="game-only" + invalid game-src still rejects', () => {
+    const { errors, el } = mountEl({ mode: 'game-only', 'game-src': 'http://x.com/g.js' });
     expect(errors[0]?.detail.code).toBe('invalid-config');
     el.remove();
   });

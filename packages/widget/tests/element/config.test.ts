@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseAttributes, validateConfig, validateGameUrl } from '../../src/config.js';
 
 function makeEl(attrs: Record<string, string>): HTMLElement {
@@ -62,6 +62,26 @@ describe('validateConfig', () => {
     const cfg = { sitekey: 'k', game: null, games: null, gameSrc: null, mode: 'auto' as const };
     expect(validateConfig(cfg)).toBeNull();
   });
+
+  it('game-only with empty sitekey is valid', () => {
+    const cfg = { sitekey: '', game: '@org/g', games: null, gameSrc: null, mode: 'game-only' as const };
+    expect(validateConfig(cfg)).toBeNull();
+  });
+
+  it('game-only with game-src is valid', () => {
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'https://x.com/g.js', mode: 'game-only' as const };
+    expect(validateConfig(cfg)).toBeNull();
+  });
+
+  it('game-only with no game/games/game-src is valid (becomes inert noop)', () => {
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: null, mode: 'game-only' as const };
+    expect(validateConfig(cfg)).toBeNull();
+  });
+
+  it('game-only with invalid game-src still rejects via URL validator', () => {
+    const cfg = { sitekey: '', game: null, games: null, gameSrc: 'http://x.com/g.js', mode: 'game-only' as const };
+    expect(validateConfig(cfg)?.code).toBe('invalid-config');
+  });
 });
 
 describe('parseAttributes', () => {
@@ -83,5 +103,64 @@ describe('parseAttributes', () => {
   it('parses form-submit mode', () => {
     const el = makeEl({ sitekey: 'k', mode: 'form-submit' });
     expect(parseAttributes(el).mode).toBe('form-submit');
+  });
+
+  it('parses game-only mode', () => {
+    const el = makeEl({ sitekey: 'k', mode: 'game-only' });
+    expect(parseAttributes(el).mode).toBe('game-only');
+  });
+
+  it('coerces mode to game-only when sitekey is empty and mode is unset', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({});
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('coerces mode="auto" to game-only with console.warn when sitekey is empty', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ mode: 'auto' });
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('coercing mode="auto" to "game-only"'));
+    warnSpy.mockRestore();
+  });
+
+  it('coerces mode="form-submit" to game-only with console.warn when sitekey is empty', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ mode: 'form-submit' });
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('coercing mode="form-submit" to "game-only"'));
+    warnSpy.mockRestore();
+  });
+
+  it('coerces mode="manual" to game-only with console.warn when sitekey is empty', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ mode: 'manual' });
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('coercing mode="manual" to "game-only"'));
+    warnSpy.mockRestore();
+  });
+
+  it('does not warn when sitekey is empty and mode is already game-only', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ mode: 'game-only' });
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('unknown mode value with empty sitekey coerces to game-only silently', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const el = makeEl({ mode: 'bogus' });
+    const cfg = parseAttributes(el);
+    expect(cfg.mode).toBe('game-only');
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
