@@ -28,7 +28,7 @@ export function createCapClient(
 
   const cap = new Cap({ apiEndpoint: `${apiHost}/api/v1/game/` });
 
-  // arm the gate immediately so Cap's redeem call waits for game-complete
+  // arm the gate immediately so Cap's redeem call waits for game-pass
   armRedeemGate(el);
 
   return {

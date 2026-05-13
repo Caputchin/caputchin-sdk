@@ -19,10 +19,10 @@ export function createManualMode(
         enumerable: false,
       });
 
-      Object.defineProperty(el, 'complete', {
+      Object.defineProperty(el, 'pass', {
         value(payload: { score: number | null; durationMs: number | null }): void {
           if (!started) {
-            console.warn('[caputchin] widget.complete() called before widget.start(); ignoring');
+            console.warn('[caputchin] widget.pass() called before widget.start(); ignoring');
             return;
           }
           ctx.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
@@ -46,7 +46,7 @@ export function createManualMode(
     deactivate(): void {
       const elAny = el as unknown as Record<string, unknown>;
       try { delete elAny['start']; } catch {}
-      try { delete elAny['complete']; } catch {}
+      try { delete elAny['pass']; } catch {}
       try { delete elAny['setNickname']; } catch {}
       started = false;
     },

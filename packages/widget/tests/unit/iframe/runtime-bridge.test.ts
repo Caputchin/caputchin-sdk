@@ -75,36 +75,36 @@ describe('iframe runtime — bridge.error contract', () => {
   });
 });
 
-describe('iframe runtime — bridge.complete contract', () => {
-  it('complete({score, durationMs}) posts both fields', () => {
+describe('iframe runtime — bridge.pass contract', () => {
+  it('pass({score, durationMs}) posts both fields', () => {
     let captured: unknown = null;
     registerGame('c-1', (_root, bridge) => {
       captured = bridge;
     });
     dispatchKickoff('c-1', 3);
 
-    (captured as { complete: (p: { score: number; durationMs?: number }) => void }).complete({
+    (captured as { pass: (p: { score: number; durationMs?: number }) => void }).pass({
       score: 0.5,
       durationMs: 4200,
     });
 
-    const done = posted.find((m) => m['kind'] === 'game-complete');
-    expect(done).toEqual({ kind: 'game-complete', seq: 3, score: 0.5, durationMs: 4200 });
+    const done = posted.find((m) => m['kind'] === 'game-pass');
+    expect(done).toEqual({ kind: 'game-pass', seq: 3, score: 0.5, durationMs: 4200 });
   });
 
-  it('complete({score}) with omitted durationMs posts null (not undefined)', () => {
+  it('pass({score}) with omitted durationMs posts null (not undefined)', () => {
     let captured: unknown = null;
     registerGame('c-2', (_root, bridge) => {
       captured = bridge;
     });
     dispatchKickoff('c-2', 4);
 
-    (captured as { complete: (p: { score: number; durationMs?: number }) => void }).complete({
+    (captured as { pass: (p: { score: number; durationMs?: number }) => void }).pass({
       score: 1.0,
     });
 
-    const done = posted.find((m) => m['kind'] === 'game-complete');
-    expect(done).toEqual({ kind: 'game-complete', seq: 4, score: 1.0, durationMs: null });
+    const done = posted.find((m) => m['kind'] === 'game-pass');
+    expect(done).toEqual({ kind: 'game-pass', seq: 4, score: 1.0, durationMs: null });
     expect(Object.prototype.hasOwnProperty.call(done, 'durationMs')).toBe(true);
     expect(done!['durationMs']).toBeNull();
   });

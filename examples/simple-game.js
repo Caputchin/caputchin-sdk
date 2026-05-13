@@ -26,7 +26,7 @@
       if (clicks >= 3) {
         btn.disabled = true;
         btn.textContent = 'Done!';
-        bridge.complete({ score: 1.0, durationMs: Date.now() - startMs });
+        bridge.pass({ score: 1.0, durationMs: Date.now() - startMs });
       }
     });
 

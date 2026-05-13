@@ -1,5 +1,5 @@
 export interface Bridge {
-  complete(result: { score: number; durationMs?: number }): void;
+  pass(result: { score: number; durationMs?: number }): void;
   error(err: { code: string; message?: string }): void;
 }
 

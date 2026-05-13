@@ -102,7 +102,7 @@ export function installCustomFetch(): void {
       if (gate) platform = await gate.promise;
     }
 
-    const response = await window.fetch(`${apiHost}/api/v1/game/complete`, {
+    const response = await window.fetch(`${apiHost}/api/v1/game/pass`, {
       ...init,
       method: 'POST',
       body: JSON.stringify({ ...parsedBody, platform }),

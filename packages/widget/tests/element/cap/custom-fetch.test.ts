@@ -51,7 +51,7 @@ describe('CAP_CUSTOM_FETCH', () => {
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/game/start');
   });
 
-  it('rewrites /redeem URL to /api/v1/game/complete', async () => {
+  it('rewrites /redeem URL to /api/v1/game/pass', async () => {
     const ctx: SessionContext = { platform: { sitekey: 'k' }, onWrappedToken: vi.fn() };
     registerElement(el, ctx);
     setActiveSolvingEl(el);
@@ -63,7 +63,7 @@ describe('CAP_CUSTOM_FETCH', () => {
       body: JSON.stringify({ token: 'cap-tok', solutions: [] }),
     });
 
-    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/game/complete');
+    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/game/pass');
   });
 
   it('injects platform into challenge body', async () => {

@@ -48,12 +48,12 @@ describe('IframeHost', () => {
     container.remove();
   });
 
-  it('onGameStarted not fired for game-complete', () => {
+  it('onGameStarted not fired for game-pass', () => {
     const onGameStarted = vi.fn();
     const host = makeHost();
     const container = mountHost(host, vi.fn(), onGameStarted);
 
-    capturedListener?.({ kind: 'game-complete', seq: 2, score: null, durationMs: null });
+    capturedListener?.({ kind: 'game-pass', seq: 2, score: null, durationMs: null });
     expect(onGameStarted).not.toHaveBeenCalled();
 
     host.dispose();

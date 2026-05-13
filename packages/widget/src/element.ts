@@ -108,7 +108,7 @@ export class CaputchinElement extends HTMLElement {
 
     if (gameId !== null || gameUrl !== null) {
       const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
-        if (msg.kind === 'game-complete') {
+        if (msg.kind === 'game-pass') {
           sessionCtx.platform['score'] = msg.score;
           sessionCtx.platform['durationMs'] = msg.durationMs;
           client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
@@ -152,7 +152,7 @@ export class CaputchinElement extends HTMLElement {
       injectHiddenInput(form, token);
     }
 
-    this.dispatchEvent(new CustomEvent('complete', {
+    this.dispatchEvent(new CustomEvent('pass', {
       detail: { token, score, durationMs },
       bubbles: true,
       composed: true,
@@ -193,8 +193,8 @@ export class CaputchinElement extends HTMLElement {
     };
 
     const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
-      if (msg.kind === 'game-complete') {
-        this.dispatchEvent(new CustomEvent('complete', {
+      if (msg.kind === 'game-pass') {
+        this.dispatchEvent(new CustomEvent('pass', {
           detail: { token: null, score: msg.score, durationMs: msg.durationMs },
           bubbles: true,
           composed: true,

@@ -13,7 +13,7 @@ function setCapGlobal(value: unknown): void {
 }
 
 function makeBridge(): Bridge {
-  return { complete: vi.fn(), error: vi.fn() };
+  return { pass: vi.fn(), error: vi.fn() };
 }
 
 function makeFactory(): GameFactory {
@@ -55,11 +55,11 @@ describe('register()', () => {
 
   it('Bridge type shape compiles and is callable', () => {
     const bridge = makeBridge();
-    bridge.complete({ score: 0.5 });
-    bridge.complete({ score: 1.0, durationMs: 3000 });
+    bridge.pass({ score: 0.5 });
+    bridge.pass({ score: 1.0, durationMs: 3000 });
     bridge.error({ code: 'TIMEOUT' });
     bridge.error({ code: 'CRASH', message: 'out of memory' });
-    expect(bridge.complete).toHaveBeenCalledTimes(2);
+    expect(bridge.pass).toHaveBeenCalledTimes(2);
     expect(bridge.error).toHaveBeenCalledTimes(2);
   });
 

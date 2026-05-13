@@ -56,9 +56,9 @@ import type { Bridge, GameFactory } from '@caputchin/game-sdk';
       }
 
       const bridge: Bridge = {
-        complete({ score, durationMs }) {
+        pass({ score, durationMs }) {
           postToParent({
-            kind: 'game-complete',
+            kind: 'game-pass',
             seq,
             score,
             durationMs: durationMs ?? null,

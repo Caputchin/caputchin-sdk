@@ -3,7 +3,7 @@ import { isIframeToWidget } from '../../../src/protocol/messages.js';
 
 describe('isIframeToWidget', () => {
   it('accepts game-started', () => expect(isIframeToWidget({ kind: 'game-started', seq: 1 })).toBe(true));
-  it('accepts game-complete', () => expect(isIframeToWidget({ kind: 'game-complete', seq: 2, score: 100, durationMs: 5000 })).toBe(true));
+  it('accepts game-pass', () => expect(isIframeToWidget({ kind: 'game-pass', seq: 2, score: 100, durationMs: 5000 })).toBe(true));
   it('accepts game-error', () => expect(isIframeToWidget({ kind: 'game-error', seq: 3, code: 'e', message: 'm' })).toBe(true));
   it('rejects unknown kind', () => expect(isIframeToWidget({ kind: 'kickoff', seq: 1 })).toBe(false));
   it('rejects missing seq', () => expect(isIframeToWidget({ kind: 'game-started' })).toBe(false));

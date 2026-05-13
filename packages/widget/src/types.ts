@@ -4,7 +4,7 @@ export interface StartEventDetail {
   gameId: string | null;
 }
 
-export interface CompleteEventDetail {
+export interface PassEventDetail {
   token: string;
   score: number | null;
   durationMs: number | null;
@@ -22,14 +22,14 @@ export interface ErrorEventDetail {
 
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;
-  complete: CustomEvent<CompleteEventDetail>;
+  pass: CustomEvent<PassEventDetail>;
   nickname: CustomEvent<NicknameEventDetail>;
   error: CustomEvent<ErrorEventDetail>;
 }
 
 export interface CaputchinElementShape extends HTMLElement {
   start(): void;
-  complete(payload: { score: number | null; durationMs: number | null }): void;
+  pass(payload: { score: number | null; durationMs: number | null }): void;
   setNickname(letters: string): void;
   addEventListener<K extends keyof CaputchinEventMap>(
     type: K,

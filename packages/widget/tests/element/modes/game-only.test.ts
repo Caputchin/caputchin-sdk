@@ -32,12 +32,12 @@ async function flush(): Promise<void> {
 }
 
 describe('game-only mode', () => {
-  it('does not expose start / complete / setNickname on element', () => {
+  it('does not expose start / pass / setNickname on element', () => {
     const el = getTestElement({ sitekey: 'k', mode: 'game-only', 'game-src': 'https://x.com/g.js' });
     document.body.appendChild(el);
 
     expect((el as Record<string, unknown>)['start']).toBeUndefined();
-    expect((el as Record<string, unknown>)['complete']).toBeUndefined();
+    expect((el as Record<string, unknown>)['pass']).toBeUndefined();
     expect((el as Record<string, unknown>)['setNickname']).toBeUndefined();
 
     el.remove();
@@ -243,18 +243,18 @@ describe('game-only mode: channel-driven behavior', () => {
     el.remove();
   });
 
-  it('dispatches complete event with token:null on game-complete postMessage', async () => {
-    const completes: CustomEvent[] = [];
+  it('dispatches pass event with token:null on game-pass postMessage', async () => {
+    const passes: CustomEvent[] = [];
     const el = getTestElement({ mode: 'game-only', 'game-src': 'https://x.com/g.js' });
-    el.addEventListener('complete', (e) => completes.push(e as CustomEvent));
+    el.addEventListener('pass', (e) => passes.push(e as CustomEvent));
     document.body.appendChild(el);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(capturedListener).not.toBeNull();
-    capturedListener!({ kind: 'game-complete', seq: 1, score: 42, durationMs: 1000 });
+    capturedListener!({ kind: 'game-pass', seq: 1, score: 42, durationMs: 1000 });
 
-    expect(completes).toHaveLength(1);
-    expect(completes[0]?.detail).toEqual({ token: null, score: 42, durationMs: 1000 });
+    expect(passes).toHaveLength(1);
+    expect(passes[0]?.detail).toEqual({ token: null, score: 42, durationMs: 1000 });
 
     el.remove();
   });
@@ -349,7 +349,7 @@ describe('game-only mode: marketplace path', () => {
     const urls = fetchSpy.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('/cap/'))).toBe(false);
     expect(urls.some((u) => u.includes('/game/start'))).toBe(false);
-    expect(urls.some((u) => u.includes('/game/complete'))).toBe(false);
+    expect(urls.some((u) => u.includes('/game/pass'))).toBe(false);
 
     el.remove();
     vi.unstubAllGlobals();

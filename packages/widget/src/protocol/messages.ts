@@ -16,8 +16,8 @@ export interface GameStartedMessage {
   seq: number;
 }
 
-export interface GameCompleteMessage {
-  kind: 'game-complete';
+export interface GamePassMessage {
+  kind: 'game-pass';
   seq: number;
   score: number | null;
   durationMs: number | null;
@@ -30,9 +30,9 @@ export interface GameErrorMessage {
   message: string;
 }
 
-export type IframeToWidget = GameStartedMessage | GameCompleteMessage | GameErrorMessage;
+export type IframeToWidget = GameStartedMessage | GamePassMessage | GameErrorMessage;
 
-const IFRAME_KINDS = new Set(['game-started', 'game-complete', 'game-error']);
+const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error']);
 
 export function isIframeToWidget(msg: unknown): msg is IframeToWidget {
   if (typeof msg !== 'object' || msg === null) return false;
