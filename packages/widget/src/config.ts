@@ -29,6 +29,11 @@ export function validateGameUrl(url: string): string | null {
   if (UNSAFE_CHARS.test(url)) {
     return `game-src contains unsafe characters: "${url}"`;
   }
+  // Same-origin absolute path (single leading slash, not protocol-relative `//host/...`).
+  // Inherently as trusted as inline scripts on the host page; canonicalize at use site.
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    return null;
+  }
   // Rebuild from parsed URL to prevent path-confusion and normalise encoding.
   let parsed: URL;
   try {
@@ -40,6 +45,17 @@ export function validateGameUrl(url: string): string | null {
     return `game-src must be HTTPS: "${url}"`;
   }
   return null;
+}
+
+/**
+ * Resolve a same-origin absolute path to a full URL so it can be placed in a
+ * CSP source list and `<script src>` attribute. Cross-origin URLs pass through.
+ */
+export function canonicalizeGameUrl(url: string): string {
+  if (url.startsWith('/') && !url.startsWith('//') && typeof location !== 'undefined') {
+    return location.origin + url;
+  }
+  return url;
 }
 
 export function parseAttributes(el: HTMLElement): ParsedConfig {

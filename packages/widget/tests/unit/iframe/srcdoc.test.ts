@@ -95,4 +95,10 @@ describe('buildSrcdoc', () => {
     expect(html).not.toContain("a'b");
     expect(html).toContain('&#39;');
   });
+
+  it('resolves same-origin absolute path to full URL in CSP and script-src', () => {
+    const html = buildSrcdoc({ ...base, gameUrl: '/examples/simple-game.js', gameId: 'g1' });
+    expect(html).toContain(location.origin + '/examples/simple-game.js');
+    expect(html).not.toContain('script-src \'sha256-' + SHA + '\' /examples');
+  });
 });

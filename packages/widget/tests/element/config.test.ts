@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parseAttributes, validateConfig, validateGameUrl } from '../../src/config.js';
+import { canonicalizeGameUrl, parseAttributes, validateConfig, validateGameUrl } from '../../src/config.js';
 
 function makeEl(attrs: Record<string, string>): HTMLElement {
   const el = document.createElement('div');
@@ -20,6 +20,25 @@ describe('validateGameUrl', () => {
   it('rejects URL with semicolon (CSP directive injection)', () => expect(validateGameUrl('https://evil.com/x;script-src https://atk.com')).not.toBeNull());
   it('rejects URL with comma (CSP source list injection)', () => expect(validateGameUrl('https://evil.com/x,https://atk.com')).not.toBeNull());
   it('rejects URL with backtick', () => expect(validateGameUrl('https://evil.com/x`y')).not.toBeNull());
+  it('accepts same-origin absolute path', () => expect(validateGameUrl('/examples/simple-game.js')).toBeNull());
+  it('accepts same-origin absolute path with query', () => expect(validateGameUrl('/path/game.js?v=1')).toBeNull());
+  it('rejects protocol-relative //host/path', () => expect(validateGameUrl('//evil.com/game.js')).not.toBeNull());
+  it('rejects bare path without leading slash', () => expect(validateGameUrl('examples/game.js')).not.toBeNull());
+});
+
+describe('canonicalizeGameUrl', () => {
+  it('passes through full https URL', () => {
+    expect(canonicalizeGameUrl('https://cdn.example.com/game.js')).toBe('https://cdn.example.com/game.js');
+  });
+
+  it('resolves same-origin absolute path against location.origin', () => {
+    const out = canonicalizeGameUrl('/examples/game.js');
+    expect(out.startsWith(location.origin + '/examples/game.js')).toBe(true);
+  });
+
+  it('does not resolve protocol-relative URL (passes through unchanged)', () => {
+    expect(canonicalizeGameUrl('//cdn.example.com/game.js')).toBe('//cdn.example.com/game.js');
+  });
 });
 
 describe('validateConfig', () => {
