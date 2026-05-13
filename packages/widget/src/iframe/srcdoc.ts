@@ -1,4 +1,4 @@
-import { validateGameUrl } from '../config.js';
+import { canonicalizeGameUrl, validateGameUrl } from '../config.js';
 
 const INTEGRITY_RE = /^sha384-[A-Za-z0-9+/=]{60,100}$/;
 
@@ -32,7 +32,10 @@ export function buildSrcdoc(opts: SrcdocOptions): string {
     if (urlErr) {
       throw new Error(`buildSrcdoc: invalid gameUrl — ${urlErr}`);
     }
-    const safeGameUrl = escapeAttr(gameUrl);
+    // Same-origin paths need to be resolved to absolute URLs so they're valid
+    // CSP source-list entries (paths alone are not valid CSP sources).
+    const resolvedUrl = canonicalizeGameUrl(gameUrl);
+    const safeGameUrl = escapeAttr(resolvedUrl);
     scriptSrc += ` ${safeGameUrl}`;
 
     const integrityAttr =
