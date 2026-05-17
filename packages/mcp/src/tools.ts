@@ -47,7 +47,6 @@ export const HostedVerificationPutInput = z.object({
   site_id: z.string().min(1),
   enabled: z.boolean(),
   webhook_url: z.string().url().nullable().optional(),
-  webhook_secret: z.string().optional().describe('Plaintext webhook signing secret (stored hashed; set once).'),
   email_to: z.string().email().nullable().optional(),
 });
 
@@ -220,7 +219,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'caputchin_set_hosted_verification',
-    description: 'Set hosted-verification config (toggle, webhook URL, webhook secret, email destination). Paid tier only.',
+    description: 'Set hosted-verification config (toggle, webhook URL, email destination). Paid tier only.',
     inputSchema: HostedVerificationPutInput,
     call: {
       method: 'PUT',
@@ -229,6 +228,16 @@ export const TOOLS: ToolDef[] = [
         const { site_id: _siteId, ...rest } = a;
         return rest;
       },
+    },
+  },
+  {
+    name: 'caputchin_test_hosted_verification',
+    description:
+      'Fire a synthetic verified-submission payload at the configured destinations for a site (paid tier only). Returns per-destination delivery status. Does not call cap or write replay-tracking.',
+    inputSchema: HostedVerificationGetInput,
+    call: {
+      method: 'POST',
+      path: (a) => `/api/v1/management/hosted-verification/${encodeURIComponent(String(a.site_id))}/test`,
     },
   },
   // me/* — account-self surfaces. Account-PAT or session cookie only;
