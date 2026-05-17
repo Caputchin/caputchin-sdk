@@ -27,9 +27,9 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
     site_id: 'site_xyz',
     enabled: true,
     webhook_url: 'https://x.com/hook',
-    webhook_secret: 'shh',
     email_to: 'alerts@example.com',
   },
+  caputchin_test_hosted_verification: { site_id: 'site_xyz' },
   caputchin_get_account: {},
   caputchin_change_email: { new_email: 'new@example.com' },
   caputchin_list_sessions: {},
@@ -130,8 +130,8 @@ describe('TOOLS catalog — shape', () => {
     }
   });
 
-  it('exposes 19 management tools (sites/tokens/hosted-verification/cap-config/me)', () => {
-    expect(TOOLS.length).toBe(19);
+  it('exposes 20 management tools (sites/tokens/hosted-verification/cap-config/me)', () => {
+    expect(TOOLS.length).toBe(20);
   });
 
   it('me/* tools target /api/v1/management/me/* paths', () => {
