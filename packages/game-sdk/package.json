@@ -17,7 +17,7 @@
   "bugs": {
     "url": "https://github.com/Caputchin/caputchin-sdk/issues"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "publishConfig": {
     "access": "public"
