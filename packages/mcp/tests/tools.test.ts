@@ -6,7 +6,7 @@ const SAMPLE_ARGS: Record<string, Record<string, unknown>> = {
   caputchin_list_sites: {},
   caputchin_create_site: {
     name: 'demo',
-    tier: 'free',
+    tier: 'solo',
   },
   caputchin_get_site: { id: 'site_abc' },
   caputchin_update_site: { id: 'site_abc', name: 'renamed', disabled: false },
@@ -95,7 +95,7 @@ describe('TOOLS catalog — body() factories', () => {
 
   it('SiteCreateInput schema defaults tier to free when omitted', () => {
     const parsed = SiteCreateInput.parse({ name: 'x' });
-    expect(parsed.tier).toBe('free');
+    expect(parsed.tier).toBe('solo');
   });
 
   it('caputchin_update_site body strips id from request payload', () => {

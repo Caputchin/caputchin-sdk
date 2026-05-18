@@ -17,7 +17,7 @@ export const SitesListInput = z.object({}).strict();
 
 export const SiteCreateInput = z.object({
   name: z.string().min(1).describe('Human-readable label for the site.'),
-  tier: z.enum(['free', 'paid']).optional().default('free'),
+  tier: z.enum(['solo', 'alpha']).optional().default('solo'),
 });
 
 export const SiteIdInput = z.object({
@@ -27,7 +27,7 @@ export const SiteIdInput = z.object({
 export const SiteUpdateInput = z.object({
   id: z.string().min(1),
   name: z.string().optional(),
-  tier: z.enum(['free', 'paid']).optional(),
+  tier: z.enum(['solo', 'alpha']).optional(),
   disabled: z.boolean().optional().describe('When true the site stops accepting verification.'),
 });
 
