@@ -45,10 +45,10 @@ describe('bridgeHandler', () => {
       })
     );
     const handler = bridgeHandler(cfg, create);
-    await handler({ name: 'demo', tier: 'paid' });
+    await handler({ name: 'demo', tier: 'alpha' });
     const init = fetchSpy.mock.calls[0]![1]!;
     const parsed = JSON.parse(init.body as string);
-    expect(parsed).toEqual({ name: 'demo', tier: 'paid' });
+    expect(parsed).toEqual({ name: 'demo', tier: 'alpha' });
   });
 
   it('omits body for methods without a body factory (DELETE)', async () => {
