@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v1.0.0...game-sdk-v1.1.0) (2026-05-18)
+
+
+### Features
+
+* **widget:** add 3-layout system (inline/modal/fullscreen) with auto resolution and trigger checkbox ([07ae0e5](https://github.com/Caputchin/caputchin-sdk/commit/07ae0e526838682fb91b7a1c4073cd0fd0df7c16))
+
+
+### Reverts
+
+* release-please PR [#10](https://github.com/Caputchin/caputchin-sdk/issues/10) due to broken title pattern config ([52b9413](https://github.com/Caputchin/caputchin-sdk/commit/52b9413168769ade1b94f31ad091403e81481317))
+
 ## 1.0.0 (2026-05-13)
 
 
