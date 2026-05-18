@@ -18,7 +18,7 @@ jobs:
       widget_released: ${{ steps.release.outputs['packages/widget--release_created'] }}
       mcp_released: ${{ steps.release.outputs['packages/mcp--release_created'] }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
