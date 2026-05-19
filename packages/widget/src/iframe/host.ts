@@ -18,6 +18,8 @@ export class IframeHost {
   private unlisten: (() => void) | null = null;
   private kickoffAckTimer: ReturnType<typeof setTimeout> | null = null;
   private onLoadFailed: ((code: 'iframe-load-failed', message: string) => void) | null = null;
+  /** When true, iframe width tracks reported content width. False = iframe stays width:100% of slot. */
+  private autoWidth = true;
 
   private manifestResolver: ((m: ManifestMessage | null) => void) | null = null;
   private manifestTimer: ReturnType<typeof setTimeout> | null = null;
@@ -42,6 +44,16 @@ export class IframeHost {
     const iframe = document.createElement('iframe');
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.style.border = 'none';
+    // Hidden until first `resize` message lands so the spec-default 300×150
+    // never paints to the user. Start at a roomy 800×600 (hidden) so the
+    // game's content can lay out naturally — at a tiny viewport, text wraps
+    // and `scrollWidth/scrollHeight` reports the wrapped size, not the
+    // natural content size. After the runtime reports actual dimensions
+    // we snap the iframe to match.
+    iframe.style.visibility = 'hidden';
+    iframe.style.display = 'block';
+    iframe.style.width = '800px';
+    iframe.style.height = '600px';
     iframe.srcdoc = buildSrcdoc({
       gameId: this.gameId,
       gameUrl: this.gameUrl,
@@ -51,6 +63,14 @@ export class IframeHost {
     });
     this.iframe = iframe;
     return iframe;
+  }
+
+  /** Switch off auto-width when the parent layout wants a fixed/full-width iframe. */
+  setAutoWidth(auto: boolean): void {
+    this.autoWidth = auto;
+    if (!auto && this.iframe) {
+      this.iframe.style.width = '100%';
+    }
   }
 
   mount(
@@ -68,6 +88,10 @@ export class IframeHost {
         this.handleManifest(msg);
         return;
       }
+      if (msg.kind === 'resize') {
+        this.applyResize(msg.width, msg.height);
+        return;
+      }
       if (msg.kind === 'game-started') {
         this.clearKickoffAckTimer();
         onGameStarted?.();
@@ -81,6 +105,16 @@ export class IframeHost {
   /** Returns the iframe element for re-parenting by external presenters. */
   getIframe(): HTMLIFrameElement | null {
     return this.iframe;
+  }
+
+  private applyResize(width: number, height: number): void {
+    if (!this.iframe) return;
+    this.iframe.style.height = `${height}px`;
+    if (this.autoWidth) this.iframe.style.width = `${width}px`;
+    // First resize message reveals the iframe — defaults (300×150) never paint.
+    if (this.iframe.style.visibility === 'hidden') {
+      this.iframe.style.visibility = 'visible';
+    }
   }
 
   /**

@@ -45,13 +45,21 @@ export interface ManifestMessage {
   preferredLayout: Layout | null;
 }
 
+export interface ResizeMessage {
+  kind: 'resize';
+  seq: number;
+  width: number;
+  height: number;
+}
+
 export type IframeToWidget =
   | GameStartedMessage
   | GamePassMessage
   | GameErrorMessage
-  | ManifestMessage;
+  | ManifestMessage
+  | ResizeMessage;
 
-const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest']);
+const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest', 'resize']);
 
 export function isIframeToWidget(msg: unknown): msg is IframeToWidget {
   if (typeof msg !== 'object' || msg === null) return false;

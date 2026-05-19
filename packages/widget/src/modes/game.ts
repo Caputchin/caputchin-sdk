@@ -39,7 +39,8 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot } = input;
+  const { host, root: renderRoot, width } = input;
+  const isFullWidth = width === 'full';
   let frame: HTMLDivElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
   let badgeSlot: HTMLDivElement | null = null;
@@ -53,6 +54,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       frame = document.createElement('div');
       frame.setAttribute('part', 'game-frame');
       frame.dataset.layout = 'inline';
+      if (isFullWidth) frame.dataset.width = 'full';
 
       iframeSlot = document.createElement('div');
       iframeSlot.setAttribute('part', 'game-iframe-slot');
@@ -63,6 +65,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       frame.appendChild(iframeSlot);
       frame.appendChild(badgeSlot);
       renderRoot.appendChild(frame);
+      if (isFullWidth) {
+        host.style.display = 'block';
+        host.style.width = '100%';
+      }
 
       subSimple = createSimplePresentation({
         host,
@@ -77,6 +83,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       if (!frame) return;
       subSimple?.unmount();
       frame.remove();
+      if (isFullWidth) {
+        host.style.display = '';
+        host.style.width = '';
+      }
       frame = null;
       iframeSlot = null;
       badgeSlot = null;
@@ -239,9 +249,12 @@ function ensureGameStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     // --- inline frame ---
+    // Default: fit-content so the frame snaps to the iframe's auto-reported size.
     '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
-    '[part="game-iframe-slot"]{display:flex;flex-direction:column;width:100%}',
-    '[part="game-iframe-slot"] iframe{display:block;width:100%;border:0;background:#fff}',
+    // width="full": frame spans parent; iframe sized by JS to 100% via setAutoWidth(false).
+    '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
+    '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
+    '[part="game-iframe-slot"] iframe{display:block;border:0;background:#fff}',
     // Thin separator between iframe and brand strip — matches the outer frame border.
     '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:transparent;padding:0;border-top:1px solid #d0d7de}',
     // Strip the embedded simple panel of its own border + radius + background.

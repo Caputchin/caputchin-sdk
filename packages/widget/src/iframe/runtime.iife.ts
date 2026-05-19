@@ -47,11 +47,53 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
     });
   }
 
+  // Auto-size: report content dimensions to parent whenever they change.
+  // The parent (IframeHost) snaps the iframe to match. First report also
+  // reveals the iframe (kept visibility:hidden until then to avoid the
+  // default 300×150 flash on iframe-load).
+  // Auto-size: scrollWidth/scrollHeight on the html element reflect the
+  // furthest extent of any content overflow. We force the html element to
+  // shrink-wrap (width:max-content) so it reports the natural content
+  // bounds instead of the iframe viewport. Combined with starting iframe
+  // hidden, the user only ever sees the iframe at the correct size.
+  let lastReportedWidth = -1;
+  let lastReportedHeight = -1;
+  function reportSize(): void {
+    const root = document.documentElement;
+    if (!root) return;
+    const width = Math.ceil(root.scrollWidth);
+    const height = Math.ceil(root.scrollHeight);
+    if (width === lastReportedWidth && height === lastReportedHeight) return;
+    if (width === 0 && height === 0) return;
+    lastReportedWidth = width;
+    lastReportedHeight = height;
+    postToParent({ kind: 'resize', seq: 0, width, height });
+  }
+  function installResizeReporter(): void {
+    // Shrink-wrap html so scrollWidth/scrollHeight = content extent, not
+    // viewport. We inject a style at runtime instead of in the srcdoc CSP
+    // so customer game scripts can still override (e.g. set html width to
+    // 100% explicitly) if they need viewport-driven sizing.
+    const style = document.createElement('style');
+    style.textContent = 'html,body{width:max-content;height:max-content;margin:0}';
+    document.head.appendChild(style);
+
+    reportSize();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => reportSize());
+    ro.observe(document.documentElement);
+    if (document.body) ro.observe(document.body);
+  }
+
   // Defer manifest until all body scripts have run so register() has populated gameOpts.
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', postManifest, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      postManifest();
+      installResizeReporter();
+    }, { once: true });
   } else {
     postManifest();
+    installResizeReporter();
   }
 
   window.addEventListener('message', (event: MessageEvent) => {
