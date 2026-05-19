@@ -20,7 +20,10 @@ export interface Presentation {
 }
 
 export interface PresentationFactoryInput {
-  el: HTMLElement;
+  /** The custom-element host (used for host-level styling like full-width). */
+  host: HTMLElement;
+  /** Where to append DOM — shadow root by default; isolated from page CSS. */
+  root: ShadowRoot;
   trigger: WidgetTrigger;
   width: WidgetWidth;
 }

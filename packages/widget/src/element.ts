@@ -53,8 +53,12 @@ export class CaputchinElement extends HTMLElement {
     }
 
     // All other modes: presentation + trigger orchestrate verification.
+    // Attach shadow root once (LayoutPresenter is idempotent and will reuse it).
+    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+
     this.presentation = createPresentation(this.config.mode, {
-      el: this,
+      host: this,
+      root: shadow,
       trigger: this.config.trigger,
       width: this.config.width,
     });
