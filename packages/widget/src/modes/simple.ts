@@ -11,7 +11,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   let root: HTMLDivElement | null = null;
   let checkbox: HTMLDivElement | null = null;
   let label: HTMLSpanElement | null = null;
-  let brand: HTMLDivElement | null = null;
+  let brand: HTMLAnchorElement | null = null;
   const activateListeners: Array<() => void> = [];
 
   function onPointer(): void {
@@ -70,9 +70,12 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       label.textContent = "I'm not a robot";
       label.style.cssText = 'flex:1 1 auto';
 
-      brand = document.createElement('div');
-      brand.setAttribute('part', 'simple-checkbox-brand');
-      brand.style.cssText = [
+      const brandLink = document.createElement('a');
+      brandLink.setAttribute('part', 'simple-checkbox-brand');
+      brandLink.href = 'https://caputchin.com/legal';
+      brandLink.target = '_blank';
+      brandLink.rel = 'noopener noreferrer';
+      brandLink.style.cssText = [
         'display:flex',
         'flex-direction:column',
         'align-items:flex-end',
@@ -81,14 +84,18 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'color:#6e7681',
         'line-height:1.2',
         'flex:0 0 auto',
+        'text-decoration:none',
       ].join(';');
+      // Brand link is informational — keep clicks out of the checkbox activation path.
+      brandLink.addEventListener('click', (e) => e.stopPropagation());
       const brandName = document.createElement('div');
       brandName.textContent = 'Caputchin';
       brandName.style.cssText = 'font-weight:600;font-size:0.75rem;color:#2F6640';
       const brandTag = document.createElement('div');
-      brandTag.textContent = 'Privacy · Terms';
-      brand.appendChild(brandName);
-      brand.appendChild(brandTag);
+      brandTag.textContent = 'privacy-first';
+      brandLink.appendChild(brandName);
+      brandLink.appendChild(brandTag);
+      brand = brandLink;
 
       root.appendChild(checkbox);
       root.appendChild(label);
