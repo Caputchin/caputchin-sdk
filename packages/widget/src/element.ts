@@ -445,6 +445,10 @@ export class CaputchinElement extends HTMLElement {
       return;
     }
 
+    // Auto-width: iframe grows to fit reported content. For width="full" the
+    // outer frame already spans parent; iframe just fills it.
+    host.setAutoWidth(this.config?.width !== 'full');
+
     host.mount(slot, onLoadFailed, onGameStarted);
 
     const iframe = host.getIframe();
