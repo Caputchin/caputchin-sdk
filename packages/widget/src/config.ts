@@ -1,5 +1,5 @@
-import type { LayoutAttr } from './layout/types.js';
-import { isLayoutAttr } from './layout/types.js';
+import type { LayoutAttr } from './layout.js';
+import { isLayoutAttr } from './layout.js';
 
 export type WidgetMode = 'invisible' | 'simple' | 'game' | 'game-only';
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';

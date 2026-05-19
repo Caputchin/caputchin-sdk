@@ -54,12 +54,12 @@ describe('CaputchinElement lifecycle', () => {
   });
 
   it('start event deferred to game-started postMessage when game configured (M3)', () => {
-    const src = readFileSync(resolve(__dirname, '../../src/element.ts'), 'utf-8');
-    expect(src).toContain('dispatchStart()');
-    // dispatchStart is wired as the onGameStarted callback handed to
-    // installGameFrame (replaces the old installLayout flow).
-    expect(src).toContain('installGameFrame(');
-    expect(src).toContain('dispatchStart,');
+    // Game verify path defers `start` until iframe reports `game-started`:
+    // installGameFrame receives an onGameStarted callback that calls dispatchStart.
+    const runSrc = readFileSync(resolve(__dirname, '../../src/verify/run.ts'), 'utf-8');
+    expect(runSrc).toContain('installGameFrame(');
+    expect(runSrc).toContain('dispatchStart()');
+    expect(runSrc).toContain('gameStartedEmitted');
   });
 
   it('observedAttributes includes layout', () => {
