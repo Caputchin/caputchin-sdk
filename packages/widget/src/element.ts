@@ -39,6 +39,10 @@ export class CaputchinElement extends HTMLElement {
   private doneCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private gameStartedEmitted = false;
   private widgetId: string | null = null;
+  /** Set when the iframe game reported a fatal error; suppresses the duplicate
+   * `verification-failed` event the catch handler would otherwise fire after
+   * cap.solve rejects from the aborted gate. */
+  private gameErrored = false;
 
   connectedCallback(): void {
     this.connected = true;
@@ -115,6 +119,7 @@ export class CaputchinElement extends HTMLElement {
     this.gameStartedEmitted = false;
     this.config = null;
     this.widgetId = null;
+    this.gameErrored = false;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
@@ -233,7 +238,11 @@ export class CaputchinElement extends HTMLElement {
           const { code, originalCode } = mapIframeErrorCode(msg.code);
           fireError(this, code, msg.message, originalCode);
           this.onTriggerError();
-          client.releaseGate({ score: null, durationMs: null });
+          // Abort verification — the game failed. No pass event, no token.
+          // gameErrored flag suppresses the cap.solve catch from firing a
+          // duplicate `verification-failed` for the same root cause.
+          this.gameErrored = true;
+          client.abortGate(new Error(`game-error: ${msg.code}`));
         }
       });
       this.iframeHost = host;
@@ -267,7 +276,17 @@ export class CaputchinElement extends HTMLElement {
     try {
       await client.solve();
     } catch (err) {
-      fireError(this, 'verification-failed', String(err), 'cap-solve-failed');
+      // Game-error already fired a dedicated error event; don't double-report.
+      if (!this.gameErrored) {
+        fireError(this, 'verification-failed', String(err), 'cap-solve-failed');
+      }
+      this.presentation?.setState('error');
+      return;
+    }
+
+    if (this.gameErrored) {
+      // Game told us it failed — even if cap.solve somehow returned, the
+      // verification is invalid. Drop the wrapped token, no pass event.
       this.presentation?.setState('error');
       return;
     }

@@ -1,6 +1,7 @@
 import Cap from '@cap.js/widget';
 import {
   CPT_ROUTE_PREFIX,
+  abortRedeemGate,
   armRedeemGate,
   releaseRedeemGate,
   registerSession,
@@ -11,6 +12,8 @@ import {
 export interface CapClient {
   solve(): Promise<void>;
   releaseGate(platform: Record<string, unknown>): void;
+  /** Abort the in-flight solve (used when the game itself reported a fatal error). */
+  abortGate(reason: Error): void;
   reset(): void;
   dispose(): void;
 }
@@ -45,6 +48,10 @@ export function createCapClient(
 
     releaseGate(platform: Record<string, unknown>): void {
       releaseRedeemGate(widgetId, platform);
+    },
+
+    abortGate(reason: Error): void {
+      abortRedeemGate(widgetId, reason);
     },
 
     reset(): void {
