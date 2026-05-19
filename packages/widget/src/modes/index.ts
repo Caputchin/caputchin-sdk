@@ -1,37 +1,41 @@
-import type { CapClient } from '../cap/client.js';
 import type { WidgetMode } from '../config.js';
-import { createAutoMode } from './auto.js';
-import { createFormSubmitMode } from './form-submit.js';
-import { createGameOnlyMode } from './game-only.js';
-import { createManualMode } from './manual.js';
+import { createInvisiblePresentation } from './invisible.js';
+import { createSimplePresentation } from './simple.js';
 
-export interface VerificationContext {
-  sitekey: string;
-  gameId: string | null;
-  gameUrl: string | null;
-  integrity: string | null;
-  apiHost: string;
-  capClient: CapClient | null;
+export type PresentationState = 'idle' | 'verifying' | 'verified' | 'error';
+
+export interface Presentation {
+  /** Build any DOM into the widget shadow root or host. Called once. */
+  mount(): void;
+  /** Tear down DOM + listeners. Called on widget disconnect. */
+  unmount(): void;
+  /** Visual state feedback. */
+  setState(state: PresentationState): void;
+  /**
+   * Register a user-activation handler (e.g. checkbox click). Presentations
+   * with no clickable surface (invisible) return a no-op cleanup. The `click`
+   * trigger relies on this; other triggers ignore it.
+   */
+  onActivate(handler: () => void): () => void;
 }
 
-export interface ModeStrategy {
-  activate(ctx: VerificationContext): void;
-  deactivate(): void;
+export interface PresentationFactoryInput {
+  el: HTMLElement;
 }
 
-export function createModeStrategy(
-  mode: WidgetMode,
-  el: HTMLElement,
-  runVerification: () => Promise<void>
-): ModeStrategy {
+/**
+ * Lightweight presentations only (invisible, simple). The `game` and
+ * `game-only` modes are orchestrated directly in element.ts because they
+ * reuse the IframeHost + LayoutPresenter machinery already there.
+ */
+export function createPresentation(mode: WidgetMode, input: PresentationFactoryInput): Presentation | null {
   switch (mode) {
-    case 'auto':
-      return createAutoMode(runVerification);
-    case 'form-submit':
-      return createFormSubmitMode(el, runVerification);
-    case 'manual':
-      return createManualMode(el, runVerification);
+    case 'invisible':
+      return createInvisiblePresentation();
+    case 'simple':
+      return createSimplePresentation(input);
+    case 'game':
     case 'game-only':
-      return createGameOnlyMode(runVerification);
+      return null;
   }
 }

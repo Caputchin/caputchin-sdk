@@ -1,68 +1,78 @@
-import { parseAttributes, validateConfig } from './config.js';
+import { inspectConfig, type ParsedConfig } from './config.js';
 import { fireError, mapIframeErrorCode } from './errors.js';
 import { fetchMarketplaceResolution } from './resolver.js';
-
 import { pickFromGamesAttr } from './pool.js';
 import { injectHiddenInput } from './form.js';
 import { IframeHost } from './iframe/host.js';
 import { createCapClient, type CapClient } from './cap/client.js';
-import { createModeStrategy, type ModeStrategy, type VerificationContext } from './modes/index.js';
+import { createPresentation, type Presentation } from './modes/index.js';
+import { createTriggerStrategy, type TriggerStrategy, type TriggerContext } from './triggers/index.js';
 import type { WrappedToken } from './token.js';
 import { LayoutPresenter } from './layout/presenter.js';
 import { resolveLayout } from './layout/resolve.js';
 import { evalAutoBreakpoint } from './layout/breakpoint.js';
-import type { LayoutAttr } from './layout/types.js';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DONE_DIALOG_CLOSE_MS = 600;
 
 export class CaputchinElement extends HTMLElement {
-  static observedAttributes = ['sitekey', 'game', 'games', 'game-src', 'mode', 'layout'];
+  static observedAttributes = ['sitekey', 'mode', 'trigger', 'game', 'games', 'game-src', 'layout'];
 
-  private mode: ModeStrategy | null = null;
+  private presentation: Presentation | null = null;
+  private trigger: TriggerStrategy | null = null;
+  private triggerCtx: TriggerContext | null = null;
   private capClient: CapClient | null = null;
   private iframeHost: IframeHost | null = null;
-  private presenter: LayoutPresenter | null = null;
+  private layoutPresenter: LayoutPresenter | null = null;
   private connected = false;
-  private layoutAttr: LayoutAttr | null = null;
+  private config: ParsedConfig | null = null;
   private pendingKickoff: (() => void) | null = null;
   private doneCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private gameStartedEmitted = false;
 
   connectedCallback(): void {
     this.connected = true;
 
-    const raw = parseAttributes(this);
-    const invalid = validateConfig(raw);
-    if (invalid) {
-      fireError(this, invalid.code, invalid.message);
+    // Always-callable methods. Define before any potential early return so
+    // `widget.start()` / `widget.pass()` / `widget.setNickname()` are present
+    // even when the widget is inert (missing sitekey, etc.).
+    this.installMethods();
+
+    const inspection = inspectConfig(this);
+    for (const issue of inspection.issues) {
+      fireError(this, 'invalid-config', issue.message);
+    }
+    if (inspection.inert) return;
+
+    this.config = inspection.config;
+
+    // game-only is a distinct path: iframe-only, no verification, no triggers.
+    if (this.config.mode === 'game-only') {
+      this.runGameOnly().catch(() => {});
       return;
     }
 
-    this.layoutAttr = raw.layout;
+    // All other modes: presentation + trigger orchestrate verification.
+    this.presentation = createPresentation(this.config.mode, { el: this });
+    this.presentation?.mount();
 
-    const apiHost = __CAPUTCHIN_API_HOST__;
-
-    const ctx: VerificationContext = {
-      sitekey: raw.sitekey,
-      gameId: null,
-      gameUrl: raw.gameSrc ?? null,
-      integrity: null,
-      apiHost,
+    this.trigger = createTriggerStrategy(this.config.trigger);
+    this.triggerCtx = {
+      el: this,
+      presentation: this.presentation ?? {
+        mount(): void {},
+        unmount(): void {},
+        setState(): void {},
+        onActivate(): () => void { return () => {}; },
+      },
+      runVerification: () => this.runVerification(),
+      releaseManualPass: (payload) => {
+        this.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
+      },
       capClient: null,
     };
 
-    if (raw.games) {
-      ctx.gameId = pickFromGamesAttr(raw.games);
-    } else if (raw.game) {
-      ctx.gameId = raw.game;
-    }
-
-    const runner =
-      raw.mode === 'game-only'
-        ? (): Promise<void> => this.runGameOnly(ctx)
-        : (): Promise<void> => this.runVerification(ctx);
-    this.mode = createModeStrategy(raw.mode, this, runner);
-    this.mode.activate(ctx);
+    this.trigger.activate(this.triggerCtx);
   }
 
   disconnectedCallback(): void {
@@ -71,15 +81,20 @@ export class CaputchinElement extends HTMLElement {
       clearTimeout(this.doneCloseTimer);
       this.doneCloseTimer = null;
     }
-    this.mode?.deactivate();
-    this.mode = null;
+    this.trigger?.deactivate();
+    this.trigger = null;
+    this.triggerCtx = null;
+    this.presentation?.unmount();
+    this.presentation = null;
     this.capClient?.dispose();
     this.capClient = null;
     this.iframeHost?.dispose();
     this.iframeHost = null;
-    this.presenter?.dispose();
-    this.presenter = null;
+    this.layoutPresenter?.dispose();
+    this.layoutPresenter = null;
     this.pendingKickoff = null;
+    this.gameStartedEmitted = false;
+    this.config = null;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
@@ -88,11 +103,236 @@ export class CaputchinElement extends HTMLElement {
     }
   }
 
+  private installMethods(): void {
+    Object.defineProperty(this, 'start', {
+      value: (): void => {
+        if (!this.config) return;
+        if (this.config.mode === 'game-only') {
+          fireError(this, 'invalid-call', 'start() not applicable in mode="game-only"');
+          return;
+        }
+        this.trigger?.forceStart?.(this.triggerCtx!);
+      },
+      configurable: true,
+      writable: false,
+      enumerable: false,
+    });
+
+    Object.defineProperty(this, 'pass', {
+      value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
+        if (!this.config) return;
+        const inGameManual = this.config.mode === 'game' && this.config.trigger === 'manual';
+        if (!inGameManual) {
+          fireError(this, 'invalid-call', 'pass() only callable in mode="game" trigger="manual"');
+          return;
+        }
+        const score = typeof payload?.score === 'number' ? payload.score : null;
+        const durationMs = typeof payload?.durationMs === 'number' ? payload.durationMs : null;
+        this.triggerCtx?.releaseManualPass({ score, durationMs });
+      },
+      configurable: true,
+      writable: false,
+      enumerable: false,
+    });
+
+    Object.defineProperty(this, 'setNickname', {
+      value: (_letters: string): void => {
+        throw new Error('setNickname is not implemented in this build (Post-MVP)');
+      },
+      configurable: true,
+      writable: false,
+      enumerable: false,
+    });
+  }
+
+  private resolveGameId(): string | null {
+    if (!this.config) return null;
+    if (this.config.games) return pickFromGamesAttr(this.config.games);
+    return this.config.game ?? null;
+  }
+
   /**
-   * Mount the iframe into a presenter staging slot, wait for manifest, resolve
-   * layout, re-parent iframe into the chosen wrapper, fire layout-resolved.
-   * Kickoff fires immediately for inline; for modal/fullscreen, kickoff is
-   * deferred to the trigger checkbox activation.
+   * Verification path for mode = invisible | simple | game.
+   * Trigger has already decided "now" — this runs the verification + (if game
+   * mode) mounts the iframe in parallel.
+   */
+  private async runVerification(): Promise<void> {
+    if (!this.config) return;
+    const cfg = this.config;
+    const apiHost = __CAPUTCHIN_API_HOST__;
+    const gameId = this.resolveGameId();
+
+    this.presentation?.setState('verifying');
+
+    let gameUrl: string | null = cfg.gameSrc;
+    let integrity: string | null = null;
+
+    const wantsIframe = cfg.mode === 'game' && cfg.trigger !== 'manual';
+
+    if (wantsIframe && gameId && !gameUrl) {
+      const resolution = await fetchMarketplaceResolution(gameId, apiHost);
+      if (!resolution.ok) {
+        fireError(this, 'game-load-failed', resolution.message, resolution.code);
+        this.presentation?.setState('error');
+        return;
+      }
+      gameUrl = resolution.url;
+      integrity = resolution.integrity;
+    }
+
+    let wrappedToken: WrappedToken | null = null;
+    const sessionCtx = {
+      platform: { sitekey: cfg.sitekey, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
+      onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
+    };
+
+    const client = createCapClient(this, apiHost, sessionCtx);
+    this.capClient = client;
+    if (this.triggerCtx) this.triggerCtx.capClient = client;
+
+    const dispatchStart = (): void => {
+      this.dispatchEvent(new CustomEvent('start', {
+        detail: { gameId },
+        bubbles: true,
+        composed: true,
+      }));
+    };
+
+    if (wantsIframe && (gameId !== null || gameUrl !== null)) {
+      const host = new IframeHost(gameUrl, integrity, gameId, this, (msg) => {
+        if (msg.kind === 'game-pass') {
+          sessionCtx.platform['score'] = msg.score;
+          sessionCtx.platform['durationMs'] = msg.durationMs;
+          this.onTriggerDone();
+          client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
+        } else if (msg.kind === 'game-error') {
+          const { code, originalCode } = mapIframeErrorCode(msg.code);
+          fireError(this, code, msg.message, originalCode);
+          this.onTriggerError();
+          client.releaseGate({ score: null, durationMs: null });
+        }
+      });
+      this.iframeHost = host;
+
+      await this.installLayout(
+        host,
+        (code, message) => {
+          client.releaseGate({ score: null, durationMs: null });
+          fireError(this, 'game-load-failed', message, code);
+          this.presentation?.setState('error');
+          client.dispose();
+          this.iframeHost = null;
+        },
+        () => {
+          if (this.gameStartedEmitted) return;
+          this.gameStartedEmitted = true;
+          dispatchStart();
+        },
+      );
+    } else {
+      // No iframe in the verification path: invisible, simple, or game-manual.
+      // For game-manual the Cap gate stays armed until widget.pass() releases.
+      if (cfg.mode !== 'game') {
+        // invisible / simple: no game payload to wait for — release immediately
+        // so Cap's redeem can proceed end-to-end.
+        client.releaseGate({ score: null, durationMs: null });
+      }
+      dispatchStart();
+    }
+
+    try {
+      await client.solve();
+    } catch (err) {
+      fireError(this, 'verification-failed', String(err), 'cap-solve-failed');
+      this.presentation?.setState('error');
+      return;
+    }
+
+    if (!wrappedToken) {
+      fireError(this, 'verification-failed', 'No wrapped token received from platform', 'cap-redeem-failed');
+      this.presentation?.setState('error');
+      return;
+    }
+
+    const { token, score, durationMs } = wrappedToken;
+
+    const form = this.closest('form');
+    if (form instanceof HTMLFormElement) {
+      injectHiddenInput(form, token);
+    }
+
+    this.presentation?.setState('verified');
+    this.dispatchEvent(new CustomEvent('pass', {
+      detail: { token, score, durationMs },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private async runGameOnly(): Promise<void> {
+    if (!this.config) return;
+    const cfg = this.config;
+    const apiHost = __CAPUTCHIN_API_HOST__;
+    const gameId = this.resolveGameId();
+
+    let gameUrl: string | null = cfg.gameSrc;
+    let integrity: string | null = null;
+
+    if (gameId === null && gameUrl === null) {
+      console.warn('[caputchin] game-only mode with no game configured — widget is inert');
+      return;
+    }
+
+    if (gameId && !gameUrl) {
+      const resolution = await fetchMarketplaceResolution(gameId, apiHost);
+      if (!resolution.ok) {
+        fireError(this, 'game-load-failed', resolution.message, resolution.code);
+        return;
+      }
+      gameUrl = resolution.url;
+      integrity = resolution.integrity;
+    }
+
+    const dispatchStart = (): void => {
+      if (this.gameStartedEmitted) return;
+      this.gameStartedEmitted = true;
+      this.dispatchEvent(new CustomEvent('start', {
+        detail: { gameId },
+        bubbles: true,
+        composed: true,
+      }));
+    };
+
+    const host = new IframeHost(gameUrl, integrity, gameId, this, (msg) => {
+      if (msg.kind === 'game-pass') {
+        this.onTriggerDone();
+        this.dispatchEvent(new CustomEvent('pass', {
+          detail: { token: null, score: msg.score, durationMs: msg.durationMs },
+          bubbles: true,
+          composed: true,
+        }));
+      } else if (msg.kind === 'game-error') {
+        const { code, originalCode } = mapIframeErrorCode(msg.code);
+        fireError(this, code, msg.message, originalCode);
+        this.onTriggerError();
+      }
+    });
+    this.iframeHost = host;
+
+    await this.installLayout(
+      host,
+      (code, message) => {
+        fireError(this, 'game-load-failed', message, code);
+        this.iframeHost = null;
+      },
+      dispatchStart,
+    );
+  }
+
+  /**
+   * Mount iframe into a presenter staging slot, wait for manifest, resolve
+   * layout, re-parent iframe. Kickoff deferred to trigger checkbox activation
+   * for modal/fullscreen; fires immediately for inline.
    */
   private async installLayout(
     host: IframeHost,
@@ -105,42 +345,36 @@ export class CaputchinElement extends HTMLElement {
         this.pendingKickoff = null;
         fn?.();
       },
-      onDialogClose: () => {
-        // Nothing to do — trigger state already reflects done/error.
-      },
+      onDialogClose: () => {},
     });
-    this.presenter = presenter;
+    this.layoutPresenter = presenter;
 
     host.mount(presenter.getStaging(), onLoadFailed, onGameStarted);
 
     const iframe = host.getIframe();
     if (!iframe) {
-      fireError(this, 'iframe-load-failed', 'IframeHost.build() returned no iframe');
+      fireError(this, 'game-load-failed', 'IframeHost.build() returned no iframe', 'iframe-load-failed');
       return;
     }
 
     const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
     if (!manifest) {
-      console.warn(
-        `[caputchin] manifest-timeout — no manifest received from iframe within ${MANIFEST_TIMEOUT_MS}ms`,
-      );
+      console.warn(`[caputchin] manifest-timeout — no manifest received from iframe within ${MANIFEST_TIMEOUT_MS}ms`);
     }
 
     const resolved = resolveLayout({
-      attr: this.layoutAttr,
+      attr: this.config?.layout ?? null,
       manifestPreferred: manifest?.preferredLayout ?? null,
       autoIsWide: evalAutoBreakpoint(),
     });
 
     presenter.apply(resolved.layout, iframe);
 
-    this.dispatchEvent(
-      new CustomEvent('layout-resolved', {
-        detail: { layout: resolved.layout, source: resolved.source },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent('layout-resolved', {
+      detail: { layout: resolved.layout, source: resolved.source },
+      bubbles: true,
+      composed: true,
+    }));
 
     const doKickoff = (): void => {
       host.setLayoutContext(resolved.layout);
@@ -158,188 +392,19 @@ export class CaputchinElement extends HTMLElement {
     }
   }
 
-  private onTriggerVerifying(): void {
-    this.presenter?.setTriggerState('verifying');
-  }
-
   private onTriggerDone(): void {
-    if (!this.presenter?.hasTrigger()) return;
-    this.presenter.setTriggerState('done');
+    if (!this.layoutPresenter?.hasTrigger()) return;
+    this.layoutPresenter.setTriggerState('done');
     if (this.doneCloseTimer !== null) clearTimeout(this.doneCloseTimer);
     this.doneCloseTimer = setTimeout(() => {
       this.doneCloseTimer = null;
-      this.presenter?.close();
+      this.layoutPresenter?.close();
     }, DONE_DIALOG_CLOSE_MS);
   }
 
   private onTriggerError(): void {
-    if (!this.presenter?.hasTrigger()) return;
-    this.presenter.setTriggerState('error');
-    this.presenter.close();
-  }
-
-  private async runVerification(ctx: VerificationContext): Promise<void> {
-    const el = this as HTMLElement;
-    const { apiHost, sitekey } = ctx;
-
-    let gameUrl: string | null = ctx.gameUrl;
-    let integrity: string | null = null;
-    const gameId: string | null = ctx.gameId;
-
-    if (gameId && !gameUrl) {
-      const resolution = await fetchMarketplaceResolution(gameId, apiHost);
-      if (!resolution.ok) {
-        fireError(el, resolution.code, resolution.message);
-        return;
-      }
-      gameUrl = resolution.url;
-      integrity = resolution.integrity;
-    }
-
-    let wrappedToken: WrappedToken | null = null;
-
-    const sessionCtx = {
-      platform: { sitekey, score: null, durationMs: null } as Record<string, unknown>,
-      onWrappedToken: (token: WrappedToken) => {
-        wrappedToken = token;
-      },
-    };
-
-    const client = createCapClient(el, apiHost, sessionCtx);
-    this.capClient = client;
-    ctx.capClient = client;
-
-    const dispatchStart = (): void => {
-      this.dispatchEvent(
-        new CustomEvent('start', {
-          detail: { gameId },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-      this.onTriggerVerifying();
-    };
-
-    if (gameId !== null || gameUrl !== null) {
-      const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
-        if (msg.kind === 'game-pass') {
-          sessionCtx.platform['score'] = msg.score;
-          sessionCtx.platform['durationMs'] = msg.durationMs;
-          this.onTriggerDone();
-          client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
-        } else if (msg.kind === 'game-error') {
-          const { code, originalCode } = mapIframeErrorCode(msg.code);
-          fireError(el, code, msg.message, originalCode);
-          this.onTriggerError();
-          client.releaseGate({ score: null, durationMs: null });
-        }
-      });
-
-      this.iframeHost = host;
-
-      await this.installLayout(
-        host,
-        (code, message) => {
-          client.releaseGate({ score: null, durationMs: null });
-          fireError(el, code, message);
-          client.dispose();
-          this.iframeHost = null;
-        },
-        dispatchStart,
-      );
-    } else {
-      client.releaseGate({ score: null, durationMs: null });
-      dispatchStart();
-    }
-
-    try {
-      await client.solve();
-    } catch (err) {
-      fireError(el, 'cap-solve-failed', String(err));
-      return;
-    }
-
-    if (!wrappedToken) {
-      fireError(el, 'cap-redeem-failed', 'No wrapped token received from platform');
-      return;
-    }
-
-    const { token, score, durationMs } = wrappedToken;
-
-    const form = el.closest('form');
-    if (form instanceof HTMLFormElement) {
-      injectHiddenInput(form, token);
-    }
-
-    this.dispatchEvent(
-      new CustomEvent('pass', {
-        detail: { token, score, durationMs },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
-  private async runGameOnly(ctx: VerificationContext): Promise<void> {
-    const el = this as HTMLElement;
-    const { apiHost } = ctx;
-
-    let gameUrl: string | null = ctx.gameUrl;
-    let integrity: string | null = null;
-    const gameId: string | null = ctx.gameId;
-
-    if (gameId === null && gameUrl === null) {
-      console.warn('[caputchin] game-only mode with no game configured — widget is inert');
-      return;
-    }
-
-    if (gameId && !gameUrl) {
-      const resolution = await fetchMarketplaceResolution(gameId, apiHost);
-      if (!resolution.ok) {
-        fireError(el, resolution.code, resolution.message);
-        return;
-      }
-      gameUrl = resolution.url;
-      integrity = resolution.integrity;
-    }
-
-    const dispatchStart = (): void => {
-      this.dispatchEvent(
-        new CustomEvent('start', {
-          detail: { gameId },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-      this.onTriggerVerifying();
-    };
-
-    const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
-      if (msg.kind === 'game-pass') {
-        this.onTriggerDone();
-        this.dispatchEvent(
-          new CustomEvent('pass', {
-            detail: { token: null, score: msg.score, durationMs: msg.durationMs },
-            bubbles: true,
-            composed: true,
-          }),
-        );
-      } else if (msg.kind === 'game-error') {
-        const { code, originalCode } = mapIframeErrorCode(msg.code);
-        fireError(el, code, msg.message, originalCode);
-        this.onTriggerError();
-      }
-    });
-
-    this.iframeHost = host;
-
-    await this.installLayout(
-      host,
-      (code, message) => {
-        fireError(el, code, message);
-        this.iframeHost = null;
-      },
-      dispatchStart,
-    );
+    if (!this.layoutPresenter?.hasTrigger()) return;
+    this.layoutPresenter.setTriggerState('error');
+    this.layoutPresenter.close();
   }
 }

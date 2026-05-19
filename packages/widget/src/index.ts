@@ -18,7 +18,9 @@ export type {
   Layout,
   LayoutAttr,
   LayoutSource,
+  WidgetMode,
+  WidgetTrigger,
 } from './types.js';
 export type { ErrorCode } from './errors.js';
-export type { ParsedConfig, WidgetMode } from './config.js';
+export type { ParsedConfig } from './config.js';
 export { CaputchinElement } from './element.js';
