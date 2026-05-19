@@ -56,7 +56,9 @@ describe('CaputchinElement lifecycle', () => {
   it('start event deferred to game-started postMessage when game configured (M3)', () => {
     const src = readFileSync(resolve(__dirname, '../../src/element.ts'), 'utf-8');
     expect(src).toContain('dispatchStart()');
-    expect(src).toContain('installLayout(');
+    // dispatchStart is wired as the onGameStarted callback handed to
+    // installGameFrame (replaces the old installLayout flow).
+    expect(src).toContain('installGameFrame(');
     expect(src).toContain('dispatchStart,');
   });
 
