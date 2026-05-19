@@ -60,14 +60,13 @@ export function createGamePresentation(input: PresentationFactoryInput): GamePre
       frame.appendChild(badgeSlot);
       renderRoot.appendChild(frame);
 
-      // Mount the embedded simple presentation into the badge slot.
+      // Mount the embedded simple presentation into the badge slot. Initial
+      // state stays at the pill default ("see no data" / brand badge); for
+      // `mode="game"` the surrounding runVerification flips it to verifying
+      // immediately, for `mode="game-only"` it stays informational until
+      // game-pass flips it to verified.
       subSimple = buildSubSimple();
       subSimple.mount();
-      // The embedded pill is informational only — its idle state is misleading
-      // for game contexts ("I'm not a robot" doesn't apply). The setState
-      // calls below from the game presentation drive it directly; nothing
-      // here listens for clicks on the sub-simple.
-      subSimple.setState('verifying');
     },
 
     unmount(): void {
