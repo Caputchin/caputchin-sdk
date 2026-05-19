@@ -16,7 +16,7 @@ const MANIFEST_TIMEOUT_MS = 2000;
 const DONE_DIALOG_CLOSE_MS = 600;
 
 export class CaputchinElement extends HTMLElement {
-  static observedAttributes = ['sitekey', 'mode', 'trigger', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'game', 'games', 'game-src', 'layout'];
 
   private presentation: Presentation | null = null;
   private trigger: TriggerStrategy | null = null;
@@ -53,7 +53,11 @@ export class CaputchinElement extends HTMLElement {
     }
 
     // All other modes: presentation + trigger orchestrate verification.
-    this.presentation = createPresentation(this.config.mode, { el: this, trigger: this.config.trigger });
+    this.presentation = createPresentation(this.config.mode, {
+      el: this,
+      trigger: this.config.trigger,
+      width: this.config.width,
+    });
     this.presentation?.mount();
 
     this.trigger = createTriggerStrategy(this.config.trigger);

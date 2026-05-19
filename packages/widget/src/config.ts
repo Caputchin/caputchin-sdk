@@ -3,11 +3,13 @@ import { isLayoutAttr } from './layout/types.js';
 
 export type WidgetMode = 'invisible' | 'simple' | 'game' | 'game-only';
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';
+export type WidgetWidth = 'auto' | 'full';
 
 export interface ParsedConfig {
   sitekey: string;
   mode: WidgetMode;
   trigger: WidgetTrigger;
+  width: WidgetWidth;
   game: string | null;
   games: string | null;
   gameSrc: string | null;
@@ -31,6 +33,7 @@ const UNSAFE_CHARS = /["'`;,<>\s\x00-\x1f]/;
 
 const MODES: ReadonlyArray<WidgetMode> = ['invisible', 'simple', 'game', 'game-only'];
 const TRIGGERS: ReadonlyArray<WidgetTrigger> = ['auto', 'click', 'form-submit', 'manual'];
+const WIDTHS: ReadonlyArray<WidgetWidth> = ['auto', 'full'];
 
 export function validateGameUrl(url: string): string | null {
   if (BLOCKED_SCHEMES.test(url)) {
@@ -69,10 +72,15 @@ function isTrigger(v: string | null): v is WidgetTrigger {
   return v !== null && (TRIGGERS as ReadonlyArray<string>).includes(v);
 }
 
+function isWidth(v: string | null): v is WidgetWidth {
+  return v !== null && (WIDTHS as ReadonlyArray<string>).includes(v);
+}
+
 export function parseAttributes(el: HTMLElement): {
   sitekey: string;
   rawMode: string | null;
   rawTrigger: string | null;
+  rawWidth: string | null;
   game: string | null;
   games: string | null;
   gameSrc: string | null;
@@ -82,6 +90,7 @@ export function parseAttributes(el: HTMLElement): {
     sitekey: el.getAttribute('sitekey') ?? '',
     rawMode: el.getAttribute('mode'),
     rawTrigger: el.getAttribute('trigger'),
+    rawWidth: el.getAttribute('width'),
     game: el.getAttribute('game'),
     games: el.getAttribute('games'),
     gameSrc: el.getAttribute('game-src'),
@@ -118,6 +127,17 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
   } else {
     issues.push({ message: `trigger="${raw.rawTrigger}" is invalid; falling back to "auto"` });
     trigger = 'auto';
+  }
+
+  // ---- width ----
+  let width: WidgetWidth;
+  if (raw.rawWidth === null || raw.rawWidth === '') {
+    width = 'auto';
+  } else if (isWidth(raw.rawWidth)) {
+    width = raw.rawWidth;
+  } else {
+    issues.push({ message: `width="${raw.rawWidth}" is invalid; expected auto|full; falling back to "auto"` });
+    width = 'auto';
   }
 
   // ---- trigger × mode conflict coercion ----
@@ -177,7 +197,7 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
   }
 
   return {
-    config: { sitekey, mode, trigger, game, games, gameSrc, layout },
+    config: { sitekey, mode, trigger, width, game, games, gameSrc, layout },
     issues,
     inert,
   };

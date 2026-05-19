@@ -20,6 +20,7 @@ export type {
   LayoutSource,
   WidgetMode,
   WidgetTrigger,
+  WidgetWidth,
 } from './types.js';
 export type { ErrorCode } from './errors.js';
 export type { ParsedConfig } from './config.js';
