@@ -415,6 +415,8 @@ export class CaputchinElement extends HTMLElement {
     const host = new IframeHost(gameUrl, integrity, gameId, this, (msg) => {
       if (msg.kind === 'game-pass') {
         this.onTriggerDone();
+        // game-only: no verification, brand strip flips to "verified" on game-pass.
+        this.presentation?.setState('verified');
         this.dispatchEvent(new CustomEvent('pass', {
           detail: { token: null, score: msg.score, durationMs: msg.durationMs },
           bubbles: true,
@@ -424,18 +426,35 @@ export class CaputchinElement extends HTMLElement {
         const { code, originalCode } = mapIframeErrorCode(msg.code);
         fireError(this, code, msg.message, originalCode);
         this.onTriggerError();
+        this.presentation?.setState('error');
       }
     });
     this.iframeHost = host;
 
-    await this.installLayout(
-      host,
-      (code, message) => {
-        fireError(this, 'game-load-failed', message, code);
-        this.iframeHost = null;
-      },
-      dispatchStart,
-    );
+    // game-only inline goes through the bordered game frame (brand strip
+    // is informational since there's no verification — flips to "verified"
+    // on game-pass). Modal/fullscreen falls back to the old layout path.
+    const wantsInline = !cfg.layout || cfg.layout === 'inline';
+    if (wantsInline) {
+      await this.installGameFrame(
+        host,
+        (code, message) => {
+          fireError(this, 'game-load-failed', message, code);
+          this.presentation?.setState('error');
+          this.iframeHost = null;
+        },
+        dispatchStart,
+      );
+    } else {
+      await this.installLayout(
+        host,
+        (code, message) => {
+          fireError(this, 'game-load-failed', message, code);
+          this.iframeHost = null;
+        },
+        dispatchStart,
+      );
+    }
   }
 
   /**
