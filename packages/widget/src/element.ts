@@ -5,6 +5,7 @@ import { pickFromGamesAttr } from './pool.js';
 import { injectHiddenInput } from './form.js';
 import { IframeHost } from './iframe/host.js';
 import { createCapClient, type CapClient } from './cap/client.js';
+import { getSessionId } from './cap/custom-fetch.js';
 import { createPresentation, type Presentation } from './modes/index.js';
 import { createTriggerStrategy, type TriggerStrategy, type TriggerContext } from './triggers/index.js';
 import type { WrappedToken } from './token.js';
@@ -43,6 +44,8 @@ export class CaputchinElement extends HTMLElement {
    * `verification-failed` event the catch handler would otherwise fire after
    * cap.solve rejects from the aborted gate. */
   private gameErrored = false;
+  /** Locked at first successful pass; reused for multi-round follow-up pass events. */
+  private lockedToken: string | null = null;
 
   connectedCallback(): void {
     this.connected = true;
@@ -120,6 +123,7 @@ export class CaputchinElement extends HTMLElement {
     this.config = null;
     this.widgetId = null;
     this.gameErrored = false;
+    this.lockedToken = null;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
@@ -228,12 +232,22 @@ export class CaputchinElement extends HTMLElement {
     };
 
     if (wantsIframe && (gameId !== null || gameUrl !== null)) {
+      let firstClickHappened = false;
       const host = new IframeHost(gameUrl, integrity, gameId, this, (msg) => {
         if (msg.kind === 'game-pass') {
           sessionCtx.platform['score'] = msg.score;
           sessionCtx.platform['durationMs'] = msg.durationMs;
           this.onTriggerDone();
-          client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
+          if (!firstClickHappened) {
+            // First pass — releases the gate so cap.solve completes, mints the token.
+            firstClickHappened = true;
+            client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
+          } else {
+            // Multi-round: cap.solve is already done. Call /verify/pass directly
+            // for scoreboard recording, then fire another pass event so the
+            // customer sees each round. Token stays locked at the first call.
+            void this.recordAdditionalRound(apiHost, msg.score, msg.durationMs);
+          }
         } else if (msg.kind === 'game-error') {
           const { code, originalCode } = mapIframeErrorCode(msg.code);
           fireError(this, code, msg.message, originalCode);
@@ -305,8 +319,39 @@ export class CaputchinElement extends HTMLElement {
     }
 
     this.presentation?.setState('verified');
+    this.lockedToken = token;
     this.dispatchEvent(new CustomEvent('pass', {
       detail: { token, score, durationMs },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  /**
+   * Multi-round path: cap.solve already minted the token. Subsequent
+   * bridge.pass() calls from the iframe game record additional rounds —
+   * fire /verify/pass directly with the existing sessionId + new payload,
+   * then emit a follow-up `pass` event reusing the locked token.
+   */
+  private async recordAdditionalRound(
+    apiHost: string,
+    score: number | null,
+    durationMs: number | null,
+  ): Promise<void> {
+    if (!this.widgetId || !this.lockedToken) return;
+    const sessionId = getSessionId(this.widgetId);
+    if (!sessionId) return;
+    try {
+      await window.fetch(`${apiHost}/api/v1/verify/pass`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ platform: { sessionId, score, durationMs } }),
+      });
+    } catch {
+      // best-effort scoreboard recording — fire the pass event regardless
+    }
+    this.dispatchEvent(new CustomEvent('pass', {
+      detail: { token: this.lockedToken, score, durationMs },
       bubbles: true,
       composed: true,
     }));
