@@ -350,6 +350,32 @@
     <div class="log" data-log="edge-bad-mode"></div>
   </div>
 
+  <div class="section" data-widget="game-failing">
+    <header>
+      <h3>game × auto — game calls bridge.error → widget fires game-error-relayed</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=auto</span><span class="tag">bridge.error</span></div>
+    </header>
+    <p class="desc">The game waits 1.5s then calls <code>bridge.error({code:'demo-failure'})</code>. Widget translates to <code>game-error-relayed</code> with <code>originalCode</code> carrying the game-supplied code.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_..." mode="game" game="@demo/failing" game-src="/examples/failing-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount iframe-host">
+      <caputchin-widget id="w-game-failing" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" game="@demo/failing" game-src="/examples/failing-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="game-failing"></div>
+  </div>
+
+  <div class="section" data-widget="game-multi-round">
+    <header>
+      <h3>game × auto — multi-round passes</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=auto</span><span class="tag">replay</span></div>
+    </header>
+    <p class="desc">Click the button 3 times. Each click fires <code>bridge.pass({score, durationMs})</code>. First call mints the wrapped token and emits the pass event; subsequent calls emit pass events with later scores but the token is locked at the first.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_..." mode="game" game="@demo/multi-round" game-src="/examples/multi-round-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount iframe-host">
+      <caputchin-widget id="w-game-multi-round" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" game="@demo/multi-round" game-src="/examples/multi-round-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="game-multi-round"></div>
+  </div>
+
   <div class="section" data-widget="simple-compact">
     <header>
       <h3>simple × auto × size="compact" — denser variant for tight layouts</h3>
