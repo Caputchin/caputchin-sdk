@@ -7,22 +7,26 @@ declare global {
 (globalThis as unknown as { __CAPUTCHIN_API_HOST__: string }).__CAPUTCHIN_API_HOST__ = 'https://api.test.com';
 
 describe('mode="simple" presentation', () => {
-  it('renders a checkbox with Caputchin branding on mount', () => {
+  it('renders a checkbox with Caputchin branding on mount (inside shadow root)', () => {
     const el = getTestElement({ sitekey: 'k', mode: 'simple', trigger: 'click' });
     document.body.appendChild(el);
-    const checkbox = el.querySelector('[role="checkbox"]');
+    const shadow = el.shadowRoot;
+    expect(shadow).not.toBeNull();
+    const checkbox = shadow!.querySelector('[role="checkbox"]');
     expect(checkbox).not.toBeNull();
-    expect(el.textContent).toContain('Caputchin');
-    expect(el.textContent).toContain("I'm not a robot");
+    expect(shadow!.textContent).toContain('Caputchin');
+    expect(shadow!.textContent).toContain("I'm not a robot");
+    // Light-DOM children stay empty — internals are isolated.
+    expect(el.querySelector('[role="checkbox"]')).toBeNull();
     el.remove();
   });
 
   it('removes the checkbox on disconnect', () => {
     const el = getTestElement({ sitekey: 'k', mode: 'simple', trigger: 'click' });
     document.body.appendChild(el);
-    expect(el.querySelector('[role="checkbox"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[role="checkbox"]')).not.toBeNull();
     el.remove();
-    expect(el.querySelector('[role="checkbox"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[role="checkbox"]')).toBeNull();
   });
 });
 

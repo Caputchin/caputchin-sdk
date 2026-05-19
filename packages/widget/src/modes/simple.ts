@@ -12,7 +12,7 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  *   verification window. No left-side checkbox / phantom control.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { el, trigger, width } = input;
+  const { host, root: renderRoot, trigger, width } = input;
   const isPill = trigger === 'form-submit' || trigger === 'manual';
   const isFullWidth = width === 'full';
 
@@ -114,7 +114,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   return {
     mount(): void {
       if (root) return;
-      ensureStyles();
+      ensureStyles(renderRoot);
 
       root = document.createElement('div');
       root.setAttribute('part', isPill ? 'simple-pill' : 'simple-checkbox');
@@ -186,10 +186,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       // Host element is inline by default — width:100% inside an inline host
       // sizes to content. Expand the host when full-width is requested.
       if (isFullWidth) {
-        el.style.display = 'block';
-        el.style.width = '100%';
+        host.style.display = 'block';
+        host.style.width = '100%';
       }
-      el.appendChild(root);
+      renderRoot.appendChild(root);
 
       // Apply idle state once everything is wired so first paint is correct.
       this.setState('idle');
@@ -202,8 +202,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         statusIcon.removeEventListener('keydown', onKey);
       }
       if (isFullWidth) {
-        el.style.display = '';
-        el.style.width = '';
+        host.style.display = '';
+        host.style.width = '';
       }
       root.remove();
       root = null;
@@ -317,10 +317,10 @@ function applyPillTagState(tag: HTMLAnchorElement, state: PresentationState): vo
   }
 }
 
-let stylesInjected = false;
-function ensureStyles(): void {
-  if (stylesInjected) return;
-  stylesInjected = true;
+const stylesInjectedSet = new WeakSet<ShadowRoot>();
+function ensureStyles(root: ShadowRoot): void {
+  if (stylesInjectedSet.has(root)) return;
+  stylesInjectedSet.add(root);
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
@@ -340,5 +340,5 @@ function ensureStyles(): void {
       '[part="simple-checkbox-label"]{display:none}',
     '}',
   ].join('');
-  document.head.appendChild(style);
+  root.appendChild(style);
 }
