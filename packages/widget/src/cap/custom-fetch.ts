@@ -55,7 +55,10 @@ export function releaseRedeemGate(el: HTMLElement, platform: Record<string, unkn
   const gate = redeemGates.get(el);
   if (!gate) return;
   clearTimeout(gate.timer);
-  redeemGates.delete(el);
+  // Keep the gate entry alive so a redeem fetch that fires AFTER the release
+  // still finds it and awaits the (already-resolved) promise. Without this,
+  // a fast game-pass beat the redeem fetch and left it with no sessionId.
+  // Cleanup happens in unregisterElement.
   gate.resolve(platform);
 }
 
@@ -131,10 +134,17 @@ export function installCustomFetch(): void {
       try {
         const data = await response.clone().json() as Record<string, unknown>;
         if (data && typeof data['token'] === 'string') {
+          // Server response only carries the powToken in `data.token` and the
+          // wrappedToken under `data.platform.wrappedToken`. score/durationMs
+          // were sent in the request `platform` (game-pass payload) but aren't
+          // echoed back — read them from the request payload we just built so
+          // the customer's `pass` event detail surfaces the real values.
+          const score = typeof platform['score'] === 'number' ? platform['score'] : null;
+          const durationMs = typeof platform['durationMs'] === 'number' ? platform['durationMs'] : null;
           ctx.onWrappedToken(assembleWrappedToken({
             token: data['token'] as string,
-            score: typeof data['score'] === 'number' ? data['score'] : null,
-            durationMs: typeof data['durationMs'] === 'number' ? data['durationMs'] : null,
+            score,
+            durationMs,
           }));
         }
       } catch {
