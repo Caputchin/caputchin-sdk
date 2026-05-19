@@ -8,6 +8,7 @@ export interface SessionContext {
 interface GateEntry {
   promise: Promise<Record<string, unknown>>;
   resolve: (platform: Record<string, unknown>) => void;
+  reject: (reason: Error) => void;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -41,12 +42,19 @@ export function armRedeemGate(id: string): void {
   if (existing) clearTimeout(existing.timer);
 
   let resolve!: (platform: Record<string, unknown>) => void;
-  const promise = new Promise<Record<string, unknown>>((res) => { resolve = res; });
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<Record<string, unknown>>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  // Swallow late rejections so unhandled-rejection noise doesn't surface
+  // for gates whose redeem fetch never arrived (e.g. game aborted early).
+  promise.catch(() => {});
   const timer = setTimeout(() => {
     redeemGates.delete(id);
     resolve({});
   }, GATE_TIMEOUT_MS);
-  redeemGates.set(id, { promise, resolve, timer });
+  redeemGates.set(id, { promise, resolve, reject, timer });
 }
 
 export function releaseRedeemGate(id: string, platform: Record<string, unknown>): void {
@@ -57,6 +65,18 @@ export function releaseRedeemGate(id: string, platform: Record<string, unknown>)
   // release still finds it and awaits the already-resolved promise. Cleanup
   // happens in unregisterSession.
   gate.resolve(platform);
+}
+
+/**
+ * Abort the gate — the redeem fetch (already awaiting or arriving later)
+ * throws instead of fetching. Used when the game itself reported a fatal
+ * error and verification must NOT continue.
+ */
+export function abortRedeemGate(id: string, reason: Error): void {
+  const gate = redeemGates.get(id);
+  if (!gate) return;
+  clearTimeout(gate.timer);
+  gate.reject(reason);
 }
 
 function parseBody(init: RequestInit | undefined): Record<string, unknown> {
