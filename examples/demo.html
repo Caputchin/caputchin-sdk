@@ -3,297 +3,417 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Caputchin Widget — Dev Demo</title>
+  <title>Caputchin Widget — Use-Case Demo</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
     body {
       font-family: system-ui, sans-serif;
       margin: 0;
-      padding: 2rem;
+      padding: 1.5rem;
       background: #f8f7ff;
       color: #1a0a2e;
+      max-width: 60rem;
+      margin: 0 auto;
     }
 
     h1 { color: #3d2a5e; margin-bottom: 0.25rem; }
-    p.subtitle { color: #888; margin-top: 0; margin-bottom: 2rem; font-size: 0.9rem; }
+    p.subtitle { color: #6a4c93; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    h2.matrix-h { margin-top: 2rem; color: #2F6640; border-bottom: 2px solid #e0d9f5; padding-bottom: 0.25rem; }
 
     .section {
       background: #fff;
       border: 1px solid #e0d9f5;
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
     }
 
-    .section h2 { margin-top: 0; font-size: 1rem; color: #6a4c93; }
-    .section p  { font-size: 0.85rem; color: #555; margin-top: 0; }
-
-    caputchin-widget { display: block; margin-top: 0.75rem; }
-
-    .fake-form input[type="text"] {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
-      margin-right: 0.5rem;
+    .section header { display:flex; align-items:baseline; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem; }
+    .section h3 { margin: 0; font-size: 0.95rem; color: #3d2a5e; }
+    .section .tags { display: flex; gap: 0.25rem; }
+    .section .tag {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 0.7rem;
+      background: #f0ebff;
+      color: #6a4c93;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
     }
-
-    .fake-form button[type="submit"],
-    .btn-row button {
-      padding: 0.4rem 1rem;
+    .section p.desc { font-size: 0.8rem; color: #555; margin: 0 0 0.5rem 0; }
+    .section pre {
+      background: #faf8ff;
+      border: 1px solid #ebe5fa;
       border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.7rem;
+      font-family: ui-monospace, "SF Mono", monospace;
+      color: #2b1a4d;
+      overflow-x: auto;
+      margin: 0.25rem 0 0.75rem 0;
+    }
+    .widget-mount {
+      padding: 0.75rem;
+      border: 1px dashed #c0b8d4;
+      border-radius: 6px;
+      background: #fafaff;
+      margin-bottom: 0.5rem;
+      min-height: 4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .widget-mount.iframe-host { min-height: 18rem; align-items: stretch; }
+    .controls { display:flex; gap:0.5rem; margin: 0.5rem 0; }
+    .controls button {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
       border: 1px solid #6a4c93;
-      background: #6a4c93;
-      color: #fff;
+      background: #fff;
+      color: #3d2a5e;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 0.85rem;
+    }
+    .controls button:hover { background: #f0ebff; }
+    .form-wrap { margin: 0.5rem 0; }
+    .form-wrap input[type="text"] {
+      border: 1px solid #ccc; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin-right: 0.4rem;
+    }
+    .form-wrap button[type="submit"] {
+      padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #2F6640; color: #fff; border: none; border-radius: 6px; cursor: pointer;
     }
 
-    .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-    .btn-row button { background: #f5f0ff; color: #3d2a5e; }
-
-    #log {
-      background: #1a0a2e;
-      color: #c8b8f5;
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      font-family: monospace;
-      font-size: 0.8rem;
-      min-height: 5rem;
-      max-height: 14rem;
+    .log {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 0.7rem;
+      background: #1A1917;
+      color: #E0F2DA;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      min-height: 4rem;
+      max-height: 12rem;
       overflow-y: auto;
       white-space: pre-wrap;
-      margin-top: 1.5rem;
+      word-break: break-all;
     }
-
-    #log .ts { color: #888; }
-    #log .ev-start    { color: #82cfff; }
-    #log .ev-pass     { color: #6fe86f; }
-    #log .ev-nickname { color: #f5c842; }
-    #log .ev-error    { color: #ff7070; }
-    #log .ev-layout-resolved { color: #c8b8f5; }
+    .log .ts   { color: #aaa; margin-right: 0.4rem; }
+    .log .ev-start { color: #82cfff; }
+    .log .ev-pass  { color: #6fe86f; }
+    .log .ev-nickname { color: #ffc870; }
+    .log .ev-error { color: #ff7070; }
+    .log .ev-layout-resolved { color: #c0a8ff; }
+    .log .ev-submit { color: #aaa; }
   </style>
 </head>
 <body>
-
-<h1>Caputchin Widget — Dev Demo</h1>
-<p class="subtitle">
-  All widgets use <code>sitekey="cpt_pub_demo"</code>. Platform routes are stubbed 501 today —
-  expect <code>cap-solve-failed</code> errors in the log.
-</p>
-
-<!-- 1. Invisible / auto mode -->
-<div class="section">
-  <h2>1 — Invisible (auto mode, no game)</h2>
-  <p>Cap-only PoW verification runs on mount. No game UI shown.</p>
-  <caputchin-widget id="w-invisible" sitekey="cpt_pub_demo"></caputchin-widget>
-</div>
-
-<!-- 2. form-submit mode -->
-<div class="section">
-  <h2>2 — form-submit mode</h2>
-  <p>Widget arms on the parent form. Verification runs when the form submits.</p>
-  <form id="fake-form" class="fake-form">
-    <input type="text" placeholder="Name" />
-    <input type="text" placeholder="Email" />
-    <button type="submit">Submit</button>
-    <caputchin-widget id="w-form" sitekey="cpt_pub_demo" mode="form-submit"></caputchin-widget>
-  </form>
-</div>
-
-<!-- 3. manual mode -->
-<div class="section">
-  <h2>3 — manual mode</h2>
-  <p>
-    <code>start()</code> triggers verification. <code>pass()</code> releases the gate early.
-    <code>setNickname()</code> is post-MVP and throws.
+  <h1>Caputchin Widget — Use-Case Demo</h1>
+  <p class="subtitle">
+    Each section shows one mode × trigger combination with its own scoped event log.
+    Sitekey: <code>cpt_pub_demo</code>. Widget bundle: <code>/packages/widget/dist/widget.js</code> (local tsup output).
   </p>
-  <caputchin-widget id="w-manual" sitekey="cpt_pub_demo" mode="manual"></caputchin-widget>
-  <div class="btn-row" id="manual-btns">
-    <button data-action="start">widget.start()</button>
-    <button data-action="pass">widget.pass({score:0.5})</button>
-    <button data-action="nickname">widget.setNickname('ABC')</button>
+
+  <!-- ====================================================== -->
+  <h2 class="matrix-h">mode="invisible" — no UI, verifies in background</h2>
+
+  <div class="section" data-widget="inv-auto">
+    <header>
+      <h3>invisible × auto</h3>
+      <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=auto</span></div>
+    </header>
+    <p class="desc">Verifies on mount. No visible UI; <code>pass</code> event fires when the wrapped token is ready.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" mode="invisible"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-inv-auto" sitekey="cpt_pub_demo" mode="invisible"></caputchin-widget>
+      <span style="font-size:0.75rem; color:#888">(no UI rendered)</span>
+    </div>
+    <div class="log" data-log="inv-auto"></div>
   </div>
-</div>
 
-<!-- 4. customer-hosted game via game-src -->
-<div class="section">
-  <h2>4 — customer-hosted game (game-src)</h2>
-  <p>
-    The widget loads <code>examples/simple-game.js</code> in an opaque-origin iframe.
-    Click the button three times to call <code>bridge.pass()</code>.
-  </p>
-  <caputchin-widget id="w-game" sitekey="cpt_pub_demo" game-src="/examples/simple-game.js"></caputchin-widget>
-</div>
+  <div class="section" data-widget="inv-form">
+    <header>
+      <h3>invisible × form-submit</h3>
+      <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=form-submit</span></div>
+    </header>
+    <p class="desc">Verifies when the enclosing <code>&lt;form&gt;</code> is submitted; submit is gated until token is ready.</p>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_demo" mode="invisible" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <form class="widget-mount form-wrap" id="form-inv-form">
+      <caputchin-widget id="w-inv-form" sitekey="cpt_pub_demo" mode="invisible" trigger="form-submit"></caputchin-widget>
+      <input type="text" placeholder="your email" />
+      <button type="submit">Sign up</button>
+    </form>
+    <div class="log" data-log="inv-form"></div>
+  </div>
 
-<!-- 5. game-only mode (Cap disabled) -->
-<div class="section">
-  <h2>5 — game-only mode</h2>
-  <p>
-    Cap is disabled entirely. The widget hosts the game iframe and surfaces
-    <code>start</code> / <code>pass</code> events with <code>token: null</code>.
-    No network requests to <code>/game/start</code> or <code>/game/pass</code>.
-  </p>
-  <caputchin-widget id="w-gameonly" sitekey="cpt_pub_demo" mode="game-only" game-src="/examples/simple-game.js"></caputchin-widget>
-</div>
+  <div class="section" data-widget="inv-manual">
+    <header>
+      <h3>invisible × manual</h3>
+      <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=manual</span></div>
+    </header>
+    <p class="desc">Customer drives the lifecycle. Click "start()" to begin verification.</p>
+    <pre>const w = document.querySelector('caputchin-widget'); w.start();</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-inv-manual" sitekey="cpt_pub_demo" mode="invisible" trigger="manual"></caputchin-widget>
+      <div class="controls">
+        <button data-action="start" data-target="w-inv-manual">widget.start()</button>
+        <button data-action="pass" data-target="w-inv-manual">widget.pass() (should noop+error)</button>
+      </div>
+    </div>
+    <div class="log" data-log="inv-manual"></div>
+  </div>
 
-<!-- 6. game-only via sitekey-absent shorthand -->
-<div class="section">
-  <h2>6 — game-only via sitekey-absent shorthand</h2>
-  <p>
-    Same as #5 but no <code>sitekey</code> attribute. Omitting <code>sitekey</code>
-    is shorthand for <code>mode="game-only"</code>.
-  </p>
-  <caputchin-widget id="w-gameonly-nokey" game-src="/examples/simple-game.js"></caputchin-widget>
-</div>
+  <!-- ====================================================== -->
+  <h2 class="matrix-h">mode="simple" — Caputchin-branded checkbox</h2>
 
-<!-- 7. explicit inline layout -->
-<div class="section">
-  <h2>7 — layout="inline" (explicit)</h2>
-  <p>Game renders inline in the page flow. No trigger checkbox; iframe is visible immediately.</p>
-  <caputchin-widget
-    id="w-layout-inline"
-    mode="game-only"
-    game-src="/examples/simple-game.js"
-    layout="inline"
-  ></caputchin-widget>
-</div>
+  <div class="section" data-widget="simple-auto">
+    <header>
+      <h3>simple × auto <span style="color:#999;font-weight:normal">(default)</span></h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=auto</span></div>
+    </header>
+    <p class="desc">Checkbox renders and auto-verifies on mount. Brand visible, no user click required.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-simple-auto" sitekey="cpt_pub_demo"></caputchin-widget>
+    </div>
+    <div class="log" data-log="simple-auto"></div>
+  </div>
 
-<!-- 8. modal layout -->
-<div class="section">
-  <h2>8 — layout="modal"</h2>
-  <p>
-    Trigger checkbox renders inline; clicking it opens a centered dialog containing
-    the game iframe. Close via backdrop click or <kbd>Esc</kbd>.
-  </p>
-  <caputchin-widget
-    id="w-layout-modal"
-    mode="game-only"
-    game-src="/examples/simple-game.js"
-    layout="modal"
-  ></caputchin-widget>
-</div>
+  <div class="section" data-widget="simple-click">
+    <header>
+      <h3>simple × click</h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=click</span></div>
+    </header>
+    <p class="desc">Checkbox waits for the user to click before verification starts.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-simple-click" sitekey="cpt_pub_demo" trigger="click"></caputchin-widget>
+    </div>
+    <div class="log" data-log="simple-click"></div>
+  </div>
 
-<!-- 9. fullscreen layout -->
-<div class="section">
-  <h2>9 — layout="fullscreen"</h2>
-  <p>
-    Trigger checkbox renders inline; clicking it takes over the full viewport. Close
-    via the top-right <strong>X</strong> button (always shown) or <kbd>Esc</kbd> on desktop.
-  </p>
-  <caputchin-widget
-    id="w-layout-fullscreen"
-    mode="game-only"
-    game-src="/examples/simple-game.js"
-    layout="fullscreen"
-  ></caputchin-widget>
-</div>
+  <div class="section" data-widget="simple-form">
+    <header>
+      <h3>simple × form-submit</h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=form-submit</span></div>
+    </header>
+    <p class="desc">Checkbox renders informational only; verification fires when the form submits.</p>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_demo" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <form class="widget-mount form-wrap" id="form-simple-form">
+      <caputchin-widget id="w-simple-form" sitekey="cpt_pub_demo" trigger="form-submit"></caputchin-widget>
+      <input type="text" placeholder="message" />
+      <button type="submit">Send</button>
+    </form>
+    <div class="log" data-log="simple-form"></div>
+  </div>
 
-<!-- 10. auto layout -->
-<div class="section">
-  <h2>10 — layout="auto" (responsive)</h2>
-  <p>
-    Resolves to <code>modal</code> at ≥768px viewport width, <code>fullscreen</code> below.
-    Evaluated once at mount; resize requires a reload to re-evaluate.
-  </p>
-  <caputchin-widget
-    id="w-layout-auto"
-    mode="game-only"
-    game-src="/examples/simple-game.js"
-    layout="auto"
-  ></caputchin-widget>
-</div>
+  <div class="section" data-widget="simple-manual">
+    <header>
+      <h3>simple × manual</h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=manual</span></div>
+    </header>
+    <p class="desc">Customer calls <code>widget.start()</code> — equivalent to a programmatic checkbox click. Checkbox still renders.</p>
+    <pre>const w = document.querySelector('caputchin-widget'); w.start();</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-simple-manual" sitekey="cpt_pub_demo" trigger="manual"></caputchin-widget>
+      <div class="controls">
+        <button data-action="start" data-target="w-simple-manual">widget.start()</button>
+        <button data-action="setNickname" data-target="w-simple-manual">setNickname('ABC') (should throw)</button>
+      </div>
+    </div>
+    <div class="log" data-log="simple-manual"></div>
+  </div>
 
-<!-- 11. resolution-order example: attr wins over game's preferredLayout -->
-<div class="section">
-  <h2>11 — resolution order (attr beats game preferredLayout)</h2>
-  <p>
-    If the game declared <code>preferredLayout: 'modal'</code> via <code>register(id, factory, { preferredLayout })</code>,
-    setting <code>layout="inline"</code> on the widget overrides it. Check the
-    <code>layout-resolved</code> event in the log — <code>source</code> should be <code>"attr"</code>.
-  </p>
-  <caputchin-widget
-    id="w-layout-override"
-    mode="game-only"
-    game-src="/examples/simple-game.js"
-    layout="inline"
-  ></caputchin-widget>
-</div>
+  <!-- ====================================================== -->
+  <h2 class="matrix-h">mode="game" — gamified verification (third defense layer)</h2>
 
-<!-- shared event log -->
-<div id="log"><span class="ts">[ready]</span> event log — subscribe to all six widgets</div>
+  <div class="section" data-widget="game-auto">
+    <header>
+      <h3>game × auto</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=auto</span></div>
+    </header>
+    <p class="desc">Iframe-hosted game + Cap verification fire in parallel on mount.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" mode="game" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount iframe-host">
+      <caputchin-widget id="w-game-auto" sitekey="cpt_pub_demo" mode="game" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="game-auto"></div>
+  </div>
 
-<script src="/packages/widget/dist/widget.js"></script>
-<script>
-  const logEl = document.getElementById('log');
+  <div class="section" data-widget="game-click">
+    <header>
+      <h3>game × click</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=click</span></div>
+    </header>
+    <p class="desc">Iframe loads but kickoff is deferred to the layout trigger (modal/fullscreen present a click-to-play surface).</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" mode="game" trigger="click" layout="modal" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount iframe-host">
+      <caputchin-widget id="w-game-click" sitekey="cpt_pub_demo" mode="game" trigger="click" layout="modal" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="game-click"></div>
+  </div>
 
-  function log(widgetId, eventName, detail) {
-    const ts = new Date().toISOString().slice(11, 23);
-    const line = document.createElement('div');
+  <div class="section" data-widget="game-form">
+    <header>
+      <h3>game × form-submit</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=form-submit</span></div>
+    </header>
+    <p class="desc">Iframe + Cap fire when the enclosing form submits. (May feel slow — user submits, then the game appears.)</p>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_demo" mode="game" trigger="form-submit" game-src="..."&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <form class="widget-mount iframe-host form-wrap" id="form-game-form">
+      <caputchin-widget id="w-game-form" sitekey="cpt_pub_demo" mode="game" trigger="form-submit" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+      <input type="text" placeholder="your name" />
+      <button type="submit">Submit</button>
+    </form>
+    <div class="log" data-log="game-form"></div>
+  </div>
 
-    const tsSpan = document.createElement('span');
-    tsSpan.className = 'ts';
-    tsSpan.textContent = '[' + ts + ']';
+  <div class="section" data-widget="game-manual">
+    <header>
+      <h3>game × manual</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=manual</span></div>
+    </header>
+    <p class="desc">
+      Customer hosts the game UX in the host page realm (NO iframe). Customer calls
+      <code>widget.start()</code> to begin Cap, then <code>widget.pass({score, durationMs})</code>
+      on game completion to release Cap and mint the wrapped token.
+    </p>
+    <pre>w.start(); /* ...customer-hosted game runs... */ w.pass({ score: 0.9, durationMs: 4200 });</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-game-manual" sitekey="cpt_pub_demo" mode="game" trigger="manual"></caputchin-widget>
+      <div class="controls">
+        <button data-action="start" data-target="w-game-manual">widget.start()</button>
+        <button data-action="pass-game" data-target="w-game-manual">widget.pass({score:0.9, durationMs:4200})</button>
+      </div>
+    </div>
+    <div class="log" data-log="game-manual"></div>
+  </div>
 
-    const evSpan = document.createElement('span');
-    evSpan.className = 'ev-' + eventName;
-    evSpan.textContent = eventName;
+  <!-- ====================================================== -->
+  <h2 class="matrix-h">mode="game-only" — game host, no verification</h2>
 
-    const rest = document.createTextNode(' #' + widgetId + ' ' + JSON.stringify(detail ?? {}));
+  <div class="section" data-widget="gameonly">
+    <header>
+      <h3>game-only</h3>
+      <div class="tags"><span class="tag">mode=game-only</span></div>
+    </header>
+    <p class="desc">
+      Pure game host. No sitekey, no <code>/verify/*</code> calls, no wrapped token.
+      <code>pass</code> event fires with <code>token: null</code>. For dev / playground / demos.
+    </p>
+    <pre>&lt;caputchin-widget mode="game-only" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount iframe-host">
+      <caputchin-widget id="w-gameonly" mode="game-only" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="gameonly"></div>
+  </div>
 
-    line.appendChild(tsSpan);
-    line.appendChild(document.createTextNode(' '));
-    line.appendChild(evSpan);
-    line.appendChild(rest);
-    logEl.appendChild(line);
-    logEl.scrollTop = logEl.scrollHeight;
-  }
+  <!-- ====================================================== -->
+  <h2 class="matrix-h">Graceful-degradation edge cases</h2>
 
-  const widgetIds = [
-    'w-invisible',
-    'w-form',
-    'w-manual',
-    'w-game',
-    'w-gameonly',
-    'w-gameonly-nokey',
-    'w-layout-inline',
-    'w-layout-modal',
-    'w-layout-fullscreen',
-    'w-layout-auto',
-    'w-layout-override',
-  ];
-  const events = ['start', 'pass', 'nickname', 'error', 'layout-resolved'];
+  <div class="section" data-widget="edge-coerce">
+    <header>
+      <h3>invisible × click → coerced to auto + error event</h3>
+      <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=click ✗</span></div>
+    </header>
+    <p class="desc">Click trigger requires a clickable surface; invisible has none. Config coerces trigger → auto and fires an <code>invalid-config</code> error event. Widget still verifies.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" mode="invisible" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-edge-coerce" sitekey="cpt_pub_demo" mode="invisible" trigger="click"></caputchin-widget>
+    </div>
+    <div class="log" data-log="edge-coerce"></div>
+  </div>
 
-  widgetIds.forEach(function (id) {
-    const el = document.getElementById(id);
-    events.forEach(function (ev) {
-      el.addEventListener(ev, function (e) {
-        log(id, ev, e.detail);
+  <div class="section" data-widget="edge-no-sitekey">
+    <header>
+      <h3>simple without sitekey → widget inert + error event</h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">sitekey ✗</span></div>
+    </header>
+    <p class="desc">Missing sitekey on a verification mode → widget does not activate. Single <code>invalid-config</code> error event fires.</p>
+    <pre>&lt;caputchin-widget mode="simple"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-edge-no-sitekey" mode="simple"></caputchin-widget>
+      <span style="font-size:0.75rem; color:#888">(no UI; inert)</span>
+    </div>
+    <div class="log" data-log="edge-no-sitekey"></div>
+  </div>
+
+  <div class="section" data-widget="edge-bad-mode">
+    <header>
+      <h3>unknown mode → falls back to "simple" + error event</h3>
+      <div class="tags"><span class="tag">mode=bogus ✗</span></div>
+    </header>
+    <p class="desc">Unknown mode value coerces to "simple" with an <code>invalid-config</code> error event.</p>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_demo" mode="bogus"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-edge-bad-mode" sitekey="cpt_pub_demo" mode="bogus"></caputchin-widget>
+    </div>
+    <div class="log" data-log="edge-bad-mode"></div>
+  </div>
+
+  <script src="/packages/widget/dist/widget.js"></script>
+  <script>
+    const EVENTS = ['start', 'pass', 'nickname', 'error', 'layout-resolved'];
+
+    function append(logEl, kind, detail) {
+      const ts = new Date().toISOString().slice(11, 23);
+      const line = document.createElement('div');
+      const tsSpan = document.createElement('span');
+      tsSpan.className = 'ts';
+      tsSpan.textContent = '[' + ts + ']';
+      const ev = document.createElement('span');
+      ev.className = 'ev-' + kind;
+      ev.textContent = kind;
+      line.appendChild(tsSpan);
+      line.appendChild(document.createTextNode(' '));
+      line.appendChild(ev);
+      line.appendChild(document.createTextNode(' ' + JSON.stringify(detail ?? {})));
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Wire every section's widget to its own scoped log.
+    document.querySelectorAll('.section').forEach(function (section) {
+      const id = section.getAttribute('data-widget');
+      const widget = section.querySelector('caputchin-widget');
+      const log = section.querySelector('[data-log="' + id + '"]');
+      if (!widget || !log) return;
+      EVENTS.forEach(function (ev) {
+        widget.addEventListener(ev, function (e) { append(log, ev, e.detail); });
+      });
+      append(log, 'start', { _note: 'log ready — interact with the widget above' });
+    });
+
+    // Form submission breadcrumbs (so you can see which submit fired).
+    ['form-inv-form', 'form-simple-form', 'form-game-form'].forEach(function (fid) {
+      const form = document.getElementById(fid);
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const section = form.closest('.section');
+        const log = section?.querySelector('.log');
+        if (log) append(log, 'submit', { form: fid });
       });
     });
-  });
 
-  document.getElementById('fake-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    log('w-form', 'submit', { note: 'form#fake submitted' });
-  });
-
-  document.getElementById('manual-btns').addEventListener('click', function (e) {
-    const action = e.target.dataset.action;
-    const w = document.getElementById('w-manual');
-    if (action === 'start') {
-      w.start();
-    } else if (action === 'pass') {
-      w.pass({ score: 0.5, durationMs: 1000 });
-    } else if (action === 'nickname') {
+    // Controls: start/pass/setNickname.
+    document.body.addEventListener('click', function (e) {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const targetId = btn.getAttribute('data-target');
+      const action = btn.getAttribute('data-action');
+      const w = document.getElementById(targetId);
+      if (!w) return;
       try {
-        w.setNickname('ABC');
+        if (action === 'start') w.start();
+        else if (action === 'pass') w.pass({ score: 0.5, durationMs: 1000 });
+        else if (action === 'pass-game') w.pass({ score: 0.9, durationMs: 4200 });
+        else if (action === 'setNickname') w.setNickname('ABC');
       } catch (err) {
-        log('w-manual', 'error', { code: 'setNickname-threw', message: String(err) });
+        const section = btn.closest('.section');
+        const log = section?.querySelector('.log');
+        if (log) append(log, 'error', { code: 'method-threw', message: String(err) });
       }
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>

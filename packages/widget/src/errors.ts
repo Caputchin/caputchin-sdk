@@ -1,39 +1,26 @@
 export type ErrorCode =
   | 'invalid-config'
-  | 'resolve-failed'
-  | 'iframe-load-failed'
-  | 'iframe-script-blocked'
-  | 'game-not-registered'
-  | 'game-error-relayed'
-  | 'postmessage-bad-origin'
-  | 'cap-solve-failed'
-  | 'cap-redeem-failed'
-  | 'form-not-found'
-  | 'manifest-timeout';
+  | 'invalid-call'
+  | 'verification-failed'
+  | 'game-load-failed'
+  | 'game-error-relayed';
 
-export const RECOVERABLE: Record<ErrorCode, boolean> = {
-  'invalid-config': false,
-  'resolve-failed': false,
-  'iframe-load-failed': false,
-  'iframe-script-blocked': false,
-  'game-not-registered': false,
-  'game-error-relayed': false,
-  'postmessage-bad-origin': true,
-  'cap-solve-failed': true,
-  'cap-redeem-failed': true,
-  'form-not-found': false,
-  'manifest-timeout': true,
-};
-
-const IFRAME_FORWARDABLE_CODES: ReadonlySet<ErrorCode> = new Set([
-  'game-not-registered',
-  'iframe-script-blocked',
+const IFRAME_GAME_RELAY: ReadonlySet<string> = new Set([
   'game-error-relayed',
 ]);
 
+const IFRAME_LOAD_RAW: ReadonlySet<string> = new Set([
+  'iframe-load-failed',
+  'iframe-script-blocked',
+  'game-not-registered',
+]);
+
 export function mapIframeErrorCode(rawCode: string): { code: ErrorCode; originalCode?: string } {
-  if (IFRAME_FORWARDABLE_CODES.has(rawCode as ErrorCode)) {
-    return { code: rawCode as ErrorCode };
+  if (IFRAME_LOAD_RAW.has(rawCode)) {
+    return { code: 'game-load-failed', originalCode: rawCode };
+  }
+  if (IFRAME_GAME_RELAY.has(rawCode)) {
+    return { code: 'game-error-relayed' };
   }
   return { code: 'game-error-relayed', originalCode: rawCode };
 }

@@ -1,12 +1,14 @@
 import type { ErrorCode } from './errors.js';
 import type { Layout, LayoutAttr, LayoutSource } from './layout/types.js';
+import type { WidgetMode, WidgetTrigger } from './config.js';
 
 export interface StartEventDetail {
   gameId: string | null;
 }
 
 export interface PassEventDetail {
-  token: string;
+  /** Wrapped token; null in `game-only` mode where no verification runs. */
+  token: string | null;
   score: number | null;
   durationMs: number | null;
 }
@@ -26,7 +28,7 @@ export interface LayoutResolvedEventDetail {
   source: LayoutSource;
 }
 
-export type { Layout, LayoutAttr, LayoutSource };
+export type { Layout, LayoutAttr, LayoutSource, WidgetMode, WidgetTrigger };
 
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;
@@ -38,7 +40,7 @@ export interface CaputchinEventMap {
 
 export interface CaputchinElementShape extends HTMLElement {
   start(): void;
-  pass(payload: { score: number | null; durationMs: number | null }): void;
+  pass(payload?: { score?: number | null; durationMs?: number | null }): void;
   setNickname(letters: string): void;
   addEventListener<K extends keyof CaputchinEventMap>(
     type: K,

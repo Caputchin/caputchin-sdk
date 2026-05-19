@@ -62,18 +62,20 @@ describe('channel.listen', () => {
     expect(cb.mock.calls[0]![0]).toMatchObject({ kind: 'game-started', seq: 1 });
   });
 
-  it('fires postmessage-bad-origin error when origin is not "null"', () => {
+  it('warns and drops message when origin is not "null"', () => {
     const cb = vi.fn();
     const errors: CustomEvent[] = [];
     el.addEventListener('error', (e) => errors.push(e as CustomEvent));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     unlisten = listen(iframe, el, cb);
 
     const src = iframe.contentWindow!;
     dispatchMsg({ kind: 'game-started', seq: 1 }, src, 'https://evil.com');
 
     expect(cb).not.toHaveBeenCalled();
-    expect(errors).toHaveLength(1);
-    expect(errors[0]!.detail.code).toBe('postmessage-bad-origin');
+    expect(errors).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('unexpected origin'));
+    warnSpy.mockRestore();
   });
 
   it('ignores messages from other sources', () => {

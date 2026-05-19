@@ -93,7 +93,7 @@ export function installCustomFetch(): void {
 
     if (isChallenge) {
       const body = JSON.stringify(ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody);
-      return window.fetch(`${apiHost}/api/v1/game/start`, { ...init, method: 'POST', body, headers });
+      return window.fetch(`${apiHost}/api/v1/verify/start`, { ...init, method: 'POST', body, headers });
     }
 
     let platform: Record<string, unknown> = {};
@@ -102,7 +102,7 @@ export function installCustomFetch(): void {
       if (gate) platform = await gate.promise;
     }
 
-    const response = await window.fetch(`${apiHost}/api/v1/game/pass`, {
+    const response = await window.fetch(`${apiHost}/api/v1/verify/pass`, {
       ...init,
       method: 'POST',
       body: JSON.stringify({ ...parsedBody, platform }),

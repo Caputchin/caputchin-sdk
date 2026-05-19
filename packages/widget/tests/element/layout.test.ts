@@ -72,12 +72,14 @@ describe('CaputchinElement — layout integration', () => {
     el.remove();
   });
 
-  it('warns on invalid layout value but does not throw', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('fires invalid-config error event on invalid layout value but does not throw', () => {
     const el = getTestElement({ sitekey: 'k', layout: 'bogus' });
+    const errors: CustomEvent[] = [];
+    el.addEventListener('error', (e) => errors.push(e as CustomEvent));
     expect(() => document.body.appendChild(el)).not.toThrow();
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid layout'));
-    warnSpy.mockRestore();
+    const layoutErr = errors.find((e) => (e.detail as { message: string }).message.includes('layout="bogus"'));
+    expect(layoutErr).toBeDefined();
+    expect((layoutErr!.detail as { code: string }).code).toBe('invalid-config');
     el.remove();
   });
 });
