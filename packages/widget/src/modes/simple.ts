@@ -317,13 +317,14 @@ function ensureStyles(): void {
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
     // Narrow viewport (≤22rem ≈ 352px): bigger touch target on the checkbox,
     // slightly tighter panel padding so the widget breathes on phones.
-    '@media (max-width:22rem){',
+    // Phone-class viewports (≤28rem ≈ 448px covers iPhone SE through Pro Max
+    // and the common Android width range). Tighter padding, bigger checkbox
+    // touch target, drop the text label — the icon + brand carry the meaning,
+    // aria-label="Verify you are human" stays on the checkbox for AT users.
+    '@media (max-width:28rem){',
       '[part="simple-checkbox"]{padding:0.625rem 0.75rem;gap:0.5rem}',
       '[part="simple-pill"]{padding:0.625rem 0.75rem}',
       '[part="simple-checkbox-box"]{width:1.75rem;height:1.75rem}',
-      // Drop the "I\'m not a robot" / "Verifying…" / "Verified" label entirely
-      // on narrow viewports. Checkbox glyph + brand block carry the meaning,
-      // aria-label="Verify you are human" stays on the checkbox for AT users.
       '[part="simple-checkbox-label"]{display:none}',
     '}',
   ].join('');
