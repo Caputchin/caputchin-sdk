@@ -12,8 +12,9 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  *   verification window. No left-side checkbox / phantom control.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { el, trigger } = input;
+  const { el, trigger, width } = input;
   const isPill = trigger === 'form-submit' || trigger === 'manual';
+  const isFullWidth = width === 'full';
 
   let root: HTMLDivElement | null = null;
   let statusIcon: HTMLDivElement | null = null;
@@ -131,14 +132,15 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'color:#1a1917',
         'user-select:none',
         'box-sizing:border-box',
-        'width:fit-content',
+        isFullWidth ? 'width:100%' : 'width:fit-content',
         'max-width:100%',
         'flex-wrap:wrap',
       ];
       if (isPill) {
         rootStyles.push('gap:0', 'justify-content:center');
       } else {
-        rootStyles.push('gap:0.75rem', 'min-width:min(18rem,100%)');
+        rootStyles.push('gap:0.75rem');
+        if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       }
       root.style.cssText = rootStyles.join(';');
 

@@ -100,6 +100,25 @@ describe('inspectConfig — sitekey rules', () => {
   });
 });
 
+describe('inspectConfig — width', () => {
+  it('defaults to auto', () => {
+    const r = inspectConfig(el({ sitekey: 'k' }));
+    expect(r.config.width).toBe('auto');
+  });
+
+  it('accepts width="full"', () => {
+    const r = inspectConfig(el({ sitekey: 'k', width: 'full' }));
+    expect(r.config.width).toBe('full');
+    expect(r.issues).toEqual([]);
+  });
+
+  it('falls back to auto on unknown width + emits issue', () => {
+    const r = inspectConfig(el({ sitekey: 'k', width: 'bogus' }));
+    expect(r.config.width).toBe('auto');
+    expect(r.issues.some((i) => i.message.includes('width="bogus"'))).toBe(true);
+  });
+});
+
 describe('inspectConfig — game-src validation', () => {
   it('strips invalid game-src URL + emits issue', () => {
     const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: 'gid', 'game-src': 'javascript:alert(1)' }));

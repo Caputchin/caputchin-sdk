@@ -1,6 +1,6 @@
 import type { ErrorCode } from './errors.js';
 import type { Layout, LayoutAttr, LayoutSource } from './layout/types.js';
-import type { WidgetMode, WidgetTrigger } from './config.js';
+import type { WidgetMode, WidgetTrigger, WidgetWidth } from './config.js';
 
 export interface StartEventDetail {
   gameId: string | null;
@@ -28,7 +28,7 @@ export interface LayoutResolvedEventDetail {
   source: LayoutSource;
 }
 
-export type { Layout, LayoutAttr, LayoutSource, WidgetMode, WidgetTrigger };
+export type { Layout, LayoutAttr, LayoutSource, WidgetMode, WidgetTrigger, WidgetWidth };
 
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;
