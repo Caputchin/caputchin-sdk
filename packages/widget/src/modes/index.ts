@@ -1,4 +1,4 @@
-import type { WidgetMode } from '../config.js';
+import type { WidgetMode, WidgetTrigger } from '../config.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -13,14 +13,15 @@ export interface Presentation {
   setState(state: PresentationState): void;
   /**
    * Register a user-activation handler (e.g. checkbox click). Presentations
-   * with no clickable surface (invisible) return a no-op cleanup. The `click`
-   * trigger relies on this; other triggers ignore it.
+   * with no clickable surface (invisible, simple-pill) return a no-op cleanup.
+   * The `click` trigger relies on this; other triggers ignore it.
    */
   onActivate(handler: () => void): () => void;
 }
 
 export interface PresentationFactoryInput {
   el: HTMLElement;
+  trigger: WidgetTrigger;
 }
 
 /**
