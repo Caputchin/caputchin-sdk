@@ -1,4 +1,5 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
+import { LOGO_PRIMARY } from '../brand/logo.js';
 
 /**
  * Caputchin UI for `mode="simple"`. Two layouts:
@@ -58,11 +59,21 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       'font-weight:600',
       'font-size:0.75rem',
     ].join(';');
-    homeLink.innerHTML =
-      '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">' +
-      '<circle cx="8" cy="8" r="8" fill="#2F6640"/>' +
-      '<text x="8" y="11" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="10" font-weight="700">C</text>' +
-      '</svg><span>Caputchin</span>';
+    // Wrap so we can size the imported SVG inline (the source SVG declares width=100%).
+    const logoSpan = document.createElement('span');
+    logoSpan.setAttribute('aria-hidden', 'true');
+    logoSpan.style.cssText = 'display:inline-flex;width:18px;height:18px;line-height:0';
+    logoSpan.innerHTML = LOGO_PRIMARY;
+    const svg = logoSpan.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '18');
+      svg.removeAttribute('id');
+    }
+    const wordmark = document.createElement('span');
+    wordmark.textContent = 'Caputchin';
+    homeLink.appendChild(logoSpan);
+    homeLink.appendChild(wordmark);
 
     const tagLink = document.createElement('a');
     tagLink.setAttribute('part', 'simple-brand-tag');
