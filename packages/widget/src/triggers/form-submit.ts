@@ -7,17 +7,9 @@ export function createFormSubmitTrigger(): TriggerStrategy {
   let completed = false;
   let submitting = false;
   let started = false;
-  let savedCtx: TriggerContext | null = null;
-
-  function start(ctx: TriggerContext): void {
-    if (started) return;
-    started = true;
-    ctx.runVerification().catch(() => {});
-  }
 
   return {
     activate(ctx: TriggerContext): void {
-      savedCtx = ctx;
       form = findEnclosingForm(ctx.el);
       // Per graceful-degradation: if no form, fall back to "first interaction
       // or widget.start()". Don't fire an error — the absence of a form just
@@ -60,11 +52,12 @@ export function createFormSubmitTrigger(): TriggerStrategy {
       completed = false;
       submitting = false;
       started = false;
-      savedCtx = null;
     },
 
-    forceStart(_ctx: TriggerContext): void {
-      if (savedCtx) start(savedCtx);
+    forceStart(ctx: TriggerContext): void {
+      if (started) return;
+      started = true;
+      ctx.runVerification().catch(() => {});
     },
   };
 }

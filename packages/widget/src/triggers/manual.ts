@@ -8,24 +8,16 @@ import type { TriggerStrategy, TriggerContext } from './index.js';
  */
 export function createManualTrigger(): TriggerStrategy {
   let started = false;
-  let savedCtx: TriggerContext | null = null;
-
-  function start(ctx: TriggerContext): void {
-    if (started) return;
-    started = true;
-    ctx.runVerification().catch(() => {});
-  }
 
   return {
-    activate(ctx: TriggerContext): void {
-      savedCtx = ctx;
-    },
+    activate(_ctx: TriggerContext): void {},
     deactivate(): void {
       started = false;
-      savedCtx = null;
     },
-    forceStart(_ctx: TriggerContext): void {
-      if (savedCtx) start(savedCtx);
+    forceStart(ctx: TriggerContext): void {
+      if (started) return;
+      started = true;
+      ctx.runVerification().catch(() => {});
     },
   };
 }
