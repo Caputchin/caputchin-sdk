@@ -21,6 +21,7 @@ export type {
   WidgetMode,
   WidgetTrigger,
   WidgetWidth,
+  WidgetSize,
 } from './types.js';
 export type { ErrorCode } from './errors.js';
 export type { ParsedConfig } from './config.js';

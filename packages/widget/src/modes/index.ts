@@ -1,4 +1,4 @@
-import type { WidgetMode, WidgetTrigger, WidgetWidth } from '../config.js';
+import type { WidgetMode, WidgetTrigger, WidgetWidth, WidgetSize } from '../config.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -26,6 +26,7 @@ export interface PresentationFactoryInput {
   root: ShadowRoot;
   trigger: WidgetTrigger;
   width: WidgetWidth;
+  size: WidgetSize;
 }
 
 /**

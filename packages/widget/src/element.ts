@@ -16,7 +16,7 @@ const MANIFEST_TIMEOUT_MS = 2000;
 const DONE_DIALOG_CLOSE_MS = 600;
 
 export class CaputchinElement extends HTMLElement {
-  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'size', 'game', 'games', 'game-src', 'layout'];
 
   private presentation: Presentation | null = null;
   private trigger: TriggerStrategy | null = null;
@@ -61,6 +61,7 @@ export class CaputchinElement extends HTMLElement {
       root: shadow,
       trigger: this.config.trigger,
       width: this.config.width,
+      size: this.config.size,
     });
     this.presentation?.mount();
 
