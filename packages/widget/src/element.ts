@@ -7,6 +7,7 @@ import { IframeHost } from './iframe/host.js';
 import { createCapClient, type CapClient } from './cap/client.js';
 import { getSessionId } from './cap/custom-fetch.js';
 import { createPresentation, type Presentation } from './modes/index.js';
+import { createGamePresentation, type GamePresentation } from './modes/game.js';
 import { createTriggerStrategy, type TriggerStrategy, type TriggerContext } from './triggers/index.js';
 import type { WrappedToken } from './token.js';
 import { LayoutPresenter } from './layout/presenter.js';
@@ -46,6 +47,8 @@ export class CaputchinElement extends HTMLElement {
   private gameErrored = false;
   /** Locked at first successful pass; reused for multi-round follow-up pass events. */
   private lockedToken: string | null = null;
+  /** New bordered-frame presentation for inline game layouts (replaces LayoutPresenter for this case). */
+  private gamePresentation: GamePresentation | null = null;
 
   connectedCallback(): void {
     this.connected = true;
@@ -124,6 +127,8 @@ export class CaputchinElement extends HTMLElement {
     this.widgetId = null;
     this.gameErrored = false;
     this.lockedToken = null;
+    this.gamePresentation?.unmount();
+    this.gamePresentation = null;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
@@ -239,43 +244,59 @@ export class CaputchinElement extends HTMLElement {
           sessionCtx.platform['durationMs'] = msg.durationMs;
           this.onTriggerDone();
           if (!firstClickHappened) {
-            // First pass — releases the gate so cap.solve completes, mints the token.
             firstClickHappened = true;
             client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
           } else {
-            // Multi-round: cap.solve is already done. Call /verify/pass directly
-            // for scoreboard recording, then fire another pass event so the
-            // customer sees each round. Token stays locked at the first call.
             void this.recordAdditionalRound(apiHost, msg.score, msg.durationMs);
           }
         } else if (msg.kind === 'game-error') {
           const { code, originalCode } = mapIframeErrorCode(msg.code);
           fireError(this, code, msg.message, originalCode);
           this.onTriggerError();
-          // Abort verification — the game failed. No pass event, no token.
-          // gameErrored flag suppresses the cap.solve catch from firing a
-          // duplicate `verification-failed` for the same root cause.
           this.gameErrored = true;
           client.abortGate(new Error(`game-error: ${msg.code}`));
         }
       });
       this.iframeHost = host;
 
-      await this.installLayout(
-        host,
-        (code, message) => {
-          client.releaseGate({ score: null, durationMs: null });
-          fireError(this, 'game-load-failed', message, code);
-          this.presentation?.setState('error');
-          client.dispose();
-          this.iframeHost = null;
-        },
-        () => {
-          if (this.gameStartedEmitted) return;
-          this.gameStartedEmitted = true;
-          dispatchStart();
-        },
-      );
+      // For now, the new bordered-frame + brand-strip presentation handles
+      // inline layouts (which is also the default when no layout attr is set).
+      // Modal/fullscreen still go through the old LayoutPresenter flow until
+      // the next refactor pass.
+      const wantsInline = !cfg.layout || cfg.layout === 'inline';
+      if (wantsInline) {
+        await this.installGameFrame(
+          host,
+          (code, message) => {
+            client.releaseGate({ score: null, durationMs: null });
+            fireError(this, 'game-load-failed', message, code);
+            this.presentation?.setState('error');
+            client.dispose();
+            this.iframeHost = null;
+          },
+          () => {
+            if (this.gameStartedEmitted) return;
+            this.gameStartedEmitted = true;
+            dispatchStart();
+          },
+        );
+      } else {
+        await this.installLayout(
+          host,
+          (code, message) => {
+            client.releaseGate({ score: null, durationMs: null });
+            fireError(this, 'game-load-failed', message, code);
+            this.presentation?.setState('error');
+            client.dispose();
+            this.iframeHost = null;
+          },
+          () => {
+            if (this.gameStartedEmitted) return;
+            this.gameStartedEmitted = true;
+            dispatchStart();
+          },
+        );
+      }
     } else {
       // No iframe in the verification path: invisible, simple, or game-manual.
       // For game-manual the Cap gate stays armed until widget.pass() releases.
@@ -418,9 +439,56 @@ export class CaputchinElement extends HTMLElement {
   }
 
   /**
-   * Mount iframe into a presenter staging slot, wait for manifest, resolve
-   * layout, re-parent iframe. Kickoff deferred to trigger checkbox activation
-   * for modal/fullscreen; fires immediately for inline.
+   * Inline-layout iframe mount path: build the bordered game-frame (iframe
+   * on top, simple-compact brand strip flush below), mount iframe into the
+   * frame's slot, kickoff. Replaces installLayout for inline cases.
+   */
+  private async installGameFrame(
+    host: IframeHost,
+    onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
+    onGameStarted: () => void,
+  ): Promise<void> {
+    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    const gp = createGamePresentation({
+      host: this,
+      root: shadow,
+      trigger: this.config?.trigger ?? 'auto',
+      width: this.config?.width ?? 'auto',
+      size: this.config?.size ?? 'normal',
+    });
+    this.gamePresentation = gp;
+    // Surface as `this.presentation` so the existing setState calls in
+    // runVerification (verifying/verified/error) drive the brand strip too.
+    this.presentation = gp;
+    gp.mount();
+
+    const slot = gp.getIframeSlot();
+    if (!slot) {
+      fireError(this, 'game-load-failed', 'game-frame slot missing', 'iframe-load-failed');
+      return;
+    }
+
+    host.mount(slot, onLoadFailed, onGameStarted);
+
+    const iframe = host.getIframe();
+    if (!iframe) {
+      fireError(this, 'game-load-failed', 'IframeHost.build() returned no iframe', 'iframe-load-failed');
+      return;
+    }
+
+    // Wait for manifest so the iframe has a chance to register its game id +
+    // optional preferredLayout before kickoff (manifest is just informational
+    // here; inline always wins for the frame layout).
+    await host.waitManifest(MANIFEST_TIMEOUT_MS);
+
+    host.setLayoutContext('inline');
+    host.kickoff(1);
+  }
+
+  /**
+   * Modal/fullscreen iframe mount path. Wait for manifest, resolve layout,
+   * apply layout, kickoff. Kickoff deferred to trigger checkbox activation
+   * for modal/fullscreen.
    */
   private async installLayout(
     host: IframeHost,
