@@ -39,18 +39,17 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'background:#fff',
         'font:14px system-ui, -apple-system, "Segoe UI", sans-serif',
         'color:#1a1917',
-        'cursor:pointer',
         'user-select:none',
         'min-width:18rem',
         'box-sizing:border-box',
       ].join(';');
-      root.tabIndex = 0;
-      root.setAttribute('role', 'checkbox');
-      root.setAttribute('aria-checked', 'false');
-      root.setAttribute('aria-label', 'Verify you are human');
 
       checkbox = document.createElement('div');
       checkbox.setAttribute('part', 'simple-checkbox-box');
+      checkbox.tabIndex = 0;
+      checkbox.setAttribute('role', 'checkbox');
+      checkbox.setAttribute('aria-checked', 'false');
+      checkbox.setAttribute('aria-label', 'Verify you are human');
       checkbox.style.cssText = [
         'width:1.5rem',
         'height:1.5rem',
@@ -64,6 +63,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'line-height:1',
         'color:#fff',
         'flex:0 0 auto',
+        'cursor:pointer',
       ].join(';');
 
       label = document.createElement('span');
@@ -86,8 +86,6 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'flex:0 0 auto',
         'text-decoration:none',
       ].join(';');
-      // Brand link is informational — keep clicks out of the checkbox activation path.
-      brandLink.addEventListener('click', (e) => e.stopPropagation());
       const brandName = document.createElement('div');
       brandName.textContent = 'Caputchin';
       brandName.style.cssText = 'font-weight:600;font-size:0.75rem;color:#2F6640';
@@ -101,16 +99,19 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       root.appendChild(label);
       root.appendChild(brand);
 
-      root.addEventListener('click', onPointer);
-      root.addEventListener('keydown', onKey);
+      // Only the checkbox itself is interactive — clicking the label or the
+      // brand link does NOT trigger verification. Keyboard activation lives
+      // on the checkbox for the same reason (it owns the role + tabIndex).
+      checkbox.addEventListener('click', onPointer);
+      checkbox.addEventListener('keydown', onKey);
 
       el.appendChild(root);
     },
 
     unmount(): void {
       if (!root) return;
-      root.removeEventListener('click', onPointer);
-      root.removeEventListener('keydown', onKey);
+      checkbox?.removeEventListener('click', onPointer);
+      checkbox?.removeEventListener('keydown', onKey);
       root.remove();
       root = null;
       checkbox = null;
@@ -127,7 +128,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
           checkbox.style.background = '#fff';
           checkbox.style.borderColor = '#6e7681';
           label.textContent = "I'm not a robot";
-          root.setAttribute('aria-checked', 'false');
+          checkbox.setAttribute('aria-checked', 'false');
           root.style.opacity = '1';
           break;
         case 'verifying':
@@ -138,7 +139,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
           checkbox.style.borderRadius = '50%';
           checkbox.style.animation = 'caputchin-spin 0.8s linear infinite';
           label.textContent = 'Verifying…';
-          root.setAttribute('aria-checked', 'mixed');
+          checkbox.setAttribute('aria-checked', 'mixed');
           ensureSpinKeyframes();
           break;
         case 'verified':
@@ -149,7 +150,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
           checkbox.style.borderTopColor = '#2F6640';
           checkbox.textContent = '✓';
           label.textContent = 'Verified';
-          root.setAttribute('aria-checked', 'true');
+          checkbox.setAttribute('aria-checked', 'true');
           break;
         case 'error':
           checkbox.style.animation = '';
@@ -160,7 +161,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
           checkbox.style.color = '#c2410c';
           checkbox.textContent = '!';
           label.textContent = 'Verification failed';
-          root.setAttribute('aria-checked', 'false');
+          checkbox.setAttribute('aria-checked', 'false');
           break;
       }
     },
