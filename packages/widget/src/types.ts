@@ -1,5 +1,5 @@
 import type { ErrorCode } from './errors.js';
-import type { Layout, LayoutAttr, LayoutSource } from './layout/types.js';
+import type { Layout, LayoutAttr, LayoutSource } from './layout.js';
 import type { WidgetMode, WidgetTrigger, WidgetWidth, WidgetSize } from './config.js';
 
 export interface StartEventDetail {
