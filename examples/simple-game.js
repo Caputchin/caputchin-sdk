@@ -1,7 +1,10 @@
 // Minimal customer-hosted game running inside an opaque-origin iframe.
 // No imports — registers directly on globalThis.Caputchin.games.
 (function () {
-  globalThis.Caputchin = globalThis.Caputchin ?? { games: {} };
+  globalThis.Caputchin = globalThis.Caputchin ?? { games: {}, gameOpts: {} };
+  globalThis.Caputchin.gameOpts = globalThis.Caputchin.gameOpts ?? {};
+
+  globalThis.Caputchin.gameOpts['@demo/simple'] = { preferredWidth: 280, preferredHeight: 160 };
 
   globalThis.Caputchin.games['@demo/simple'] = function (container, bridge) {
     const startMs = Date.now();
