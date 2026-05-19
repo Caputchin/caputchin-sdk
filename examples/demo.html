@@ -350,8 +350,10 @@
     <div class="log" data-log="edge-bad-mode"></div>
   </div>
 
-  <script src="/packages/widget/dist/widget.js"></script>
   <script>
+    // Attach event listeners BEFORE the widget script upgrades the elements,
+    // so synchronous error events from connectedCallback (e.g. invalid-config
+    // for the edge-no-sitekey demo) are not lost.
     const EVENTS = ['start', 'pass', 'nickname', 'error', 'layout-resolved'];
 
     function append(logEl, kind, detail) {
@@ -415,5 +417,6 @@
       }
     });
   </script>
+  <script src="/packages/widget/dist/widget.js"></script>
 </body>
 </html>

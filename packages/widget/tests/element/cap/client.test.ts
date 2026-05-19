@@ -12,7 +12,7 @@ vi.mock('@cap.js/widget', () => {
     solve: mockWidget.solve,
     reset: mockWidget.reset,
   }));
-  return { Cap: mockCap };
+  return { default: mockCap, Cap: mockCap };
 });
 
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
