@@ -1,10 +1,10 @@
 import Cap from '@cap.js/widget';
 import {
+  CPT_ROUTE_PREFIX,
   armRedeemGate,
   releaseRedeemGate,
-  registerElement,
-  unregisterElement,
-  setActiveSolvingEl,
+  registerSession,
+  unregisterSession,
   type SessionContext,
 } from './custom-fetch.js';
 
@@ -15,46 +15,36 @@ export interface CapClient {
   dispose(): void;
 }
 
-// Module-level serial queue so concurrent widget.solve() calls never race on _activeSolvingEl.
-// Each solve occupies the slot for its full duration (challenge + PoW + redeem).
-let solveQueue: Promise<void> = Promise.resolve();
-
+/**
+ * Create a Cap client bound to a unique widget id. The id is encoded into
+ * Cap's apiEndpoint as a URL sentinel — every fetch the Cap library issues
+ * carries the id in its path, so the custom-fetch router can attach the
+ * correct session context without any shared mutable state. Multiple widgets
+ * solve in parallel; no queue, no race.
+ */
 export function createCapClient(
-  el: HTMLElement,
+  widgetId: string,
   apiHost: string,
   ctx: SessionContext
 ): CapClient {
-  registerElement(el, ctx);
+  registerSession(widgetId, ctx);
 
-  const cap = new Cap({ apiEndpoint: `${apiHost}/api/v1/verify/` });
+  // Sentinel apiEndpoint — never reaches the server. Custom-fetch parses the
+  // widget id from the URL path and rewrites to the real /api/v1/verify/start
+  // and /api/v1/verify/pass endpoints.
+  const cap = new Cap({ apiEndpoint: `${apiHost}/${CPT_ROUTE_PREFIX}/${widgetId}/` });
 
-  // arm the gate immediately so Cap's redeem call waits for game-pass
-  armRedeemGate(el);
+  armRedeemGate(widgetId);
 
   return {
-    solve(): Promise<void> {
-      // Chain onto the global queue so only one element's Cap solve runs at a time.
-      const entry = solveQueue.then(async () => {
-        setActiveSolvingEl(el);
-        try {
-          const result = await cap.solve();
-          if (!result) {
-            throw new Error('Cap solve returned no result');
-          }
-          if (!result.success) {
-            throw new Error('Cap solve failed');
-          }
-        } finally {
-          setActiveSolvingEl(null);
-        }
-      });
-      // Advance the queue without propagating rejections to subsequent slots.
-      solveQueue = entry.catch(() => {});
-      return entry;
+    async solve(): Promise<void> {
+      const result = await cap.solve();
+      if (!result) throw new Error('Cap solve returned no result');
+      if (!result.success) throw new Error('Cap solve failed');
     },
 
     releaseGate(platform: Record<string, unknown>): void {
-      releaseRedeemGate(el, platform);
+      releaseRedeemGate(widgetId, platform);
     },
 
     reset(): void {
@@ -62,7 +52,7 @@ export function createCapClient(
     },
 
     dispose(): void {
-      unregisterElement(el);
+      unregisterSession(widgetId);
       cap.reset();
     },
   };

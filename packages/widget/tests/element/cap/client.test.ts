@@ -18,43 +18,48 @@ vi.mock('@cap.js/widget', () => {
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
 
 import { createCapClient } from '../../../src/cap/client.js';
-import { installCustomFetch, setActiveSolvingEl, armRedeemGate } from '../../../src/cap/custom-fetch.js';
+import { installCustomFetch, armRedeemGate } from '../../../src/cap/custom-fetch.js';
 
 installCustomFetch();
 vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ token: 'tok', score: 1, durationMs: 100 }), { status: 200 })));
 
-describe('createCapClient', () => {
-  let el: HTMLElement;
+let idCounter = 0;
+function nextId(): string {
+  idCounter += 1;
+  return `test_${idCounter}`;
+}
 
+describe('createCapClient', () => {
   beforeEach(() => {
-    el = document.createElement('div');
+    // fresh id per test
   });
 
   it('creates client with solve/releaseGate/reset/dispose', () => {
-    const client = createCapClient(el, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    const id = nextId();
+    const client = createCapClient(id, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
     expect(typeof client.solve).toBe('function');
     expect(typeof client.releaseGate).toBe('function');
     expect(typeof client.reset).toBe('function');
     expect(typeof client.dispose).toBe('function');
   });
 
-  it('releaseGate resolves redeem gate promise', async () => {
-    const client = createCapClient(el, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
-    armRedeemGate(el);
+  it('releaseGate resolves redeem gate promise (idempotent)', async () => {
+    const id = nextId();
+    const client = createCapClient(id, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    armRedeemGate(id);
     client.releaseGate({ score: 5, durationMs: 100 });
     expect(() => client.dispose()).not.toThrow();
   });
 
-  it('dispose unregisters element', () => {
+  it('dispose unregisters the widget id (no shared state retained)', () => {
+    const id = nextId();
     const onWrappedToken = vi.fn();
-    const client = createCapClient(el, 'https://api.test.com', { platform: {}, onWrappedToken });
+    const client = createCapClient(id, 'https://api.test.com', { platform: {}, onWrappedToken });
     expect(() => client.dispose()).not.toThrow();
   });
 
-  it('solve serializes via queue — second solve starts after first resolves', async () => {
+  it('two clients solve in parallel — no serialization queue', async () => {
     const order: number[] = [];
-    const el1 = document.createElement('div');
-    const el2 = document.createElement('div');
 
     const { Cap } = await import('@cap.js/widget');
     const capMock = Cap as ReturnType<typeof vi.fn>;
@@ -70,19 +75,20 @@ describe('createCapClient', () => {
       reset: vi.fn(),
     }));
 
-    const client1 = createCapClient(el1, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
-    const client2 = createCapClient(el2, 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    const client1 = createCapClient(nextId(), 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    const client2 = createCapClient(nextId(), 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
 
-    setActiveSolvingEl(el1);
     const p1 = client1.solve().catch(() => {});
     const p2 = client2.solve().catch(() => {});
 
+    // Both solves should be in flight; the second one resolves before the first
+    // because the first is awaiting `firstDone`. No global queue blocking it.
     await Promise.resolve();
-    expect(order).toEqual([1]);
+    await Promise.resolve();
+    expect(order).toEqual([1, 2]);
 
     resolveFirst();
     await Promise.all([p1, p2]);
-    expect(order[1]).toBe(2);
 
     client1.dispose();
     client2.dispose();

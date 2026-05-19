@@ -15,6 +15,15 @@ import { evalAutoBreakpoint } from './layout/breakpoint.js';
 const MANIFEST_TIMEOUT_MS = 2000;
 const DONE_DIALOG_CLOSE_MS = 600;
 
+let widgetIdCounter = 0;
+function makeWidgetId(): string {
+  // Unique per widget mount. Counter + Math.random keeps it stable inside one
+  // page session without needing crypto APIs (which may not exist in older
+  // WebView contexts on the support matrix).
+  widgetIdCounter += 1;
+  return `cpt_${widgetIdCounter}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export class CaputchinElement extends HTMLElement {
   static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'size', 'game', 'games', 'game-src', 'layout'];
 
@@ -29,6 +38,7 @@ export class CaputchinElement extends HTMLElement {
   private pendingKickoff: (() => void) | null = null;
   private doneCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private gameStartedEmitted = false;
+  private widgetId: string | null = null;
 
   connectedCallback(): void {
     this.connected = true;
@@ -104,6 +114,7 @@ export class CaputchinElement extends HTMLElement {
     this.pendingKickoff = null;
     this.gameStartedEmitted = false;
     this.config = null;
+    this.widgetId = null;
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
@@ -195,7 +206,11 @@ export class CaputchinElement extends HTMLElement {
       onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
     };
 
-    const client = createCapClient(this, apiHost, sessionCtx);
+    // Per-widget id encoded into the Cap library's apiEndpoint path so the
+    // custom-fetch router can attach session context without any shared
+    // mutable state. 50 widgets solve in parallel; no queue, no race.
+    if (!this.widgetId) this.widgetId = makeWidgetId();
+    const client = createCapClient(this.widgetId, apiHost, sessionCtx);
     this.capClient = client;
     if (this.triggerCtx) this.triggerCtx.capClient = client;
 
