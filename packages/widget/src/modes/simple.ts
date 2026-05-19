@@ -117,8 +117,11 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
       root = document.createElement('div');
       root.setAttribute('part', isPill ? 'simple-pill' : 'simple-checkbox');
+      // Responsive: never wider than parent (max-width:100%), capped at 22rem
+      // so the widget stays compact in wide containers but fills narrow ones.
+      // No min-width — flex children shrink naturally on narrow viewports.
       const rootStyles = [
-        'display:inline-flex',
+        'display:flex',
         'align-items:center',
         'padding:0.75rem 1rem',
         'border:1px solid #d0d7de',
@@ -128,11 +131,14 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'color:#1a1917',
         'user-select:none',
         'box-sizing:border-box',
+        'width:fit-content',
+        'max-width:100%',
+        'flex-wrap:wrap',
       ];
       if (isPill) {
         rootStyles.push('gap:0', 'justify-content:center');
       } else {
-        rootStyles.push('gap:0.75rem', 'min-width:18rem');
+        rootStyles.push('gap:0.75rem', 'min-width:min(18rem,100%)');
       }
       root.style.cssText = rootStyles.join(';');
 
@@ -162,7 +168,9 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         statusIcon.addEventListener('keydown', onKey);
 
         label = document.createElement('span');
-        label.style.cssText = 'flex:1 1 auto';
+        // min-width:0 lets the label shrink below its intrinsic content width
+        // on narrow viewports without overflowing the flex container.
+        label.style.cssText = 'flex:1 1 auto;min-width:0';
 
         root.appendChild(statusIcon);
         root.appendChild(label);
@@ -306,6 +314,13 @@ function ensureStyles(): void {
     '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
+    // Narrow viewport (≤22rem ≈ 352px): bigger touch target on the checkbox,
+    // slightly tighter panel padding so the widget breathes on phones.
+    '@media (max-width:22rem){',
+      '[part="simple-checkbox"]{padding:0.625rem 0.75rem;gap:0.5rem}',
+      '[part="simple-pill"]{padding:0.625rem 0.75rem}',
+      '[part="simple-checkbox-box"]{width:1.75rem;height:1.75rem}',
+    '}',
   ].join('');
   document.head.appendChild(style);
 }
