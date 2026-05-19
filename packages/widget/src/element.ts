@@ -53,7 +53,7 @@ export class CaputchinElement extends HTMLElement {
     }
 
     // All other modes: presentation + trigger orchestrate verification.
-    this.presentation = createPresentation(this.config.mode, { el: this });
+    this.presentation = createPresentation(this.config.mode, { el: this, trigger: this.config.trigger });
     this.presentation?.mount();
 
     this.trigger = createTriggerStrategy(this.config.trigger);
