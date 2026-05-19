@@ -37,6 +37,11 @@ export function unregisterSession(id: string): void {
   sessionIds.delete(id);
 }
 
+/** Used by multi-round games to fire follow-up /verify/pass calls directly. */
+export function getSessionId(id: string): string | null {
+  return sessionIds.get(id) ?? null;
+}
+
 export function armRedeemGate(id: string): void {
   const existing = redeemGates.get(id);
   if (existing) clearTimeout(existing.timer);
