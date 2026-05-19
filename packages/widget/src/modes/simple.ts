@@ -47,7 +47,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       'display:grid',
       'grid-template-columns:auto auto',
       'grid-template-rows:auto auto',
-      'column-gap:0.5rem',
+      'column-gap:0.25rem',
       'row-gap:0',
       'align-items:center',
       'line-height:1.2',
@@ -88,6 +88,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     wordmark.style.cssText = [
       'grid-column:2',
       'grid-row:1',
+      'place-self:center',
+      'text-align:center',
       'font-weight:600',
       'font-size:0.85rem',
       'color:inherit',
@@ -105,6 +107,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tagLink.style.cssText = [
       'grid-column:2',
       'grid-row:2',
+      'place-self:center',
+      'text-align:center',
       'color:#6e7681',
       'font-size:0.65rem',
     ].join(';');
