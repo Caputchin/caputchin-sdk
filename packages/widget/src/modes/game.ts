@@ -242,9 +242,12 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
     '[part="game-iframe-slot"]{display:flex;flex-direction:column;width:100%}',
     '[part="game-iframe-slot"] iframe{display:block;width:100%;border:0;background:#fff}',
-    '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:transparent;padding:0}',
+    // Thin separator between iframe and brand strip — matches the outer frame border.
+    '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:transparent;padding:0;border-top:1px solid #d0d7de}',
+    // Strip the embedded simple panel of its own border + radius + background.
+    // The outer game-frame border is the only border; the pill is purely text + logo.
     '[part="game-badge-slot"] [part="simple-checkbox"],',
-    '[part="game-badge-slot"] [part="simple-pill"]{border:none;border-radius:0;background:transparent;padding:0.25rem 0.5rem}',
+    '[part="game-badge-slot"] [part="simple-pill"]{border:none !important;border-radius:0 !important;background:transparent !important;padding:0.25rem 0.5rem}',
 
     // --- overlay (modal / fullscreen) ---
     '[part="game-overlay-host"]{display:inline-block}',
