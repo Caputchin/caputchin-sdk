@@ -11,54 +11,51 @@ interface GateEntry {
   timer: ReturnType<typeof setTimeout>;
 }
 
-const redeemGates = new WeakMap<HTMLElement, GateEntry>();
-const sessionContexts = new WeakMap<HTMLElement, SessionContext>();
-// Carries `platform.sessionId` from /verify/start response to /verify/pass body.
-const sessionIds = new WeakMap<HTMLElement, string>();
+// All per-widget state is keyed by the widget's unique id. The id is encoded
+// into the Cap library's apiEndpoint path so each fetch carries its own id.
+// No mutable module-level "active widget" state — the URL is the identifier.
+const sessionContexts = new Map<string, SessionContext>();
+const sessionIds = new Map<string, string>();
+const redeemGates = new Map<string, GateEntry>();
 
 const GATE_TIMEOUT_MS = 5 * 60 * 1000;
 
-let _activeSolvingEl: HTMLElement | null = null;
+/** URL sentinel prefix for widget-routed fetches. Never reaches the server. */
+export const CPT_ROUTE_PREFIX = '__cpt';
+const ROUTE_RE = /\/__cpt\/([^/]+)\/(challenge|redeem)$/;
 
-export function setActiveSolvingEl(el: HTMLElement | null): void {
-  _activeSolvingEl = el;
+export function registerSession(id: string, ctx: SessionContext): void {
+  sessionContexts.set(id, ctx);
 }
 
-export function registerElement(el: HTMLElement, ctx: SessionContext): void {
-  sessionContexts.set(el, ctx);
+export function unregisterSession(id: string): void {
+  const gate = redeemGates.get(id);
+  if (gate) clearTimeout(gate.timer);
+  redeemGates.delete(id);
+  sessionContexts.delete(id);
+  sessionIds.delete(id);
 }
 
-export function unregisterElement(el: HTMLElement): void {
-  const gate = redeemGates.get(el);
-  if (gate) {
-    clearTimeout(gate.timer);
-    redeemGates.delete(el);
-  }
-  sessionContexts.delete(el);
-  sessionIds.delete(el);
-}
-
-export function armRedeemGate(el: HTMLElement): void {
-  const existing = redeemGates.get(el);
+export function armRedeemGate(id: string): void {
+  const existing = redeemGates.get(id);
   if (existing) clearTimeout(existing.timer);
 
   let resolve!: (platform: Record<string, unknown>) => void;
   const promise = new Promise<Record<string, unknown>>((res) => { resolve = res; });
   const timer = setTimeout(() => {
-    redeemGates.delete(el);
+    redeemGates.delete(id);
     resolve({});
   }, GATE_TIMEOUT_MS);
-  redeemGates.set(el, { promise, resolve, timer });
+  redeemGates.set(id, { promise, resolve, timer });
 }
 
-export function releaseRedeemGate(el: HTMLElement, platform: Record<string, unknown>): void {
-  const gate = redeemGates.get(el);
+export function releaseRedeemGate(id: string, platform: Record<string, unknown>): void {
+  const gate = redeemGates.get(id);
   if (!gate) return;
   clearTimeout(gate.timer);
-  // Keep the gate entry alive so a redeem fetch that fires AFTER the release
-  // still finds it and awaits the (already-resolved) promise. Without this,
-  // a fast game-pass beat the redeem fetch and left it with no sessionId.
-  // Cleanup happens in unregisterElement.
+  // Keep the resolved gate in the map so a redeem fetch that fires AFTER the
+  // release still finds it and awaits the already-resolved promise. Cleanup
+  // happens in unregisterSession.
   gate.resolve(platform);
 }
 
@@ -79,33 +76,43 @@ export function installCustomFetch(): void {
   if (customFetchInstalled) return;
   customFetchInstalled = true;
 
+  // Pure URL router. Stateless across calls — every widget's session lives
+  // in the per-id maps above and is looked up deterministically from the
+  // path. 50 widgets calling concurrently route to 50 independent contexts.
   window.CAP_CUSTOM_FETCH = async (
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<Response> => {
     const urlStr = toUrlStr(input);
-    const isChallenge = urlStr.endsWith('/challenge');
-    const isRedeem = urlStr.endsWith('/redeem');
+    const match = urlStr.match(ROUTE_RE);
+    if (!match) return window.fetch(input, init);
 
-    if (!isChallenge && !isRedeem) return window.fetch(input, init);
+    const widgetId = match[1]!;
+    const op = match[2] as 'challenge' | 'redeem';
 
     const apiHost = __CAPUTCHIN_API_HOST__;
-    const el = _activeSolvingEl;
-    const ctx = el ? sessionContexts.get(el) : undefined;
+    const ctx = sessionContexts.get(widgetId);
     const parsedBody = parseBody(init);
     const merged = new Headers(init?.headers);
     merged.set('content-type', 'application/json');
     const headers = Object.fromEntries(merged.entries());
 
-    if (isChallenge) {
-      const body = JSON.stringify(ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody);
-      const startResponse = await window.fetch(`${apiHost}/api/v1/verify/start`, { ...init, method: 'POST', body, headers });
-      // Pluck `platform.sessionId` so the redeem branch can forward it.
-      if (startResponse.ok && el) {
+    if (op === 'challenge') {
+      const body = JSON.stringify(
+        ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody
+      );
+      const startResponse = await window.fetch(`${apiHost}/api/v1/verify/start`, {
+        ...init,
+        method: 'POST',
+        body,
+        headers,
+      });
+      // Stash sessionId for this widget so the redeem branch can forward it.
+      if (startResponse.ok) {
         try {
           const data = await startResponse.clone().json() as { platform?: { sessionId?: unknown } };
           if (typeof data?.platform?.sessionId === 'string') {
-            sessionIds.set(el, data.platform.sessionId);
+            sessionIds.set(widgetId, data.platform.sessionId);
           }
         } catch {
           // body parse failure — sessionId won't propagate; pass will fire missing-session-id
@@ -114,13 +121,12 @@ export function installCustomFetch(): void {
       return startResponse;
     }
 
+    // op === 'redeem'
     let platform: Record<string, unknown> = {};
-    if (el) {
-      const gate = redeemGates.get(el);
-      if (gate) platform = await gate.promise;
-      const sessionId = sessionIds.get(el);
-      if (sessionId) platform = { ...platform, sessionId };
-    }
+    const gate = redeemGates.get(widgetId);
+    if (gate) platform = await gate.promise;
+    const sessionId = sessionIds.get(widgetId);
+    if (sessionId) platform = { ...platform, sessionId };
 
     const response = await window.fetch(`${apiHost}/api/v1/verify/pass`, {
       ...init,
@@ -130,15 +136,13 @@ export function installCustomFetch(): void {
     });
 
     if (ctx && response.ok) {
-      // Await body parse synchronously before returning so solve() sees the token immediately.
       try {
         const data = await response.clone().json() as Record<string, unknown>;
         if (data && typeof data['token'] === 'string') {
-          // Server response only carries the powToken in `data.token` and the
-          // wrappedToken under `data.platform.wrappedToken`. score/durationMs
-          // were sent in the request `platform` (game-pass payload) but aren't
-          // echoed back — read them from the request payload we just built so
-          // the customer's `pass` event detail surfaces the real values.
+          // score/durationMs were sent in the request `platform` (from the
+          // gate release payload); the server doesn't echo them. Read from
+          // the local request payload so the customer's pass event detail
+          // surfaces the values we just transmitted.
           const score = typeof platform['score'] === 'number' ? platform['score'] : null;
           const durationMs = typeof platform['durationMs'] === 'number' ? platform['durationMs'] : null;
           ctx.onWrappedToken(assembleWrappedToken({
@@ -148,7 +152,7 @@ export function installCustomFetch(): void {
           }));
         }
       } catch {
-        // Body parse failure — token will be absent; element.ts fires cap-redeem-failed.
+        // Body parse failure — token will be absent; element.ts fires verification-failed.
       }
     }
 
