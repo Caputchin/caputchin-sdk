@@ -4,12 +4,14 @@ import { isLayoutAttr } from './layout/types.js';
 export type WidgetMode = 'invisible' | 'simple' | 'game' | 'game-only';
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';
 export type WidgetWidth = 'auto' | 'full';
+export type WidgetSize = 'normal' | 'compact';
 
 export interface ParsedConfig {
   sitekey: string;
   mode: WidgetMode;
   trigger: WidgetTrigger;
   width: WidgetWidth;
+  size: WidgetSize;
   game: string | null;
   games: string | null;
   gameSrc: string | null;
@@ -34,6 +36,7 @@ const UNSAFE_CHARS = /["'`;,<>\s\x00-\x1f]/;
 const MODES: ReadonlyArray<WidgetMode> = ['invisible', 'simple', 'game', 'game-only'];
 const TRIGGERS: ReadonlyArray<WidgetTrigger> = ['auto', 'click', 'form-submit', 'manual'];
 const WIDTHS: ReadonlyArray<WidgetWidth> = ['auto', 'full'];
+const SIZES: ReadonlyArray<WidgetSize> = ['normal', 'compact'];
 
 export function validateGameUrl(url: string): string | null {
   if (BLOCKED_SCHEMES.test(url)) {
@@ -76,11 +79,16 @@ function isWidth(v: string | null): v is WidgetWidth {
   return v !== null && (WIDTHS as ReadonlyArray<string>).includes(v);
 }
 
+function isSize(v: string | null): v is WidgetSize {
+  return v !== null && (SIZES as ReadonlyArray<string>).includes(v);
+}
+
 export function parseAttributes(el: HTMLElement): {
   sitekey: string;
   rawMode: string | null;
   rawTrigger: string | null;
   rawWidth: string | null;
+  rawSize: string | null;
   game: string | null;
   games: string | null;
   gameSrc: string | null;
@@ -91,6 +99,7 @@ export function parseAttributes(el: HTMLElement): {
     rawMode: el.getAttribute('mode'),
     rawTrigger: el.getAttribute('trigger'),
     rawWidth: el.getAttribute('width'),
+    rawSize: el.getAttribute('size'),
     game: el.getAttribute('game'),
     games: el.getAttribute('games'),
     gameSrc: el.getAttribute('game-src'),
@@ -138,6 +147,17 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
   } else {
     issues.push({ message: `width="${raw.rawWidth}" is invalid; expected auto|full; falling back to "auto"` });
     width = 'auto';
+  }
+
+  // ---- size ----
+  let size: WidgetSize;
+  if (raw.rawSize === null || raw.rawSize === '') {
+    size = 'normal';
+  } else if (isSize(raw.rawSize)) {
+    size = raw.rawSize;
+  } else {
+    issues.push({ message: `size="${raw.rawSize}" is invalid; expected normal|compact; falling back to "normal"` });
+    size = 'normal';
   }
 
   // ---- trigger × mode conflict coercion ----
@@ -197,7 +217,7 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
   }
 
   return {
-    config: { sitekey, mode, trigger, width, game, games, gameSrc, layout },
+    config: { sitekey, mode, trigger, width, size, game, games, gameSrc, layout },
     issues,
     inert,
   };

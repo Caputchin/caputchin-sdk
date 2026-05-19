@@ -100,6 +100,25 @@ describe('inspectConfig — sitekey rules', () => {
   });
 });
 
+describe('inspectConfig — size', () => {
+  it('defaults to normal', () => {
+    const r = inspectConfig(el({ sitekey: 'k' }));
+    expect(r.config.size).toBe('normal');
+  });
+
+  it('accepts size="compact"', () => {
+    const r = inspectConfig(el({ sitekey: 'k', size: 'compact' }));
+    expect(r.config.size).toBe('compact');
+    expect(r.issues).toEqual([]);
+  });
+
+  it('falls back to normal on unknown size + emits issue', () => {
+    const r = inspectConfig(el({ sitekey: 'k', size: 'huge' }));
+    expect(r.config.size).toBe('normal');
+    expect(r.issues.some((i) => i.message.includes('size="huge"'))).toBe(true);
+  });
+});
+
 describe('inspectConfig — width', () => {
   it('defaults to auto', () => {
     const r = inspectConfig(el({ sitekey: 'k' }));

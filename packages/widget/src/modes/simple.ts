@@ -12,9 +12,10 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  *   verification window. No left-side checkbox / phantom control.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width } = input;
+  const { host, root: renderRoot, trigger, width, size } = input;
   const isPill = trigger === 'form-submit' || trigger === 'manual';
   const isFullWidth = width === 'full';
+  const isCompact = size === 'compact';
 
   let root: HTMLDivElement | null = null;
   let statusIcon: HTMLDivElement | null = null;
@@ -58,6 +59,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     ].join(';');
 
     const logoSpan = document.createElement('span');
+    logoSpan.setAttribute('part', 'simple-brand-logo');
     logoSpan.setAttribute('aria-hidden', 'true');
     logoSpan.style.cssText = [
       'display:inline-flex',
@@ -77,6 +79,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     }
 
     const wordmark = document.createElement('span');
+    wordmark.setAttribute('part', 'simple-brand-name');
     wordmark.textContent = 'Caputchin';
     wordmark.style.cssText = [
       'grid-column:2',
@@ -118,6 +121,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
       root = document.createElement('div');
       root.setAttribute('part', isPill ? 'simple-pill' : 'simple-checkbox');
+      if (isCompact) root.setAttribute('data-size', 'compact');
       // Responsive: never wider than parent (max-width:100%), capped at 22rem
       // so the widget stays compact in wide containers but fills narrow ones.
       // No min-width — flex children shrink naturally on narrow viewports.
@@ -339,6 +343,14 @@ function ensureStyles(root: ShadowRoot): void {
       '[part="simple-checkbox-box"]{width:1.75rem;height:1.75rem}',
       '[part="simple-checkbox-label"]{display:none}',
     '}',
+    // size="compact": opt-in density for tight layouts (e.g. inline game mode).
+    // Tighter padding, smaller checkbox + logo + text. Orthogonal to width
+    // and to the mobile media query.
+    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.4rem 0.6rem;gap:0.5rem;font-size:0.8rem}',
+    '[data-size="compact"] [part="simple-checkbox-box"]{width:1.25rem;height:1.25rem;font-size:0.85rem;border-width:1.5px}',
+    '[data-size="compact"] [part="simple-brand-name"]{font-size:0.7rem}',
+    '[data-size="compact"] [part="simple-brand-logo"] svg{width:22px;height:22px}',
+    '[data-size="compact"] [part="simple-brand-tag"]{font-size:0.55rem}',
   ].join('');
   root.appendChild(style);
 }
