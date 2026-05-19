@@ -92,7 +92,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       brandName.textContent = 'Caputchin';
       brandName.style.cssText = 'font-weight:600;font-size:0.75rem;color:#2F6640';
       const brandTag = document.createElement('div');
-      brandTag.textContent = 'privacy-first';
+      brandTag.textContent = 'see no data';
       brandLink.appendChild(brandName);
       brandLink.appendChild(brandTag);
       brand = brandLink;
