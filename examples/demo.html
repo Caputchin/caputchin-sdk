@@ -350,6 +350,25 @@
     <div class="log" data-log="edge-bad-mode"></div>
   </div>
 
+  <div class="section" data-widget="edge-error">
+    <header>
+      <h3>simple × form-submit with invalid sitekey → red error state on the pill</h3>
+      <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=form-submit</span><span class="tag">sitekey ✗</span></div>
+    </header>
+    <p class="desc">
+      Platform rejects the sitekey on <code>/verify/start</code>. Cap solve throws, the widget fires a
+      <code>verification-failed</code> event and the pill flips to the red error state ("! verification failed").
+      Same path triggers for: rate limiting, network drop mid-flow, cap-misconfigured, etc.
+    </p>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_bogus_invalid" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;&lt;button&gt;Submit&lt;/button&gt;&lt;/form&gt;</pre>
+    <form class="widget-mount form-wrap" id="form-edge-error">
+      <caputchin-widget id="w-edge-error" sitekey="cpt_pub_bogus_invalid" trigger="form-submit"></caputchin-widget>
+      <input type="text" placeholder="anything" />
+      <button type="submit">Submit (will fail)</button>
+    </form>
+    <div class="log" data-log="edge-error"></div>
+  </div>
+
   <script>
     // Attach event listeners BEFORE the widget script upgrades the elements,
     // so synchronous error events from connectedCallback (e.g. invalid-config
@@ -386,7 +405,7 @@
     });
 
     // Form submission breadcrumbs (so you can see which submit fired).
-    ['form-inv-form', 'form-simple-form', 'form-game-form'].forEach(function (fid) {
+    ['form-inv-form', 'form-simple-form', 'form-game-form', 'form-edge-error'].forEach(function (fid) {
       const form = document.getElementById(fid);
       if (!form) return;
       form.addEventListener('submit', function (e) {
