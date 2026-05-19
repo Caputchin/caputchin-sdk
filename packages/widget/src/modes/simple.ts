@@ -168,6 +168,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         statusIcon.addEventListener('keydown', onKey);
 
         label = document.createElement('span');
+        label.setAttribute('part', 'simple-checkbox-label');
         // min-width:0 lets the label shrink below its intrinsic content width
         // on narrow viewports without overflowing the flex container.
         label.style.cssText = 'flex:1 1 auto;min-width:0';
@@ -320,6 +321,10 @@ function ensureStyles(): void {
       '[part="simple-checkbox"]{padding:0.625rem 0.75rem;gap:0.5rem}',
       '[part="simple-pill"]{padding:0.625rem 0.75rem}',
       '[part="simple-checkbox-box"]{width:1.75rem;height:1.75rem}',
+      // Drop the "I\'m not a robot" / "Verifying…" / "Verified" label entirely
+      // on narrow viewports. Checkbox glyph + brand block carry the meaning,
+      // aria-label="Verify you are human" stays on the checkbox for AT users.
+      '[part="simple-checkbox-label"]{display:none}',
     '}',
   ].join('');
   document.head.appendChild(style);
