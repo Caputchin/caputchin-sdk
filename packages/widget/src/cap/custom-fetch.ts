@@ -13,6 +13,8 @@ interface GateEntry {
 
 const redeemGates = new WeakMap<HTMLElement, GateEntry>();
 const sessionContexts = new WeakMap<HTMLElement, SessionContext>();
+// Carries `platform.sessionId` from /verify/start response to /verify/pass body.
+const sessionIds = new WeakMap<HTMLElement, string>();
 
 const GATE_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -33,6 +35,7 @@ export function unregisterElement(el: HTMLElement): void {
     redeemGates.delete(el);
   }
   sessionContexts.delete(el);
+  sessionIds.delete(el);
 }
 
 export function armRedeemGate(el: HTMLElement): void {
@@ -93,13 +96,27 @@ export function installCustomFetch(): void {
 
     if (isChallenge) {
       const body = JSON.stringify(ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody);
-      return window.fetch(`${apiHost}/api/v1/verify/start`, { ...init, method: 'POST', body, headers });
+      const startResponse = await window.fetch(`${apiHost}/api/v1/verify/start`, { ...init, method: 'POST', body, headers });
+      // Pluck `platform.sessionId` so the redeem branch can forward it.
+      if (startResponse.ok && el) {
+        try {
+          const data = await startResponse.clone().json() as { platform?: { sessionId?: unknown } };
+          if (typeof data?.platform?.sessionId === 'string') {
+            sessionIds.set(el, data.platform.sessionId);
+          }
+        } catch {
+          // body parse failure — sessionId won't propagate; pass will fire missing-session-id
+        }
+      }
+      return startResponse;
     }
 
     let platform: Record<string, unknown> = {};
     if (el) {
       const gate = redeemGates.get(el);
       if (gate) platform = await gate.promise;
+      const sessionId = sessionIds.get(el);
+      if (sessionId) platform = { ...platform, sessionId };
     }
 
     const response = await window.fetch(`${apiHost}/api/v1/verify/pass`, {

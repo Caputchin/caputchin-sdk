@@ -110,7 +110,7 @@
   <h1>Caputchin Widget — Use-Case Demo</h1>
   <p class="subtitle">
     Each section shows one mode × trigger combination with its own scoped event log.
-    Sitekey: <code>cpt_pub_seed_local</code>. Widget bundle: <code>/packages/widget/dist/widget.js</code> (local tsup output).
+    Sitekey: <code>cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw</code>. Widget bundle: <code>/packages/widget/dist/widget.js</code> (local tsup output).
   </p>
 
   <!-- ====================================================== -->
@@ -122,9 +122,9 @@
       <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=auto</span></div>
     </header>
     <p class="desc">Verifies on mount. No visible UI; <code>pass</code> event fires when the wrapped token is ready.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="invisible"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-inv-auto" sitekey="cpt_pub_seed_local" mode="invisible"></caputchin-widget>
+      <caputchin-widget id="w-inv-auto" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible"></caputchin-widget>
       <span style="font-size:0.75rem; color:#888">(no UI rendered)</span>
     </div>
     <div class="log" data-log="inv-auto"></div>
@@ -136,9 +136,9 @@
       <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=form-submit</span></div>
     </header>
     <p class="desc">Verifies when the enclosing <code>&lt;form&gt;</code> is submitted; submit is gated until token is ready.</p>
-    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="invisible" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
     <form class="widget-mount form-wrap" id="form-inv-form">
-      <caputchin-widget id="w-inv-form" sitekey="cpt_pub_seed_local" mode="invisible" trigger="form-submit"></caputchin-widget>
+      <caputchin-widget id="w-inv-form" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible" trigger="form-submit"></caputchin-widget>
       <input type="text" placeholder="your email" />
       <button type="submit">Sign up</button>
     </form>
@@ -153,7 +153,7 @@
     <p class="desc">Customer drives the lifecycle. Click "start()" to begin verification.</p>
     <pre>const w = document.querySelector('caputchin-widget'); w.start();</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-inv-manual" sitekey="cpt_pub_seed_local" mode="invisible" trigger="manual"></caputchin-widget>
+      <caputchin-widget id="w-inv-manual" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible" trigger="manual"></caputchin-widget>
       <div class="controls">
         <button data-action="start" data-target="w-inv-manual">widget.start()</button>
         <button data-action="pass" data-target="w-inv-manual">widget.pass() (should noop+error)</button>
@@ -171,9 +171,9 @@
       <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=auto</span></div>
     </header>
     <p class="desc">Checkbox renders and auto-verifies on mount. Brand visible, no user click required.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-simple-auto" sitekey="cpt_pub_seed_local"></caputchin-widget>
+      <caputchin-widget id="w-simple-auto" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw"></caputchin-widget>
     </div>
     <div class="log" data-log="simple-auto"></div>
   </div>
@@ -184,9 +184,9 @@
       <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=click</span></div>
     </header>
     <p class="desc">Checkbox waits for the user to click before verification starts.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-simple-click" sitekey="cpt_pub_seed_local" trigger="click"></caputchin-widget>
+      <caputchin-widget id="w-simple-click" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" trigger="click"></caputchin-widget>
     </div>
     <div class="log" data-log="simple-click"></div>
   </div>
@@ -197,9 +197,9 @@
       <div class="tags"><span class="tag">mode=simple</span><span class="tag">trigger=form-submit</span></div>
     </header>
     <p class="desc">Checkbox renders informational only; verification fires when the form submits.</p>
-    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_seed_local" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" trigger="form-submit"&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
     <form class="widget-mount form-wrap" id="form-simple-form">
-      <caputchin-widget id="w-simple-form" sitekey="cpt_pub_seed_local" trigger="form-submit"></caputchin-widget>
+      <caputchin-widget id="w-simple-form" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" trigger="form-submit"></caputchin-widget>
       <input type="text" placeholder="message" />
       <button type="submit">Send</button>
     </form>
@@ -214,7 +214,7 @@
     <p class="desc">Customer calls <code>widget.start()</code> — equivalent to a programmatic checkbox click. Checkbox still renders.</p>
     <pre>const w = document.querySelector('caputchin-widget'); w.start();</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-simple-manual" sitekey="cpt_pub_seed_local" trigger="manual"></caputchin-widget>
+      <caputchin-widget id="w-simple-manual" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" trigger="manual"></caputchin-widget>
       <div class="controls">
         <button data-action="start" data-target="w-simple-manual">widget.start()</button>
         <button data-action="setNickname" data-target="w-simple-manual">setNickname('ABC') (should throw)</button>
@@ -232,9 +232,9 @@
       <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=auto</span></div>
     </header>
     <p class="desc">Iframe-hosted game + Cap verification fire in parallel on mount.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="game" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount iframe-host">
-      <caputchin-widget id="w-game-auto" sitekey="cpt_pub_seed_local" mode="game" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+      <caputchin-widget id="w-game-auto" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
     </div>
     <div class="log" data-log="game-auto"></div>
   </div>
@@ -245,9 +245,9 @@
       <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=click</span></div>
     </header>
     <p class="desc">Iframe loads but kickoff is deferred to the layout trigger (modal/fullscreen present a click-to-play surface).</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="game" trigger="click" layout="modal" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="click" layout="modal" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount iframe-host">
-      <caputchin-widget id="w-game-click" sitekey="cpt_pub_seed_local" mode="game" trigger="click" layout="modal" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+      <caputchin-widget id="w-game-click" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="click" layout="modal" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
     </div>
     <div class="log" data-log="game-click"></div>
   </div>
@@ -258,9 +258,9 @@
       <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=form-submit</span></div>
     </header>
     <p class="desc">Iframe + Cap fire when the enclosing form submits. (May feel slow — user submits, then the game appears.)</p>
-    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="game" trigger="form-submit" game-src="..."&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
+    <pre>&lt;form&gt;&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="form-submit" game-src="..."&gt;&lt;/caputchin-widget&gt;...&lt;/form&gt;</pre>
     <form class="widget-mount iframe-host form-wrap" id="form-game-form">
-      <caputchin-widget id="w-game-form" sitekey="cpt_pub_seed_local" mode="game" trigger="form-submit" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+      <caputchin-widget id="w-game-form" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="form-submit" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
       <input type="text" placeholder="your name" />
       <button type="submit">Submit</button>
     </form>
@@ -279,7 +279,7 @@
     </p>
     <pre>w.start(); /* ...customer-hosted game runs... */ w.pass({ score: 0.9, durationMs: 4200 });</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-game-manual" sitekey="cpt_pub_seed_local" mode="game" trigger="manual"></caputchin-widget>
+      <caputchin-widget id="w-game-manual" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="manual"></caputchin-widget>
       <div class="controls">
         <button data-action="start" data-target="w-game-manual">widget.start()</button>
         <button data-action="pass-game" data-target="w-game-manual">widget.pass({score:0.9, durationMs:4200})</button>
@@ -316,9 +316,9 @@
       <div class="tags"><span class="tag">mode=invisible</span><span class="tag">trigger=click ✗</span></div>
     </header>
     <p class="desc">Click trigger requires a clickable surface; invisible has none. Config coerces trigger → auto and fires an <code>invalid-config</code> error event. Widget still verifies.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="invisible" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible" trigger="click"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-edge-coerce" sitekey="cpt_pub_seed_local" mode="invisible" trigger="click"></caputchin-widget>
+      <caputchin-widget id="w-edge-coerce" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="invisible" trigger="click"></caputchin-widget>
     </div>
     <div class="log" data-log="edge-coerce"></div>
   </div>
@@ -343,9 +343,9 @@
       <div class="tags"><span class="tag">mode=bogus ✗</span></div>
     </header>
     <p class="desc">Unknown mode value coerces to "simple" with an <code>invalid-config</code> error event.</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_seed_local" mode="bogus"&gt;&lt;/caputchin-widget&gt;</pre>
+    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="bogus"&gt;&lt;/caputchin-widget&gt;</pre>
     <div class="widget-mount">
-      <caputchin-widget id="w-edge-bad-mode" sitekey="cpt_pub_seed_local" mode="bogus"></caputchin-widget>
+      <caputchin-widget id="w-edge-bad-mode" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="bogus"></caputchin-widget>
     </div>
     <div class="log" data-log="edge-bad-mode"></div>
   </div>
