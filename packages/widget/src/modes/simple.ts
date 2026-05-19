@@ -183,6 +183,12 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       brand = built.container;
       tagLink = built.tag;
       root.appendChild(brand);
+      // Host element is inline by default — width:100% inside an inline host
+      // sizes to content. Expand the host when full-width is requested.
+      if (isFullWidth) {
+        el.style.display = 'block';
+        el.style.width = '100%';
+      }
       el.appendChild(root);
 
       // Apply idle state once everything is wired so first paint is correct.
@@ -194,6 +200,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (statusIcon && !isPill) {
         statusIcon.removeEventListener('click', onPointer);
         statusIcon.removeEventListener('keydown', onKey);
+      }
+      if (isFullWidth) {
+        el.style.display = '';
+        el.style.width = '';
       }
       root.remove();
       root = null;
