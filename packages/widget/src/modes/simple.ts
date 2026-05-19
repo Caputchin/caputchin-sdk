@@ -313,15 +313,15 @@ function ensureStyles(root: ShadowRoot): void {
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
 
-    // --- size="compact": single-row inline strip ---
-    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.35rem 0.55rem;gap:0.4rem;font-size:0.75rem;flex-wrap:nowrap}',
-    '[data-size="compact"] [part="simple-checkbox-box"]{width:1.1rem;height:1.1rem;font-size:0.75rem;border-width:1.5px}',
+    // --- size="compact": single-row inline strip, dialed down small ---
+    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.25rem 0.45rem;gap:0.3rem;font-size:0.65rem;border-radius:0.35rem;flex-wrap:nowrap}',
+    '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
     '[data-size="compact"] [part="simple-checkbox-label"]{display:none}',
-    '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.35rem}',
-    '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:20px;height:20px}',
-    '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.7rem}',
-    '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
-    '[data-size="compact"] [part="simple-brand-tag"]::before{content:" · ";color:#c0c0c0;margin-right:0.15rem}',
+    '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
+    '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
+    '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
+    '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.5rem}',
+    '[data-size="compact"] [part="simple-brand-tag"]::before{content:" · ";color:#c0c0c0;margin-right:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',
