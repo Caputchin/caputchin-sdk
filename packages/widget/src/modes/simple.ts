@@ -37,16 +37,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   function buildBrand(): { container: HTMLDivElement; tag: HTMLAnchorElement } {
     const container = document.createElement('div');
     container.setAttribute('part', 'simple-brand');
-    container.style.cssText = [
-      'display:grid',
-      'grid-template-columns:auto auto',
-      'grid-template-rows:auto auto',
-      'column-gap:0.25rem',
-      'row-gap:0',
-      'align-items:center',
-      'line-height:1.2',
-      'flex:0 0 auto',
-    ].join(';');
+    // Layout (grid for normal / flex-row for compact) lives in the shadow
+    // stylesheet so size variants can override without inline-style fights.
 
     const homeLink = document.createElement('a');
     homeLink.setAttribute('part', 'simple-brand-home');
@@ -61,35 +53,22 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     const logoSpan = document.createElement('span');
     logoSpan.setAttribute('part', 'simple-brand-logo');
     logoSpan.setAttribute('aria-hidden', 'true');
-    logoSpan.style.cssText = [
-      'display:inline-flex',
-      'width:32px',
-      'height:32px',
-      'line-height:0',
-      'grid-column:1',
-      'grid-row:1 / span 2',
-      'align-self:center',
-    ].join(';');
+    logoSpan.style.cssText = 'display:inline-flex;line-height:0';
     logoSpan.innerHTML = LOGO_PRIMARY;
     const svg = logoSpan.querySelector('svg');
     if (svg) {
-      svg.setAttribute('width', '32');
-      svg.setAttribute('height', '32');
+      // Strip the source SVG's id + 100% width so CSS in the shadow stylesheet
+      // controls the rendered size per variant (normal 32px / compact 20px).
       svg.removeAttribute('id');
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     }
 
     const wordmark = document.createElement('span');
     wordmark.setAttribute('part', 'simple-brand-name');
     wordmark.textContent = 'Caputchin';
-    wordmark.style.cssText = [
-      'grid-column:2',
-      'grid-row:1',
-      'place-self:center',
-      'text-align:center',
-      'font-weight:600',
-      'font-size:0.85rem',
-      'color:inherit',
-    ].join(';');
+    wordmark.style.cssText = 'font-weight:600;color:inherit';
 
     homeLink.appendChild(logoSpan);
     homeLink.appendChild(wordmark);
@@ -100,14 +79,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tag.target = '_blank';
     tag.rel = 'noopener noreferrer';
     tag.textContent = 'see no data';
-    tag.style.cssText = [
-      'grid-column:2',
-      'grid-row:2',
-      'place-self:center',
-      'text-align:center',
-      'color:#6e7681',
-      'font-size:0.65rem',
-    ].join(';');
+    tag.style.cssText = 'color:#6e7681';
 
     container.appendChild(homeLink);
     container.appendChild(tag);
@@ -328,29 +300,36 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
+
+    // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
+    '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
+    '[part="simple-brand-logo"]{grid-column:1;grid-row:1 / span 2;align-self:center;width:32px;height:32px}',
+    '[part="simple-brand-logo"] svg{width:100%;height:100%;display:block}',
+    '[part="simple-brand-name"]{grid-column:2;grid-row:1;place-self:center;text-align:center;font-size:0.85rem}',
+    '[part="simple-brand-tag"]{grid-column:2;grid-row:2;place-self:center;text-align:center;font-size:0.65rem}',
+
+    // --- link styling (both sizes) ---
     '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
-    // Narrow viewport (≤22rem ≈ 352px): bigger touch target on the checkbox,
-    // slightly tighter panel padding so the widget breathes on phones.
-    // Phone-class viewports (≤28rem ≈ 448px covers iPhone SE through Pro Max
-    // and the common Android width range). Tighter padding, bigger checkbox
-    // touch target, drop the text label — the icon + brand carry the meaning,
-    // aria-label="Verify you are human" stays on the checkbox for AT users.
+
+    // --- size="compact": single-row inline strip ---
+    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.35rem 0.55rem;gap:0.4rem;font-size:0.75rem;flex-wrap:nowrap}',
+    '[data-size="compact"] [part="simple-checkbox-box"]{width:1.1rem;height:1.1rem;font-size:0.75rem;border-width:1.5px}',
+    '[data-size="compact"] [part="simple-checkbox-label"]{display:none}',
+    '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.35rem}',
+    '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:20px;height:20px}',
+    '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.7rem}',
+    '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
+    '[data-size="compact"] [part="simple-brand-tag"]::before{content:" · ";color:#c0c0c0;margin-right:0.15rem}',
+
+    // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',
-      '[part="simple-checkbox"]{padding:0.625rem 0.75rem;gap:0.5rem}',
-      '[part="simple-pill"]{padding:0.625rem 0.75rem}',
-      '[part="simple-checkbox-box"]{width:1.75rem;height:1.75rem}',
-      '[part="simple-checkbox-label"]{display:none}',
+      '[part="simple-checkbox"]:not([data-size="compact"]){padding:0.625rem 0.75rem;gap:0.5rem}',
+      '[part="simple-pill"]:not([data-size="compact"]){padding:0.625rem 0.75rem}',
+      '[part="simple-checkbox-box"]:not([data-size="compact"] *){width:1.75rem;height:1.75rem}',
+      '[part="simple-checkbox"]:not([data-size="compact"]) [part="simple-checkbox-label"]{display:none}',
     '}',
-    // size="compact": opt-in density for tight layouts (e.g. inline game mode).
-    // Tighter padding, smaller checkbox + logo + text. Orthogonal to width
-    // and to the mobile media query.
-    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.4rem 0.6rem;gap:0.5rem;font-size:0.8rem}',
-    '[data-size="compact"] [part="simple-checkbox-box"]{width:1.25rem;height:1.25rem;font-size:0.85rem;border-width:1.5px}',
-    '[data-size="compact"] [part="simple-brand-name"]{font-size:0.7rem}',
-    '[data-size="compact"] [part="simple-brand-logo"] svg{width:22px;height:22px}',
-    '[data-size="compact"] [part="simple-brand-tag"]{font-size:0.55rem}',
   ].join('');
   root.appendChild(style);
 }
