@@ -445,10 +445,6 @@ export class CaputchinElement extends HTMLElement {
       return;
     }
 
-    // Auto-width: iframe grows to fit reported content. For width="full" the
-    // outer frame already spans parent; iframe just fills it.
-    host.setAutoWidth(this.config?.width !== 'full');
-
     host.mount(slot, onLoadFailed, onGameStarted);
 
     const iframe = host.getIframe();
@@ -460,9 +456,32 @@ export class CaputchinElement extends HTMLElement {
     const layout = (this.config?.layout && this.config.layout !== 'auto')
       ? this.config.layout
       : 'inline';
-    await host.waitManifest(MANIFEST_TIMEOUT_MS);
+    const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
+    this.applyIframeSize(host, manifest);
     host.setLayoutContext(layout);
     host.kickoff(1);
+  }
+
+  /**
+   * Size the iframe by priority:
+   *   1. Customer `width="<px>"` / `height="<px>"` attribute (numeric)
+   *   2. Game's manifest `preferredWidth` / `preferredHeight`
+   *   3. Widget default (400 × 300)
+   * Width also supports `"full"` (spans parent → iframe = 100%) and
+   * `"auto"` (defer to game preferred or default).
+   */
+  private applyIframeSize(host: IframeHost, manifest: { preferredWidth: number | null; preferredHeight: number | null } | null): void {
+    const cfg = this.config;
+    if (!cfg) return;
+    const DEFAULT_W = 400;
+    const DEFAULT_H = 300;
+    let widthCss: number | '100%';
+    if (typeof cfg.width === 'number') widthCss = cfg.width;
+    else if (cfg.width === 'full') widthCss = '100%';
+    else widthCss = manifest?.preferredWidth ?? DEFAULT_W;
+
+    const heightCss = cfg.height ?? manifest?.preferredHeight ?? DEFAULT_H;
+    host.setSize(widthCss, heightCss);
   }
 
   /**
