@@ -13,6 +13,11 @@ export type GameFactory = (
 
 export interface RegisterOptions {
   preferredLayout?: Layout;
+  /** Preferred iframe width in CSS pixels. The widget honors it unless the
+   * customer overrides via the `width` attribute or CSS. */
+  preferredWidth?: number;
+  /** Preferred iframe height in CSS pixels. Same precedence as preferredWidth. */
+  preferredHeight?: number;
 }
 
 type Caputchin = {

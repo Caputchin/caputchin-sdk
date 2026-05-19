@@ -1,7 +1,10 @@
 // Edge-case fixture: deliberately calls bridge.error after a short delay.
 // Exercises the iframe → widget error-relay path (`game-error-relayed`).
 (function () {
-  globalThis.Caputchin = globalThis.Caputchin ?? { games: {} };
+  globalThis.Caputchin = globalThis.Caputchin ?? { games: {}, gameOpts: {} };
+  globalThis.Caputchin.gameOpts = globalThis.Caputchin.gameOpts ?? {};
+
+  globalThis.Caputchin.gameOpts['@demo/failing'] = { preferredWidth: 320, preferredHeight: 80 };
 
   globalThis.Caputchin.games['@demo/failing'] = function (container, bridge) {
     const msg = document.createElement('div');

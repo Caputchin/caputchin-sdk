@@ -3,7 +3,10 @@
 // passes still emit `pass` events for scoreboard purposes, (3) score and
 // durationMs flow correctly through each round.
 (function () {
-  globalThis.Caputchin = globalThis.Caputchin ?? { games: {} };
+  globalThis.Caputchin = globalThis.Caputchin ?? { games: {}, gameOpts: {} };
+  globalThis.Caputchin.gameOpts = globalThis.Caputchin.gameOpts ?? {};
+
+  globalThis.Caputchin.gameOpts['@demo/multi-round'] = { preferredWidth: 280, preferredHeight: 100 };
 
   globalThis.Caputchin.games['@demo/multi-round'] = function (container, bridge) {
     const startMs = Date.now();

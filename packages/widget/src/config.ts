@@ -3,7 +3,13 @@ import { isLayoutAttr } from './layout/types.js';
 
 export type WidgetMode = 'invisible' | 'simple' | 'game' | 'game-only';
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';
-export type WidgetWidth = 'auto' | 'full';
+/** `auto` (default) sizes to content. `full` spans the parent. A positive
+ * number is an explicit pixel value that overrides both (and any game
+ * preferredWidth). */
+export type WidgetWidth = 'auto' | 'full' | number;
+/** Explicit pixel height. `null` means "auto" — defer to the game's
+ * preferredHeight (if any) or the widget default. */
+export type WidgetHeight = number | null;
 export type WidgetSize = 'normal' | 'compact';
 
 export interface ParsedConfig {
@@ -11,6 +17,7 @@ export interface ParsedConfig {
   mode: WidgetMode;
   trigger: WidgetTrigger;
   width: WidgetWidth;
+  height: WidgetHeight;
   size: WidgetSize;
   game: string | null;
   games: string | null;
@@ -35,8 +42,16 @@ const UNSAFE_CHARS = /["'`;,<>\s\x00-\x1f]/;
 
 const MODES: ReadonlyArray<WidgetMode> = ['invisible', 'simple', 'game', 'game-only'];
 const TRIGGERS: ReadonlyArray<WidgetTrigger> = ['auto', 'click', 'form-submit', 'manual'];
-const WIDTHS: ReadonlyArray<WidgetWidth> = ['auto', 'full'];
+const WIDTH_ENUM: ReadonlyArray<'auto' | 'full'> = ['auto', 'full'];
 const SIZES: ReadonlyArray<WidgetSize> = ['normal', 'compact'];
+
+function parsePixelValue(raw: string): number | null {
+  // Accept "500" or "500px"; reject negative, zero, NaN.
+  const trimmed = raw.replace(/px$/i, '').trim();
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.floor(n);
+}
 
 export function validateGameUrl(url: string): string | null {
   if (BLOCKED_SCHEMES.test(url)) {
@@ -75,10 +90,6 @@ function isTrigger(v: string | null): v is WidgetTrigger {
   return v !== null && (TRIGGERS as ReadonlyArray<string>).includes(v);
 }
 
-function isWidth(v: string | null): v is WidgetWidth {
-  return v !== null && (WIDTHS as ReadonlyArray<string>).includes(v);
-}
-
 function isSize(v: string | null): v is WidgetSize {
   return v !== null && (SIZES as ReadonlyArray<string>).includes(v);
 }
@@ -88,6 +99,7 @@ export function parseAttributes(el: HTMLElement): {
   rawMode: string | null;
   rawTrigger: string | null;
   rawWidth: string | null;
+  rawHeight: string | null;
   rawSize: string | null;
   game: string | null;
   games: string | null;
@@ -99,6 +111,7 @@ export function parseAttributes(el: HTMLElement): {
     rawMode: el.getAttribute('mode'),
     rawTrigger: el.getAttribute('trigger'),
     rawWidth: el.getAttribute('width'),
+    rawHeight: el.getAttribute('height'),
     rawSize: el.getAttribute('size'),
     game: el.getAttribute('game'),
     games: el.getAttribute('games'),
@@ -138,15 +151,31 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
     trigger = 'auto';
   }
 
-  // ---- width ----
+  // ---- width: auto | full | <pixels> ----
   let width: WidgetWidth;
   if (raw.rawWidth === null || raw.rawWidth === '') {
     width = 'auto';
-  } else if (isWidth(raw.rawWidth)) {
-    width = raw.rawWidth;
+  } else if ((WIDTH_ENUM as ReadonlyArray<string>).includes(raw.rawWidth)) {
+    width = raw.rawWidth as 'auto' | 'full';
   } else {
-    issues.push({ message: `width="${raw.rawWidth}" is invalid; expected auto|full; falling back to "auto"` });
-    width = 'auto';
+    const px = parsePixelValue(raw.rawWidth);
+    if (px === null) {
+      issues.push({ message: `width="${raw.rawWidth}" is invalid; expected auto|full or a positive pixel value; falling back to "auto"` });
+      width = 'auto';
+    } else {
+      width = px;
+    }
+  }
+
+  // ---- height: pixels or null (defer to game preferred / widget default) ----
+  let height: WidgetHeight = null;
+  if (raw.rawHeight !== null && raw.rawHeight !== '') {
+    const px = parsePixelValue(raw.rawHeight);
+    if (px === null) {
+      issues.push({ message: `height="${raw.rawHeight}" is invalid; expected a positive pixel value; ignoring` });
+    } else {
+      height = px;
+    }
   }
 
   // ---- size ----
@@ -217,7 +246,7 @@ export function inspectConfig(el: HTMLElement): ConfigInspection {
   }
 
   return {
-    config: { sitekey, mode, trigger, width, size, game, games, gameSrc, layout },
+    config: { sitekey, mode, trigger, width, height, size, game, games, gameSrc, layout },
     issues,
     inert,
   };
