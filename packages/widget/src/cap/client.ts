@@ -1,4 +1,4 @@
-import { Cap } from '@cap.js/widget';
+import Cap from '@cap.js/widget';
 import {
   armRedeemGate,
   releaseRedeemGate,
