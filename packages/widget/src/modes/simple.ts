@@ -34,13 +34,22 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   }
 
   function buildBrand(): HTMLDivElement {
+    // Grid layout:
+    //   col 1, rows 1-2: logo (centered)
+    //   col 2, row 1:    Caputchin wordmark
+    //   col 2, row 2:    "see no data" tag link
+    // Logo + wordmark live inside one anchor (home link); the anchor uses
+    // `display:contents` so its children participate in the parent grid
+    // directly instead of forming their own box.
     const container = document.createElement('div');
     container.setAttribute('part', 'simple-brand');
     container.style.cssText = [
-      'display:flex',
-      'flex-direction:column',
-      'align-items:flex-end',
-      'gap:0.125rem',
+      'display:grid',
+      'grid-template-columns:auto auto',
+      'grid-template-rows:auto auto',
+      'column-gap:0.5rem',
+      'row-gap:0',
+      'align-items:center',
       'line-height:1.2',
       'flex:0 0 auto',
     ].join(';');
@@ -51,26 +60,39 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     homeLink.target = '_blank';
     homeLink.rel = 'noopener noreferrer';
     homeLink.style.cssText = [
-      'display:inline-flex',
-      'align-items:center',
-      'gap:0.35rem',
+      'display:contents',
       'color:#2F6640',
-      'font-weight:600',
-      'font-size:0.8rem',
     ].join(';');
-    // Wrap so we can size the imported SVG inline (the source SVG declares width=100%).
+
     const logoSpan = document.createElement('span');
     logoSpan.setAttribute('aria-hidden', 'true');
-    logoSpan.style.cssText = 'display:inline-flex;width:28px;height:28px;line-height:0';
+    logoSpan.style.cssText = [
+      'display:inline-flex',
+      'width:32px',
+      'height:32px',
+      'line-height:0',
+      'grid-column:1',
+      'grid-row:1 / span 2',
+      'align-self:center',
+    ].join(';');
     logoSpan.innerHTML = LOGO_PRIMARY;
     const svg = logoSpan.querySelector('svg');
     if (svg) {
-      svg.setAttribute('width', '28');
-      svg.setAttribute('height', '28');
+      svg.setAttribute('width', '32');
+      svg.setAttribute('height', '32');
       svg.removeAttribute('id');
     }
+
     const wordmark = document.createElement('span');
     wordmark.textContent = 'Caputchin';
+    wordmark.style.cssText = [
+      'grid-column:2',
+      'grid-row:1',
+      'font-weight:600',
+      'font-size:0.85rem',
+      'color:inherit',
+    ].join(';');
+
     homeLink.appendChild(logoSpan);
     homeLink.appendChild(wordmark);
 
@@ -81,8 +103,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tagLink.rel = 'noopener noreferrer';
     tagLink.textContent = 'see no data';
     tagLink.style.cssText = [
+      'grid-column:2',
+      'grid-row:2',
       'color:#6e7681',
-      'font-size:0.625rem',
+      'font-size:0.65rem',
     ].join(';');
 
     container.appendChild(homeLink);
