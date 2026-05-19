@@ -53,21 +53,20 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     homeLink.style.cssText = [
       'display:inline-flex',
       'align-items:center',
-      'gap:0.25rem',
-      'text-decoration:none',
+      'gap:0.35rem',
       'color:#2F6640',
       'font-weight:600',
-      'font-size:0.75rem',
+      'font-size:0.8rem',
     ].join(';');
     // Wrap so we can size the imported SVG inline (the source SVG declares width=100%).
     const logoSpan = document.createElement('span');
     logoSpan.setAttribute('aria-hidden', 'true');
-    logoSpan.style.cssText = 'display:inline-flex;width:18px;height:18px;line-height:0';
+    logoSpan.style.cssText = 'display:inline-flex;width:28px;height:28px;line-height:0';
     logoSpan.innerHTML = LOGO_PRIMARY;
     const svg = logoSpan.querySelector('svg');
     if (svg) {
-      svg.setAttribute('width', '18');
-      svg.setAttribute('height', '18');
+      svg.setAttribute('width', '28');
+      svg.setAttribute('height', '28');
       svg.removeAttribute('id');
     }
     const wordmark = document.createElement('span');
@@ -82,7 +81,6 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tagLink.rel = 'noopener noreferrer';
     tagLink.textContent = 'see no data';
     tagLink.style.cssText = [
-      'text-decoration:none',
       'color:#6e7681',
       'font-size:0.625rem',
     ].join(';');
@@ -307,7 +305,7 @@ function ensureStyles(): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
-    '[part="simple-brand-home"],[part="simple-brand-tag"]{transition:color 0.15s ease,text-decoration-color 0.15s ease}',
+    '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
   ].join('');
