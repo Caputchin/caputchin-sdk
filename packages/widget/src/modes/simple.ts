@@ -87,6 +87,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'text-decoration:none',
       ].join(';');
       const brandName = document.createElement('div');
+      brandName.setAttribute('part', 'simple-checkbox-brand-name');
       brandName.textContent = 'Caputchin';
       brandName.style.cssText = 'font-weight:600;font-size:0.75rem;color:#2F6640';
       const brandTag = document.createElement('div');
@@ -94,6 +95,9 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       brandLink.appendChild(brandName);
       brandLink.appendChild(brandTag);
       brand = brandLink;
+
+      // Make sure the brand hover/focus styles are present before first paint.
+      ensureStyles();
 
       root.appendChild(checkbox);
       root.appendChild(label);
@@ -140,7 +144,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
           checkbox.style.animation = 'caputchin-spin 0.8s linear infinite';
           label.textContent = 'Verifying…';
           checkbox.setAttribute('aria-checked', 'mixed');
-          ensureSpinKeyframes();
+          ensureStyles();
           break;
         case 'verified':
           checkbox.style.animation = '';
@@ -176,11 +180,16 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   };
 }
 
-let spinKeyframesInjected = false;
-function ensureSpinKeyframes(): void {
-  if (spinKeyframesInjected) return;
-  spinKeyframesInjected = true;
+let stylesInjected = false;
+function ensureStyles(): void {
+  if (stylesInjected) return;
+  stylesInjected = true;
   const style = document.createElement('style');
-  style.textContent = '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
+  style.textContent = [
+    '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
+    '[part="simple-checkbox-brand"]{transition:color 0.15s ease}',
+    '[part="simple-checkbox-brand"]:hover,[part="simple-checkbox-brand"]:focus-visible{color:#2F6640;outline:none}',
+    '[part="simple-checkbox-brand"]:hover [part="simple-checkbox-brand-name"],[part="simple-checkbox-brand"]:focus-visible [part="simple-checkbox-brand-name"]{text-decoration:underline}',
+  ].join('');
   document.head.appendChild(style);
 }
