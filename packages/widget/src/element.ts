@@ -66,24 +66,45 @@ export class CaputchinElement extends HTMLElement {
 
     this.config = inspection.config;
 
-    // game-only is a distinct path: iframe-only, no verification, no triggers.
+    // All modes: presentation + trigger orchestrate.
+    // Attach shadow root once (LayoutPresenter is idempotent and will reuse it).
+    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+
+    // Game / game-only modes: build the game presentation upfront so the
+    // checkbox (modal/fullscreen) or the bordered frame (inline) is in the
+    // DOM and ready to receive the trigger's onActivate wiring.
+    if (this.config.mode === 'game' || this.config.mode === 'game-only') {
+      const layout = (this.config.layout && this.config.layout !== 'auto')
+        ? this.config.layout
+        : 'inline';
+      const gp = createGamePresentation({
+        host: this,
+        root: shadow,
+        trigger: this.config.trigger,
+        width: this.config.width,
+        size: this.config.size,
+        layout,
+        mode: this.config.mode,
+      });
+      this.gamePresentation = gp;
+      this.presentation = gp;
+      gp.mount();
+    } else {
+      this.presentation = createPresentation(this.config.mode, {
+      host: this,
+        root: shadow,
+        trigger: this.config.trigger,
+        width: this.config.width,
+        size: this.config.size,
+      });
+      this.presentation?.mount();
+    }
+
+    // game-only takes its own runGameOnly path (no cap, no trigger axis).
     if (this.config.mode === 'game-only') {
       this.runGameOnly().catch(() => {});
       return;
     }
-
-    // All other modes: presentation + trigger orchestrate verification.
-    // Attach shadow root once (LayoutPresenter is idempotent and will reuse it).
-    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
-
-    this.presentation = createPresentation(this.config.mode, {
-      host: this,
-      root: shadow,
-      trigger: this.config.trigger,
-      width: this.config.width,
-      size: this.config.size,
-    });
-    this.presentation?.mount();
 
     this.trigger = createTriggerStrategy(this.config.trigger);
     this.triggerCtx = {
@@ -259,44 +280,21 @@ export class CaputchinElement extends HTMLElement {
       });
       this.iframeHost = host;
 
-      // For now, the new bordered-frame + brand-strip presentation handles
-      // inline layouts (which is also the default when no layout attr is set).
-      // Modal/fullscreen still go through the old LayoutPresenter flow until
-      // the next refactor pass.
-      const wantsInline = !cfg.layout || cfg.layout === 'inline';
-      if (wantsInline) {
-        await this.installGameFrame(
-          host,
-          (code, message) => {
-            client.releaseGate({ score: null, durationMs: null });
-            fireError(this, 'game-load-failed', message, code);
-            this.presentation?.setState('error');
-            client.dispose();
-            this.iframeHost = null;
-          },
-          () => {
-            if (this.gameStartedEmitted) return;
-            this.gameStartedEmitted = true;
-            dispatchStart();
-          },
-        );
-      } else {
-        await this.installLayout(
-          host,
-          (code, message) => {
-            client.releaseGate({ score: null, durationMs: null });
-            fireError(this, 'game-load-failed', message, code);
-            this.presentation?.setState('error');
-            client.dispose();
-            this.iframeHost = null;
-          },
-          () => {
-            if (this.gameStartedEmitted) return;
-            this.gameStartedEmitted = true;
-            dispatchStart();
-          },
-        );
-      }
+      await this.installGameFrame(
+        host,
+        (code, message) => {
+          client.releaseGate({ score: null, durationMs: null });
+          fireError(this, 'game-load-failed', message, code);
+          this.presentation?.setState('error');
+          client.dispose();
+          this.iframeHost = null;
+        },
+        () => {
+          if (this.gameStartedEmitted) return;
+          this.gameStartedEmitted = true;
+          dispatchStart();
+        },
+      );
     } else {
       // No iframe in the verification path: invisible, simple, or game-manual.
       // For game-manual the Cap gate stays armed until widget.pass() releases.
@@ -431,56 +429,35 @@ export class CaputchinElement extends HTMLElement {
     });
     this.iframeHost = host;
 
-    // game-only inline goes through the bordered game frame (brand strip
-    // is informational since there's no verification — flips to "verified"
-    // on game-pass). Modal/fullscreen falls back to the old layout path.
-    const wantsInline = !cfg.layout || cfg.layout === 'inline';
-    if (wantsInline) {
-      await this.installGameFrame(
-        host,
-        (code, message) => {
-          fireError(this, 'game-load-failed', message, code);
-          this.presentation?.setState('error');
-          this.iframeHost = null;
-        },
-        dispatchStart,
-      );
-    } else {
-      await this.installLayout(
-        host,
-        (code, message) => {
-          fireError(this, 'game-load-failed', message, code);
-          this.iframeHost = null;
-        },
-        dispatchStart,
-      );
-    }
+    await this.installGameFrame(
+      host,
+      (code, message) => {
+        fireError(this, 'game-load-failed', message, code);
+        this.presentation?.setState('error');
+        this.iframeHost = null;
+      },
+      dispatchStart,
+    );
   }
 
   /**
-   * Inline-layout iframe mount path: build the bordered game-frame (iframe
-   * on top, simple-compact brand strip flush below), mount iframe into the
-   * frame's slot, kickoff. Replaces installLayout for inline cases.
+   * Build the game presentation (inline / modal / fullscreen) and mount the
+   * iframe into its slot. For modal/fullscreen, the checkbox click opens the
+   * dialog; iframe stays in DOM the whole time (no re-parent reloads srcdoc).
    */
   private async installGameFrame(
     host: IframeHost,
     onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
     onGameStarted: () => void,
   ): Promise<void> {
-    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
-    const gp = createGamePresentation({
-      host: this,
-      root: shadow,
-      trigger: this.config?.trigger ?? 'auto',
-      width: this.config?.width ?? 'auto',
-      size: this.config?.size ?? 'normal',
-    });
-    this.gamePresentation = gp;
-    // Surface as `this.presentation` so the existing setState calls in
-    // runVerification (verifying/verified/error) drive the brand strip too.
-    this.presentation = gp;
-    gp.mount();
-
+    // Game presentation is built upfront in connectedCallback so the
+    // checkbox/frame is in the DOM before any trigger fires. Just mount the
+    // iframe into its slot here.
+    const gp = this.gamePresentation;
+    if (!gp) {
+      fireError(this, 'game-load-failed', 'game presentation not built', 'iframe-load-failed');
+      return;
+    }
     const slot = gp.getIframeSlot();
     if (!slot) {
       fireError(this, 'game-load-failed', 'game-frame slot missing', 'iframe-load-failed');
@@ -495,12 +472,11 @@ export class CaputchinElement extends HTMLElement {
       return;
     }
 
-    // Wait for manifest so the iframe has a chance to register its game id +
-    // optional preferredLayout before kickoff (manifest is just informational
-    // here; inline always wins for the frame layout).
+    const layout = (this.config?.layout && this.config.layout !== 'auto')
+      ? this.config.layout
+      : 'inline';
     await host.waitManifest(MANIFEST_TIMEOUT_MS);
-
-    host.setLayoutContext('inline');
+    host.setLayoutContext(layout);
     host.kickoff(1);
   }
 
