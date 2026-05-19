@@ -5,13 +5,11 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  * Caputchin UI for `mode="simple"`. Two layouts:
  *
  * - **checkbox** (trigger=`click` or `auto`): reCAPTCHA-style clickable
- *   checkbox + "I'm not a robot" label. User-driven path.
- * - **pill** (trigger=`form-submit` or `manual`): status-only pill, no
- *   interactive checkbox (the user has no role in starting verification —
- *   showing a clickable checkbox would be a phantom control).
- *
- * Both layouts share the same brand block in the trailing slot: two
- * independent links — Caputchin wordmark+logo → `/`, "see no data" → `/legal`.
+ *   checkbox + "I'm not a robot" label + brand block on the right.
+ * - **pill** (trigger=`form-submit` or `manual`): Turnstile-style compact
+ *   branded pill — the brand block IS the status indicator. The tagline
+ *   slot ("see no data" link in idle) swaps to status text during the
+ *   verification window. No left-side checkbox / phantom control.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
   const { el, trigger } = input;
@@ -21,6 +19,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   let statusIcon: HTMLDivElement | null = null;
   let label: HTMLSpanElement | null = null;
   let brand: HTMLDivElement | null = null;
+  let tagLink: HTMLAnchorElement | null = null;
   const activateListeners: Array<() => void> = [];
 
   function onPointer(): void {
@@ -33,14 +32,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     }
   }
 
-  function buildBrand(): HTMLDivElement {
-    // Grid layout:
-    //   col 1, rows 1-2: logo (centered)
-    //   col 2, row 1:    Caputchin wordmark
-    //   col 2, row 2:    "see no data" tag link
-    // Logo + wordmark live inside one anchor (home link); the anchor uses
-    // `display:contents` so its children participate in the parent grid
-    // directly instead of forming their own box.
+  function buildBrand(): { container: HTMLDivElement; tag: HTMLAnchorElement } {
     const container = document.createElement('div');
     container.setAttribute('part', 'simple-brand');
     container.style.cssText = [
@@ -98,13 +90,13 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     homeLink.appendChild(logoSpan);
     homeLink.appendChild(wordmark);
 
-    const tagLink = document.createElement('a');
-    tagLink.setAttribute('part', 'simple-brand-tag');
-    tagLink.href = 'https://caputchin.com/legal';
-    tagLink.target = '_blank';
-    tagLink.rel = 'noopener noreferrer';
-    tagLink.textContent = 'see no data';
-    tagLink.style.cssText = [
+    const tag = document.createElement('a');
+    tag.setAttribute('part', 'simple-brand-tag');
+    tag.href = 'https://caputchin.com/legal';
+    tag.target = '_blank';
+    tag.rel = 'noopener noreferrer';
+    tag.textContent = 'see no data';
+    tag.style.cssText = [
       'grid-column:2',
       'grid-row:2',
       'place-self:center',
@@ -114,8 +106,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     ].join(';');
 
     container.appendChild(homeLink);
-    container.appendChild(tagLink);
-    return container;
+    container.appendChild(tag);
+    return { container, tag };
   }
 
   return {
@@ -125,10 +117,9 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
       root = document.createElement('div');
       root.setAttribute('part', isPill ? 'simple-pill' : 'simple-checkbox');
-      root.style.cssText = [
+      const rootStyles = [
         'display:inline-flex',
         'align-items:center',
-        'gap:0.75rem',
         'padding:0.75rem 1rem',
         'border:1px solid #d0d7de',
         'border-radius:0.5rem',
@@ -136,28 +127,17 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'font:14px system-ui, -apple-system, "Segoe UI", sans-serif',
         'color:#1a1917',
         'user-select:none',
-        'min-width:18rem',
         'box-sizing:border-box',
-      ].join(';');
-
-      // Status indicator: clickable checkbox in checkbox layout, passive
-      // shield/dot in pill layout.
-      statusIcon = document.createElement('div');
+      ];
       if (isPill) {
-        statusIcon.setAttribute('part', 'simple-pill-status');
-        statusIcon.setAttribute('aria-hidden', 'true');
-        statusIcon.style.cssText = [
-          'width:1.25rem',
-          'height:1.25rem',
-          'display:flex',
-          'align-items:center',
-          'justify-content:center',
-          'font-size:0.875rem',
-          'line-height:1',
-          'flex:0 0 auto',
-          'color:#6e7681',
-        ].join(';');
+        rootStyles.push('gap:0', 'justify-content:center');
       } else {
+        rootStyles.push('gap:0.75rem', 'min-width:18rem');
+      }
+      root.style.cssText = rootStyles.join(';');
+
+      if (!isPill) {
+        statusIcon = document.createElement('div');
         statusIcon.setAttribute('part', 'simple-checkbox-box');
         statusIcon.tabIndex = 0;
         statusIcon.setAttribute('role', 'checkbox');
@@ -180,15 +160,17 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         ].join(';');
         statusIcon.addEventListener('click', onPointer);
         statusIcon.addEventListener('keydown', onKey);
+
+        label = document.createElement('span');
+        label.style.cssText = 'flex:1 1 auto';
+
+        root.appendChild(statusIcon);
+        root.appendChild(label);
       }
 
-      label = document.createElement('span');
-      label.style.cssText = 'flex:1 1 auto';
-
-      brand = buildBrand();
-
-      root.appendChild(statusIcon);
-      root.appendChild(label);
+      const built = buildBrand();
+      brand = built.container;
+      tagLink = built.tag;
       root.appendChild(brand);
       el.appendChild(root);
 
@@ -207,15 +189,16 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       statusIcon = null;
       label = null;
       brand = null;
+      tagLink = null;
       activateListeners.length = 0;
     },
 
     setState(state: PresentationState): void {
-      if (!root || !statusIcon || !label) return;
+      if (!root) return;
       if (isPill) {
-        applyPillState(statusIcon, label, state);
+        if (tagLink) applyPillTagState(tagLink, state);
       } else {
-        applyCheckboxState(statusIcon, label, state);
+        if (statusIcon && label) applyCheckboxState(statusIcon, label, state);
       }
     },
 
@@ -276,52 +259,39 @@ function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: 
   }
 }
 
-function applyPillState(icon: HTMLDivElement, label: HTMLSpanElement, state: PresentationState): void {
+/**
+ * Pill layout = brand block IS the status indicator. Tagline slot swaps:
+ * idle = "see no data" link to /legal; non-idle = status text (no link).
+ */
+function applyPillTagState(tag: HTMLAnchorElement, state: PresentationState): void {
   switch (state) {
     case 'idle':
-      icon.style.color = '#6e7681';
-      icon.style.animation = '';
-      icon.style.border = '';
-      icon.style.borderRadius = '';
-      icon.style.width = '1.25rem';
-      icon.style.height = '1.25rem';
-      icon.textContent = '🛡';
-      label.textContent = 'Protected by Caputchin';
-      label.style.color = '#6e7681';
+      tag.textContent = 'see no data';
+      tag.style.color = '#6e7681';
+      tag.style.pointerEvents = 'auto';
+      tag.style.cursor = '';
+      tag.removeAttribute('aria-live');
       break;
     case 'verifying':
-      icon.textContent = '';
-      icon.style.color = '#2F6640';
-      icon.style.width = '1.25rem';
-      icon.style.height = '1.25rem';
-      icon.style.border = '2px solid #2F6640';
-      icon.style.borderTopColor = 'transparent';
-      icon.style.borderRadius = '50%';
-      icon.style.animation = 'caputchin-spin 0.8s linear infinite';
-      label.textContent = 'Verifying…';
-      label.style.color = '#1a1917';
+      tag.textContent = 'verifying…';
+      tag.style.color = '#2F6640';
+      tag.style.pointerEvents = 'none';
+      tag.style.cursor = 'default';
+      tag.setAttribute('aria-live', 'polite');
       break;
     case 'verified':
-      icon.style.animation = '';
-      icon.style.color = '#2F6640';
-      icon.style.border = '';
-      icon.style.borderRadius = '';
-      icon.style.width = '1.25rem';
-      icon.style.height = '1.25rem';
-      icon.textContent = '✓';
-      label.textContent = 'Verified';
-      label.style.color = '#2F6640';
+      tag.textContent = '✓ verified';
+      tag.style.color = '#2F6640';
+      tag.style.pointerEvents = 'none';
+      tag.style.cursor = 'default';
+      tag.setAttribute('aria-live', 'polite');
       break;
     case 'error':
-      icon.style.animation = '';
-      icon.style.color = '#c2410c';
-      icon.style.border = '';
-      icon.style.borderRadius = '';
-      icon.style.width = '1.25rem';
-      icon.style.height = '1.25rem';
-      icon.textContent = '!';
-      label.textContent = 'Verification failed';
-      label.style.color = '#c2410c';
+      tag.textContent = '! verification failed';
+      tag.style.color = '#c2410c';
+      tag.style.pointerEvents = 'none';
+      tag.style.cursor = 'default';
+      tag.setAttribute('aria-live', 'polite');
       break;
   }
 }
