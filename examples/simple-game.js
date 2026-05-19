@@ -3,7 +3,7 @@
 (function () {
   globalThis.Caputchin = globalThis.Caputchin ?? { games: {} };
 
-  globalThis.Caputchin.games['simple-demo-game'] = function (container, bridge) {
+  globalThis.Caputchin.games['@demo/simple'] = function (container, bridge) {
     const startMs = Date.now();
     let clicks = 0;
 

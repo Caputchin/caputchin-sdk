@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { send, listen } from '../../../src/protocol/channel.js';
 
 describe('channel.send', () => {
-  it('posts to "null" origin for srcdoc sandbox defense-in-depth (M5)', () => {
+  it('posts with targetOrigin="*" — sandbox iframe opaque origin requires it (M5)', () => {
     const postMessageSpy = vi.fn();
     const iframe = {
       contentWindow: { postMessage: postMessageSpy },
@@ -11,7 +11,9 @@ describe('channel.send', () => {
     send(iframe, { kind: 'kickoff', seq: 1, gameId: null });
 
     expect(postMessageSpy).toHaveBeenCalledOnce();
-    expect(postMessageSpy.mock.calls[0]![1]).toBe('null');
+    // "null" is silently dropped by the postMessage spec; "*" is the only
+    // valid wildcard targetOrigin for opaque-origin (sandboxed srcdoc) frames.
+    expect(postMessageSpy.mock.calls[0]![1]).toBe('*');
   });
 
   it('sends dispose message with correct shape', () => {
