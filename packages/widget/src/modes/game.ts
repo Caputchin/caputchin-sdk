@@ -106,9 +106,10 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-frame"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
     '[part="game-iframe-slot"]{display:flex;flex-direction:column;width:100%}',
     '[part="game-iframe-slot"] iframe{display:block;width:100%;border:0;background:#fff}',
-    // Brand strip sits flush at the bottom; thin separator from iframe above.
-    '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:#fafbfc;border-top:1px solid #eaeef2;padding:0}',
-    // Strip the sub-simple panel's own border — the frame already provides it.
+    // Brand strip sits truly flush at the bottom — no separator, same bg as
+    // iframe area, so the strip reads as part of the frame.
+    '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:transparent;padding:0}',
+    // Strip the sub-simple panel's own border/radius — the outer frame is the only border.
     '[part="game-badge-slot"] [part="simple-checkbox"],',
     '[part="game-badge-slot"] [part="simple-pill"]{border:none;border-radius:0;background:transparent;padding:0.25rem 0.5rem}',
   ].join('');
