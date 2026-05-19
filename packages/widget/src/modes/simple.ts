@@ -100,7 +100,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       const rootStyles = [
         'display:flex',
         'align-items:center',
-        'padding:0.75rem 1rem',
+        'padding:0.5rem 0.75rem',
         'border:1px solid #d0d7de',
         'border-radius:0.5rem',
         'background:#fff',
