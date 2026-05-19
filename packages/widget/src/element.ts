@@ -10,12 +10,8 @@ import { createPresentation, type Presentation } from './modes/index.js';
 import { createGamePresentation, type GamePresentation } from './modes/game.js';
 import { createTriggerStrategy, type TriggerStrategy, type TriggerContext } from './triggers/index.js';
 import type { WrappedToken } from './token.js';
-import { LayoutPresenter } from './layout/presenter.js';
-import { resolveLayout } from './layout/resolve.js';
-import { evalAutoBreakpoint } from './layout/breakpoint.js';
 
 const MANIFEST_TIMEOUT_MS = 2000;
-const DONE_DIALOG_CLOSE_MS = 600;
 
 let widgetIdCounter = 0;
 function makeWidgetId(): string {
@@ -34,11 +30,8 @@ export class CaputchinElement extends HTMLElement {
   private triggerCtx: TriggerContext | null = null;
   private capClient: CapClient | null = null;
   private iframeHost: IframeHost | null = null;
-  private layoutPresenter: LayoutPresenter | null = null;
   private connected = false;
   private config: ParsedConfig | null = null;
-  private pendingKickoff: (() => void) | null = null;
-  private doneCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private gameStartedEmitted = false;
   private widgetId: string | null = null;
   /** Set when the iframe game reported a fatal error; suppresses the duplicate
@@ -47,7 +40,7 @@ export class CaputchinElement extends HTMLElement {
   private gameErrored = false;
   /** Locked at first successful pass; reused for multi-round follow-up pass events. */
   private lockedToken: string | null = null;
-  /** New bordered-frame presentation for inline game layouts (replaces LayoutPresenter for this case). */
+  /** Bordered-frame / modal / fullscreen presentation for game and game-only modes. */
   private gamePresentation: GamePresentation | null = null;
 
   connectedCallback(): void {
@@ -67,7 +60,6 @@ export class CaputchinElement extends HTMLElement {
     this.config = inspection.config;
 
     // All modes: presentation + trigger orchestrate.
-    // Attach shadow root once (LayoutPresenter is idempotent and will reuse it).
     const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
     // Game / game-only modes: build the game presentation upfront so the
@@ -127,10 +119,6 @@ export class CaputchinElement extends HTMLElement {
 
   disconnectedCallback(): void {
     this.connected = false;
-    if (this.doneCloseTimer !== null) {
-      clearTimeout(this.doneCloseTimer);
-      this.doneCloseTimer = null;
-    }
     this.trigger?.deactivate();
     this.trigger = null;
     this.triggerCtx = null;
@@ -140,9 +128,6 @@ export class CaputchinElement extends HTMLElement {
     this.capClient = null;
     this.iframeHost?.dispose();
     this.iframeHost = null;
-    this.layoutPresenter?.dispose();
-    this.layoutPresenter = null;
-    this.pendingKickoff = null;
     this.gameStartedEmitted = false;
     this.config = null;
     this.widgetId = null;
@@ -263,7 +248,6 @@ export class CaputchinElement extends HTMLElement {
         if (msg.kind === 'game-pass') {
           sessionCtx.platform['score'] = msg.score;
           sessionCtx.platform['durationMs'] = msg.durationMs;
-          this.onTriggerDone();
           if (!firstClickHappened) {
             firstClickHappened = true;
             client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
@@ -273,7 +257,6 @@ export class CaputchinElement extends HTMLElement {
         } else if (msg.kind === 'game-error') {
           const { code, originalCode } = mapIframeErrorCode(msg.code);
           fireError(this, code, msg.message, originalCode);
-          this.onTriggerError();
           this.gameErrored = true;
           client.abortGate(new Error(`game-error: ${msg.code}`));
         }
@@ -412,7 +395,6 @@ export class CaputchinElement extends HTMLElement {
 
     const host = new IframeHost(gameUrl, integrity, gameId, this, (msg) => {
       if (msg.kind === 'game-pass') {
-        this.onTriggerDone();
         // game-only: no verification, brand strip flips to "verified" on game-pass.
         this.presentation?.setState('verified');
         this.dispatchEvent(new CustomEvent('pass', {
@@ -423,7 +405,6 @@ export class CaputchinElement extends HTMLElement {
       } else if (msg.kind === 'game-error') {
         const { code, originalCode } = mapIframeErrorCode(msg.code);
         fireError(this, code, msg.message, originalCode);
-        this.onTriggerError();
         this.presentation?.setState('error');
       }
     });
@@ -485,77 +466,4 @@ export class CaputchinElement extends HTMLElement {
    * apply layout, kickoff. Kickoff deferred to trigger checkbox activation
    * for modal/fullscreen.
    */
-  private async installLayout(
-    host: IframeHost,
-    onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
-    onGameStarted: () => void,
-  ): Promise<void> {
-    const presenter = new LayoutPresenter(this, {
-      onTriggerActivate: () => {
-        const fn = this.pendingKickoff;
-        this.pendingKickoff = null;
-        fn?.();
-      },
-      onDialogClose: () => {},
-    });
-    this.layoutPresenter = presenter;
-
-    host.mount(presenter.getStaging(), onLoadFailed, onGameStarted);
-
-    const iframe = host.getIframe();
-    if (!iframe) {
-      fireError(this, 'game-load-failed', 'IframeHost.build() returned no iframe', 'iframe-load-failed');
-      return;
-    }
-
-    const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
-    if (!manifest) {
-      console.warn(`[caputchin] manifest-timeout — no manifest received from iframe within ${MANIFEST_TIMEOUT_MS}ms`);
-    }
-
-    const resolved = resolveLayout({
-      attr: this.config?.layout ?? null,
-      manifestPreferred: manifest?.preferredLayout ?? null,
-      autoIsWide: evalAutoBreakpoint(),
-    });
-
-    presenter.apply(resolved.layout, iframe);
-
-    this.dispatchEvent(new CustomEvent('layout-resolved', {
-      detail: { layout: resolved.layout, source: resolved.source },
-      bubbles: true,
-      composed: true,
-    }));
-
-    const doKickoff = (): void => {
-      host.setLayoutContext(resolved.layout);
-      host.kickoff(1);
-    };
-
-    if (resolved.layout === 'inline') {
-      doKickoff();
-    } else {
-      this.pendingKickoff = (): void => {
-        presenter.setTriggerState('loading');
-        presenter.open();
-        doKickoff();
-      };
-    }
-  }
-
-  private onTriggerDone(): void {
-    if (!this.layoutPresenter?.hasTrigger()) return;
-    this.layoutPresenter.setTriggerState('done');
-    if (this.doneCloseTimer !== null) clearTimeout(this.doneCloseTimer);
-    this.doneCloseTimer = setTimeout(() => {
-      this.doneCloseTimer = null;
-      this.layoutPresenter?.close();
-    }, DONE_DIALOG_CLOSE_MS);
-  }
-
-  private onTriggerError(): void {
-    if (!this.layoutPresenter?.hasTrigger()) return;
-    this.layoutPresenter.setTriggerState('error');
-    this.layoutPresenter.close();
-  }
 }
