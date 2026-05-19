@@ -127,20 +127,14 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         statusIcon.setAttribute('role', 'checkbox');
         statusIcon.setAttribute('aria-checked', 'false');
         statusIcon.setAttribute('aria-label', 'Verify you are human');
+        // Static layout/sizing lives in the shadow stylesheet so size variants
+        // (`data-size="compact"`) can override without inline-style specificity
+        // fights. Dynamic bits (background/border/animation) stay in setState.
         statusIcon.style.cssText = [
-          'width:1.5rem',
-          'height:1.5rem',
           'border:2px solid #6e7681',
           'border-radius:0.25rem',
           'background:#fff',
-          'display:flex',
-          'align-items:center',
-          'justify-content:center',
-          'font-size:1rem',
-          'line-height:1',
           'color:#fff',
-          'flex:0 0 auto',
-          'cursor:pointer',
         ].join(';');
         statusIcon.addEventListener('click', onPointer);
         statusIcon.addEventListener('keydown', onKey);
@@ -300,6 +294,9 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
+
+    // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
+    '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
 
     // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
     '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
