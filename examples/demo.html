@@ -239,17 +239,30 @@
     <div class="log" data-log="game-auto"></div>
   </div>
 
-  <div class="section" data-widget="game-click">
+  <div class="section" data-widget="game-modal">
     <header>
-      <h3>game × click</h3>
-      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=click</span></div>
+      <h3>game × auto × layout="modal" — checkbox opens modal with game</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=auto</span><span class="tag">layout=modal</span></div>
     </header>
-    <p class="desc">Iframe loads but kickoff is deferred to the layout trigger (modal/fullscreen present a click-to-play surface).</p>
-    <pre>&lt;caputchin-widget sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="click" layout="modal" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
-    <div class="widget-mount iframe-host">
-      <caputchin-widget id="w-game-click" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="click" layout="modal" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+    <p class="desc">Simple checkbox is the visible entry. Cap fires on mount (background). Click the checkbox to open a centered modal with the iframe game. Backdrop click or pass closes it.</p>
+    <pre>&lt;caputchin-widget sitekey="..." mode="game" layout="modal" game-src="/examples/simple-game.js"&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-game-modal" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" layout="modal" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
     </div>
-    <div class="log" data-log="game-click"></div>
+    <div class="log" data-log="game-modal"></div>
+  </div>
+
+  <div class="section" data-widget="game-fullscreen">
+    <header>
+      <h3>game × click × layout="fullscreen" — checkbox opens fullscreen game</h3>
+      <div class="tags"><span class="tag">mode=game</span><span class="tag">trigger=click</span><span class="tag">layout=fullscreen</span></div>
+    </header>
+    <p class="desc">Simple checkbox is the entry. Click fires verification AND opens a fullscreen overlay with the iframe game. Close button in the corner; auto-closes on pass.</p>
+    <pre>&lt;caputchin-widget sitekey="..." mode="game" trigger="click" layout="fullscreen" game-src="..."&gt;&lt;/caputchin-widget&gt;</pre>
+    <div class="widget-mount">
+      <caputchin-widget id="w-game-fullscreen" sitekey="cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw" mode="game" trigger="click" layout="fullscreen" game="@demo/simple" game-src="/examples/simple-game.js"></caputchin-widget>
+    </div>
+    <div class="log" data-log="game-fullscreen"></div>
   </div>
 
   <div class="section" data-widget="game-form">
