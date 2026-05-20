@@ -61,6 +61,7 @@ export class CaputchinGame extends HTMLElement {
       root: shadow,
       trigger: derivedTrigger,
       width: state.config.width,
+      height: state.config.height,
       layout,
       manual: isManual,
     });

@@ -1,5 +1,5 @@
 import type { Presentation, PresentationState } from './index.js';
-import type { WidgetTrigger, WidgetWidth, WidgetSize } from '../config/shared.js';
+import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import { createSimplePresentation } from './simple.js';
 import { emitDialogShown, emitDialogHidden } from '../verify/events.js';
 
@@ -35,7 +35,11 @@ export interface GamePresentationInput {
    *  should render (still click for modal/fullscreen so the user gets the
    *  entry checkbox; auto for inline since there's no entry surface). */
   trigger: WidgetTrigger;
+  /** Customer's `width` attr. Applied to the OUTER chrome (inline frame
+   *  or modal/fullscreen entry checkbox), not the iframe. */
   width: WidgetWidth;
+  /** Customer's `height` attr. Same routing as width — outer chrome only. */
+  height: WidgetHeight;
   layout: 'inline' | 'modal' | 'fullscreen';
   /** When true: render a `<slot></slot>` in place of the iframe slot so
    *  customer light-DOM children project into the layout chrome. The
@@ -51,8 +55,10 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, width, manual } = input;
+  const { host, root: renderRoot, width, height, manual } = input;
   const isFullWidth = width === 'full';
+  const pxWidth = typeof width === 'number' ? width : null;
+  const pxHeight = typeof height === 'number' ? height : null;
   let frame: HTMLDivElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
   let badgeSlot: HTMLDivElement | null = null;
@@ -85,10 +91,6 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       frame.appendChild(iframeSlot);
       frame.appendChild(badgeSlot);
       renderRoot.appendChild(frame);
-      if (isFullWidth) {
-        host.style.display = 'block';
-        host.style.width = '100%';
-      }
 
       // Per spec: inline game frame embeds a standalone simple × compact × auto
       // widget below the iframe. No style overrides — it looks like a regular
@@ -104,14 +106,40 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         size: 'compact' as WidgetSize,
       });
       subSimple.mount();
+
+      // Customer width/height apply to the WHOLE inline panel (iframe + brand
+      // strip), not the iframe. Iframe-slot becomes flex:1 so the iframe
+      // fills the remaining area; brand strip stays its compact natural
+      // height. Reapplied AFTER subSimple.mount() because subSimple's
+      // width:'full' branch sets host.style.width='100%' which would
+      // otherwise overwrite the customer's pixel width.
+      if (isFullWidth) {
+        host.style.display = 'block';
+        host.style.width = '100%';
+      } else if (pxWidth !== null) {
+        host.style.display = 'block';
+        host.style.width = `${pxWidth}px`;
+        frame.style.width = '100%';
+        iframeSlot.dataset.fill = 'true';
+      }
+      if (pxHeight !== null) {
+        host.style.display ||= 'block';
+        host.style.height = `${pxHeight}px`;
+        frame.style.height = '100%';
+        iframeSlot.style.flex = '1 1 auto';
+        iframeSlot.style.minHeight = '0';
+        iframeSlot.style.overflow = 'hidden';
+        iframeSlot.dataset.fill = 'true';
+      }
     },
     unmount(): void {
       if (!frame) return;
       subSimple?.unmount();
       frame.remove();
-      if (isFullWidth) {
+      if (isFullWidth || pxWidth !== null || pxHeight !== null) {
         host.style.display = '';
         host.style.width = '';
+        host.style.height = '';
       }
       frame = null;
       iframeSlot = null;
@@ -148,7 +176,7 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout, manual } = input;
+  const { host, root: renderRoot, layout, manual, width, height } = input;
   let container: HTMLDivElement | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
@@ -228,16 +256,26 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       container.appendChild(dialog);
       renderRoot.appendChild(container);
 
+      // Customer width/height on overlay layouts size the entry checkbox
+      // (not the dialog or iframe). Plumb both through to the simple
+      // presentation, which applies them to the host element.
       subSimple = createSimplePresentation({
         host,
         root: checkboxSlot as unknown as ShadowRoot,
         trigger: 'click' as WidgetTrigger,
-        width: input.width,
+        width,
+        height,
         // Overlay (modal / fullscreen) always uses the normal checkbox.
         // Inline uses compact (hardcoded in createInlineGame).
         size: 'normal' as WidgetSize,
       });
       subSimple.mount();
+      // Pin checkboxSlot to the customer dims so the simple presentation's
+      // internal width:100% / height:100% root fills the entry surface
+      // instead of shrinking to its intrinsic checkbox-and-brand width.
+      if (typeof width === 'number') checkboxSlot.style.width = `${width}px`;
+      if (width === 'full') checkboxSlot.style.width = '100%';
+      if (typeof height === 'number') checkboxSlot.style.height = `${height}px`;
       subSimple.onActivate(() => {
         this.open();
         if (!firstActivationFired) {
@@ -339,6 +377,10 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
     '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
     '[part="game-iframe-slot"] iframe{display:block;border:0;background:#fff}',
+    // When the customer pins the inline frame size (width/height attr), the
+    // iframe stretches to fill the slot instead of staying at the game's
+    // manifest preferred size.
+    '[part="game-iframe-slot"][data-fill="true"] iframe{width:100%!important;height:100%!important;flex:1 1 auto}',
     // Badge slot: thin separator line between iframe and brand strip.
     '[part="game-badge-slot"]{display:flex;border-top:1px solid #d0d7de;background:#fff}',
     // Strip the embedded simple widget of its own border/radius/bg so it
@@ -350,7 +392,11 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-checkbox"]{display:inline-block}',
     '[part="game-overlay-dialog"]{padding:0;border:0;background:transparent;max-width:none;max-height:none}',
     '[part="game-overlay-dialog"][open]{display:flex;flex-direction:column}',
-    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:#fff;padding:1rem;width:min(40rem,90vw);height:min(32rem,80vh);box-shadow:0 20px 50px rgba(0,0,0,0.25)}',
+    // Modal: shrink-wrap to the iframe so neither white space nor scrollbars
+    // appear. The iframe is sized to the game's manifest dimensions (or the
+    // 400x300 default); the dialog hugs that plus its own padding. Capped to
+    // 90vw / 90vh so very large games still fit the viewport.
+    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:#fff;padding:1rem;width:fit-content;height:fit-content;max-width:90vw;max-height:90vh;box-shadow:0 20px 50px rgba(0,0,0,0.25)}',
     '[part="game-overlay-dialog"][data-layout="modal"]::backdrop{background:rgba(0,0,0,0.45)}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:#fff}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:rgba(0,0,0,0.8)}',
