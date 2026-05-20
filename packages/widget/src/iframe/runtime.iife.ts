@@ -62,6 +62,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
   let kickoffGameId: string | null = null;
   let currentLayout: Layout | null = null;
   let sizeObserver: ResizeObserver | null = null;
+  let mutationObserver: MutationObserver | null = null;
 
   function postToParent(msg: Record<string, unknown>): void {
     window.parent.postMessage(msg, '*');
@@ -192,6 +193,18 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       // iframe too. The `postDimensions` dedupe guard suppresses spam from
       // animations that don't change layout dimensions. Cleaned up in the
       // 'dispose' handler below alongside the rest of the game lifecycle.
+      // documentElement.scrollWidth/Height: max(viewport, content overflow).
+      // GROWS reliably (content > iframe → measurement = content size →
+      // iframe resizes up). Does NOT detect shrinks below viewport — the
+      // measurement floor-clamps to iframe size. We accept this limitation
+      // because the alternative (measuring body directly) creates a death
+      // spiral: body shrinks with iframe → measurement gets smaller →
+      // iframe shrinks more → measurement gets smaller, etc.
+      //
+      // For games whose post-game UI shifts SHRINK content (replay button
+      // appears then disappears), the iframe stays at the larger size after
+      // the resize-up. Acceptable trade-off — games can use bridge.setSize
+      // for explicit shrink if they need it.
       function measureDocumentSize(): void {
         const docEl = document.documentElement;
         const w = Math.max(docEl.scrollWidth, document.body?.scrollWidth ?? 0);
@@ -202,10 +215,17 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         sizeObserver = new ResizeObserver(() => measureDocumentSize());
         sizeObserver.observe(document.documentElement);
         if (document.body) sizeObserver.observe(document.body);
-        requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
-      } else {
-        requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
       }
+      if (typeof MutationObserver === 'function' && document.body) {
+        mutationObserver = new MutationObserver(() => measureDocumentSize());
+        mutationObserver.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style', 'class'],
+        });
+      }
+      requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
 
       postToParent({ kind: 'game-started', seq });
       return;
@@ -215,6 +235,10 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       if (sizeObserver) {
         sizeObserver.disconnect();
         sizeObserver = null;
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
       }
       if (typeof cleanup === 'function') {
         try {
