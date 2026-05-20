@@ -32,7 +32,7 @@ export class CaputchinGame extends HTMLElement {
     const state = this.state;
     state.connected = true;
 
-    installGameMethods(this, state);
+    installGameMethods(this, state, __CAPUTCHIN_API_HOST__);
 
     const inspection = inspectGameConfig(this);
     for (const issue of inspection.issues) {
@@ -117,6 +117,7 @@ export class CaputchinGame extends HTMLElement {
     s.lockedToken = null;
     s.gameStartedEmitted = false;
     s.gameErrored = false;
+    s.firstPassFired = false;
     s.connected = false;
     this.state = createInitialGameState();
   }
