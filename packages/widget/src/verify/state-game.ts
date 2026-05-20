@@ -20,6 +20,10 @@ export interface GameState {
   gameErrored: boolean;
   /** Locked at first successful pass; reused for multi-round follow-up pass events. */
   lockedToken: string | null;
+  /** Set on the first `widget.pass()` call so subsequent calls route through
+   *  `recordAdditionalRound` instead of releasing the cap gate again. Mirrors
+   *  the iframe path's `firstClickHappened` flag for the manual surface. */
+  firstPassFired: boolean;
   connected: boolean;
 }
 
@@ -35,6 +39,7 @@ export function createInitialGameState(): GameState {
     gameStartedEmitted: false,
     gameErrored: false,
     lockedToken: null,
+    firstPassFired: false,
     connected: false,
   };
 }

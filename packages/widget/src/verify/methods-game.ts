@@ -1,4 +1,5 @@
 import { fireError } from '../errors.js';
+import { recordAdditionalRound } from './record-round.js';
 import type { GameState } from './state-game.js';
 
 /**
@@ -6,8 +7,13 @@ import type { GameState } from './state-game.js';
  * auto-kicks on mount for inline (manual or iframe) and on the first
  * checkbox click for modal/fullscreen. `pass()` and `fail()` are the
  * customer's release/abort handles, only valid when `trigger="manual"`.
+ *
+ * Multi-round: customers can call `pass()` repeatedly to record higher
+ * scores. First call releases the cap gate (token gets minted); subsequent
+ * calls fire `/verify/pass` directly with the locked token via
+ * `recordAdditionalRound`, mirroring the iframe game multi-round flow.
  */
-export function installGameMethods(el: HTMLElement, state: GameState): void {
+export function installGameMethods(el: HTMLElement, state: GameState, apiHost: string): void {
   Object.defineProperty(el, 'pass', {
     value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
       if (!state.config) return;
@@ -19,7 +25,8 @@ export function installGameMethods(el: HTMLElement, state: GameState): void {
       const durationMs = typeof payload?.durationMs === 'number' ? payload.durationMs : null;
 
       if (state.config.sitekey === null) {
-        // Game-only manual: no cap to release; just fire the pass event.
+        // Game-only manual: no cap to release. Every pass fires a fresh
+        // event — multi-round works out of the box.
         el.dispatchEvent(new CustomEvent('pass', {
           detail: { token: null, score, durationMs },
           bubbles: true,
@@ -29,15 +36,28 @@ export function installGameMethods(el: HTMLElement, state: GameState): void {
         return;
       }
 
-      // Cap + manual: gate must already be armed (verification started). For
+      // Cap + manual. Gate must already be armed (verification started). For
       // inline that happens on mount; for modal/fullscreen on first dialog
-      // open. Customers calling pass() before the entry click would silently
-      // drop without this guard — surface as invalid-call so they see it.
+      // open. Premature calls would silently drop — surface as invalid-call.
       if (!state.capClient) {
         fireError(el, 'invalid-call', 'pass() called before verification started — open the dialog first');
         return;
       }
-      state.triggerCtx?.releaseManualPass({ score, durationMs });
+
+      if (!state.firstPassFired) {
+        // First pass: release the cap gate. runManual's cap.solve().then will
+        // emit the pass event once the wrapped token comes back from redeem.
+        state.firstPassFired = true;
+        state.triggerCtx?.releaseManualPass({ score, durationMs });
+      } else {
+        // Subsequent pass: record an additional round directly against
+        // /verify/pass, then emit the pass event with the locked token.
+        // `recordAdditionalRound` silently no-ops if `lockedToken` isn't
+        // set yet (race: customer called pass() faster than cap.solve
+        // completed); customers normally wait for the `pass` event before
+        // scoring again.
+        void recordAdditionalRound(el, state.widgetId, state.lockedToken, apiHost, score, durationMs);
+      }
     },
     configurable: true,
     writable: false,
