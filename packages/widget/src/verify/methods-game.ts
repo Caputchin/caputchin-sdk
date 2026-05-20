@@ -2,22 +2,12 @@ import { fireError } from '../errors.js';
 import type { GameState } from './state-game.js';
 
 /**
- * Public methods on `<caputchin-game>`. In iframe mode (auto-derived
- * trigger), `pass()` and `fail()` are misplaced — the iframe drives the
- * outcome via postMessage. In `trigger="manual"` they're the customer's
- * release / abort handles.
+ * Public methods on `<caputchin-game>`. There is no `start()` — verification
+ * auto-kicks on mount for inline (manual or iframe) and on the first
+ * checkbox click for modal/fullscreen. `pass()` and `fail()` are the
+ * customer's release/abort handles, only valid when `trigger="manual"`.
  */
 export function installGameMethods(el: HTMLElement, state: GameState): void {
-  Object.defineProperty(el, 'start', {
-    value: (): void => {
-      if (!state.config) return;
-      state.trigger?.forceStart?.(state.triggerCtx!);
-    },
-    configurable: true,
-    writable: false,
-    enumerable: false,
-  });
-
   Object.defineProperty(el, 'pass', {
     value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
       if (!state.config) return;
@@ -39,8 +29,14 @@ export function installGameMethods(el: HTMLElement, state: GameState): void {
         return;
       }
 
-      // Cap + manual: release the gate. run-manual's cap.solve().then will
-      // emit the pass event with the wrapped token once redeem returns.
+      // Cap + manual: gate must already be armed (verification started). For
+      // inline that happens on mount; for modal/fullscreen on first dialog
+      // open. Customers calling pass() before the entry click would silently
+      // drop without this guard — surface as invalid-call so they see it.
+      if (!state.capClient) {
+        fireError(el, 'invalid-call', 'pass() called before verification started — open the dialog first');
+        return;
+      }
       state.triggerCtx?.releaseManualPass({ score, durationMs });
     },
     configurable: true,
@@ -58,11 +54,16 @@ export function installGameMethods(el: HTMLElement, state: GameState): void {
       const code = typeof payload?.code === 'string' ? payload.code : 'game-failed';
       const message = typeof payload?.message === 'string' ? payload.message : 'Customer game reported failure';
 
+      // Same guard as pass(): fail before verification started is meaningless
+      // for the cap path. Game-only manual has no cap gate so it's always OK.
+      if (state.config.sitekey !== null && !state.capClient) {
+        fireError(el, 'invalid-call', 'fail() called before verification started — open the dialog first');
+        return;
+      }
+
       state.gameErrored = true;
       fireError(el, 'game-error-relayed', message, code);
-      if (state.config.sitekey !== null) {
-        state.capClient?.abortGate(new Error(`game-failed: ${code}`));
-      }
+      state.capClient?.abortGate(new Error(`game-failed: ${code}`));
       state.gamePresentation?.setState('error');
     },
     configurable: true,

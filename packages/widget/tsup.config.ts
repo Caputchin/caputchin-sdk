@@ -20,9 +20,13 @@ if (fs.existsSync(metaPath)) {
   );
 }
 
+// Default to localhost so `pnpm build` + `pnpm dev` in a checkout never
+// accidentally produce a prod-pointing bundle. The `build:prod` script
+// explicitly sets CAPUTCHIN_API_HOST=https://api.caputchin.com — that's the
+// only path that should ship a production-host bundle.
 const sharedDefine = {
   __CAPUTCHIN_API_HOST__: JSON.stringify(
-    process.env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com'
+    process.env.CAPUTCHIN_API_HOST ?? 'http://localhost:3000'
   ),
   __IFRAME_RUNTIME__: JSON.stringify(iframeRuntime),
   __IFRAME_RUNTIME_SHA256__: JSON.stringify(iframeRuntimeSha256),
