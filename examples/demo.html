@@ -3,58 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Caputchin Widget — Playground</title>
+  <title>Caputchin Playground — Widget &amp; Game</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body {
       font-family: system-ui, sans-serif;
-      margin: 0;
+      margin: 0 auto;
       padding: 1.5rem;
       background: #f8f7ff;
       color: #1a0a2e;
       max-width: 56rem;
-      margin: 0 auto;
     }
     h1 { color: #3d2a5e; margin-bottom: 0.25rem; }
     p.subtitle { color: #6a4c93; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
     h2 { margin: 1.5rem 0 0.5rem; font-size: 1rem; color: #3d2a5e; border-bottom: 1px solid #e0d9f5; padding-bottom: 0.25rem; }
 
+    .tabs {
+      display: flex; gap: 0.4rem; margin-bottom: 1rem;
+      border-bottom: 2px solid #e0d9f5;
+    }
+    .tab {
+      background: none; border: 0; padding: 0.6rem 1.2rem;
+      font: inherit; font-weight: 600; font-size: 0.95rem;
+      color: #6a4c93; cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+    }
+    .tab.active { color: #2F6640; border-bottom-color: #2F6640; }
+
     .section {
-      background: #fff;
-      border: 1px solid #e0d9f5;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
+      background: #fff; border: 1px solid #e0d9f5; border-radius: 12px;
+      padding: 1rem 1.25rem; margin-bottom: 1rem;
     }
 
-    /* presets */
     .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .preset {
-      font-size: 0.75rem;
-      padding: 0.3rem 0.6rem;
-      border: 1px solid #6a4c93;
-      background: #fff;
-      color: #3d2a5e;
-      border-radius: 999px;
-      cursor: pointer;
+      font-size: 0.75rem; padding: 0.3rem 0.6rem;
+      border: 1px solid #6a4c93; background: #fff; color: #3d2a5e;
+      border-radius: 999px; cursor: pointer;
     }
     .preset:hover { background: #f0ebff; }
 
-    /* controls grid */
     .controls {
-      display: grid;
+      display: grid; gap: 0.75rem 1rem;
       grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-      gap: 0.75rem 1rem;
     }
     .field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; }
     .field label { color: #555; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
     .field select, .field input, .field textarea {
-      font: inherit;
-      font-size: 0.85rem;
-      padding: 0.4rem 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
+      font: inherit; font-size: 0.85rem; padding: 0.4rem 0.5rem;
+      border: 1px solid #ccc; border-radius: 6px; background: #fff;
     }
     .field textarea { min-height: 2.5rem; resize: vertical; }
     .row { display: flex; gap: 0.5rem; align-items: center; }
@@ -63,87 +60,49 @@
 
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
     .actions button {
-      font-size: 0.85rem;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      border: 0;
-      cursor: pointer;
+      font-size: 0.85rem; padding: 0.5rem 1rem;
+      border-radius: 6px; border: 0; cursor: pointer;
     }
     button.primary { background: #2F6640; color: #fff; }
     button.primary:hover { background: #1f4a2c; }
     button.secondary { background: #fff; color: #3d2a5e; border: 1px solid #6a4c93; }
     button.secondary:hover { background: #f0ebff; }
 
-    /* code preview */
     .code {
-      font-family: ui-monospace, "SF Mono", monospace;
-      font-size: 0.75rem;
-      background: #f5f3fa;
-      border: 1px solid #ebe5fa;
-      border-radius: 6px;
-      padding: 0.6rem 0.75rem;
-      color: #2b1a4d;
-      white-space: pre-wrap;
-      word-break: break-all;
-      position: relative;
+      font-family: ui-monospace, "SF Mono", monospace; font-size: 0.75rem;
+      background: #1A1917; color: #E0F2DA; padding: 0.6rem 0.8rem;
+      border-radius: 6px; position: relative; overflow-x: auto;
     }
-    .code .copy {
-      position: absolute;
-      top: 0.4rem;
-      right: 0.4rem;
-      font-size: 0.65rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      border: 1px solid #6a4c93;
-      background: #fff;
-      color: #3d2a5e;
-      cursor: pointer;
+    .code button.copy {
+      position: absolute; top: 0.3rem; right: 0.3rem;
+      background: #2F6640; color: #fff; border: 0; font-size: 0.7rem;
+      padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;
     }
 
-    /* widget preview area */
-    #widget-mount {
-      padding: 1rem;
-      border: 1px dashed #c0b8d4;
-      border-radius: 6px;
-      background: #fafaff;
-      min-height: 5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
+    .mount { display: flex; flex-direction: column; gap: 0.75rem; }
+    .mount form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .mount form input[type="text"] {
+      border: 1px solid #ccc; border-radius: 6px; padding: 0.4rem 0.6rem;
+      font-size: 0.85rem; max-width: 16rem;
     }
-    #widget-mount form { display: flex; flex-direction: column; gap: 0.5rem; }
-    #widget-mount form input[type="text"] {
-      border: 1px solid #ccc; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem;
-      max-width: 16rem;
-    }
-    #widget-mount form button[type="submit"] {
-      padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #2F6640; color: #fff; border: 0; border-radius: 6px; cursor: pointer;
-      max-width: 8rem;
+    .mount form button[type="submit"] {
+      padding: 0.4rem 0.8rem; font-size: 0.85rem;
+      background: #2F6640; color: #fff; border: 0;
+      border-radius: 6px; cursor: pointer; max-width: 8rem;
     }
     .manual-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .manual-controls button {
-      font-size: 0.75rem;
-      padding: 0.3rem 0.6rem;
-      border: 1px solid #6a4c93;
-      background: #fff;
-      color: #3d2a5e;
-      border-radius: 6px;
-      cursor: pointer;
+      font-size: 0.75rem; padding: 0.3rem 0.6rem;
+      border: 1px solid #6a4c93; background: #fff; color: #3d2a5e;
+      border-radius: 6px; cursor: pointer;
     }
 
-    /* log */
     .log {
-      font-family: ui-monospace, "SF Mono", monospace;
-      font-size: 0.7rem;
-      background: #1A1917;
-      color: #E0F2DA;
-      padding: 0.6rem 0.8rem;
-      border-radius: 6px;
-      min-height: 6rem;
-      max-height: 20rem;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
+      font-family: ui-monospace, "SF Mono", monospace; font-size: 0.7rem;
+      background: #1A1917; color: #E0F2DA;
+      padding: 0.6rem 0.8rem; border-radius: 6px;
+      min-height: 6rem; max-height: 20rem; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-all;
     }
     .log .ts { color: #aaa; margin-right: 0.4rem; }
     .log .ev-start { color: #82cfff; }
@@ -152,374 +111,518 @@
     .log .ev-error { color: #ff7070; }
     .log .ev-layout-resolved { color: #c0a8ff; }
     .log .ev-submit { color: #aaa; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
   </style>
 </head>
 <body>
-  <h1>Caputchin Widget Playground</h1>
+  <h1>Caputchin Playground</h1>
   <p class="subtitle">
-    One widget, every setting selectable. Pick a preset to jump in. Sitekey:
+    Two widgets, two tabs. Pick a preset to jump in. Sitekey:
     <code>cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw</code>.
   </p>
 
-  <!-- ============ PRESETS ============ -->
-  <section class="section">
-    <h2>Presets</h2>
-    <div class="presets" id="presets"></div>
-  </section>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="widget" type="button">&lt;caputchin-widget&gt; (cap)</button>
+    <button class="tab" data-tab="game" type="button">&lt;caputchin-game&gt;</button>
+  </div>
 
-  <!-- ============ CONTROLS ============ -->
-  <section class="section">
-    <h2>Settings</h2>
-    <div class="controls">
-      <div class="field">
-        <label for="ctrl-mode">mode</label>
-        <select id="ctrl-mode">
-          <option value="invisible">invisible</option>
-          <option value="simple" selected>simple</option>
-          <option value="game">game</option>
-          <option value="game-only">game-only</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="ctrl-trigger">trigger</label>
-        <select id="ctrl-trigger">
-          <option value="auto" selected>auto</option>
-          <option value="click">click</option>
-          <option value="form-submit">form-submit</option>
-          <option value="manual">manual</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="ctrl-layout">layout</label>
-        <select id="ctrl-layout">
-          <option value="">(unset)</option>
-          <option value="inline">inline</option>
-          <option value="modal">modal</option>
-          <option value="fullscreen">fullscreen</option>
-          <option value="auto">auto</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="ctrl-size">size</label>
-        <select id="ctrl-size">
-          <option value="normal" selected>normal</option>
-          <option value="compact">compact</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="ctrl-width">width</label>
-        <div class="row">
-          <select id="ctrl-width-mode">
-            <option value="auto" selected>auto</option>
-            <option value="full">full</option>
-            <option value="pixels">pixels</option>
+  <!-- ============================================================
+       <caputchin-widget> PANEL
+       ============================================================ -->
+  <div class="panel active" id="panel-widget">
+    <section class="section">
+      <h2>Presets</h2>
+      <div class="presets" id="widget-presets"></div>
+    </section>
+
+    <section class="section">
+      <h2>Settings</h2>
+      <div class="controls">
+        <div class="field">
+          <label for="w-mode">mode</label>
+          <select id="w-mode">
+            <option value="invisible">invisible</option>
+            <option value="simple" selected>simple</option>
           </select>
-          <input id="ctrl-width-px" type="number" min="1" placeholder="e.g. 500" disabled />
+        </div>
+        <div class="field">
+          <label for="w-trigger">trigger</label>
+          <select id="w-trigger">
+            <option value="auto" selected>auto</option>
+            <option value="click">click</option>
+            <option value="form-submit">form-submit</option>
+            <option value="manual">manual</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="w-size">size</label>
+          <select id="w-size">
+            <option value="normal" selected>normal</option>
+            <option value="compact">compact</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="w-width-mode">width</label>
+          <div class="row">
+            <select id="w-width-mode">
+              <option value="auto" selected>auto</option>
+              <option value="full">full</option>
+              <option value="pixels">pixels</option>
+            </select>
+            <input id="w-width-px" type="number" min="1" placeholder="e.g. 500" disabled />
+          </div>
         </div>
       </div>
-      <div class="field">
-        <label for="ctrl-height-px">height (px, blank = default)</label>
-        <input id="ctrl-height-px" type="number" min="1" placeholder="e.g. 300" />
+      <div class="actions">
+        <button class="primary" id="w-apply">Apply &amp; remount</button>
+        <button class="secondary" id="w-reset">Reset</button>
       </div>
-      <div class="field">
-        <label for="ctrl-game">game</label>
-        <select id="ctrl-game">
-          <option value="">(none)</option>
-          <option value="@demo/simple">@demo/simple — click 3x to pass</option>
-          <option value="@demo/multi-round">@demo/multi-round — 3 rounds, score per round</option>
-          <option value="@demo/failing">@demo/failing — fires bridge.error after 1.5s</option>
-        </select>
+    </section>
+
+    <section class="section">
+      <h2>Markup</h2>
+      <div class="code"><button class="copy" data-copy="widget">copy</button><span id="w-code"></span></div>
+    </section>
+
+    <section class="section">
+      <h2>Widget</h2>
+      <div class="mount" id="w-mount"></div>
+    </section>
+
+    <section class="section">
+      <h2>Events</h2>
+      <div class="log" id="w-log"></div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       <caputchin-game> PANEL
+       ============================================================ -->
+  <div class="panel" id="panel-game">
+    <section class="section">
+      <h2>Presets</h2>
+      <div class="presets" id="game-presets"></div>
+    </section>
+
+    <section class="section">
+      <h2>Settings</h2>
+      <div class="controls">
+        <div class="field">
+          <label for="g-sitekey-mode">sitekey</label>
+          <select id="g-sitekey-mode">
+            <option value="present" selected>present (play + verify)</option>
+            <option value="absent">absent (game-only)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="g-trigger">trigger</label>
+          <select id="g-trigger">
+            <option value="auto" selected>auto</option>
+            <option value="click">click</option>
+            <option value="form-submit">form-submit</option>
+            <option value="manual">manual (customer-hosted)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="g-layout">layout</label>
+          <select id="g-layout">
+            <option value="auto" selected>auto</option>
+            <option value="inline">inline</option>
+            <option value="modal">modal</option>
+            <option value="fullscreen">fullscreen</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="g-size">size</label>
+          <select id="g-size">
+            <option value="normal" selected>normal</option>
+            <option value="compact">compact</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="g-width-mode">width</label>
+          <div class="row">
+            <select id="g-width-mode">
+              <option value="auto" selected>auto</option>
+              <option value="full">full</option>
+              <option value="pixels">pixels</option>
+            </select>
+            <input id="g-width-px" type="number" min="1" placeholder="e.g. 500" disabled />
+          </div>
+        </div>
+        <div class="field">
+          <label for="g-height-px">height (px, blank = auto)</label>
+          <input id="g-height-px" type="number" min="1" placeholder="e.g. 300" />
+        </div>
+        <div class="field">
+          <label for="g-game">game</label>
+          <select id="g-game">
+            <option value="@demo/simple" selected>@demo/simple — click 3x to pass</option>
+            <option value="@demo/multi-round">@demo/multi-round — 3 rounds</option>
+            <option value="@demo/failing">@demo/failing — bridge.error after 1.5s</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="g-games">games (comma-sep, overrides game)</label>
+          <textarea id="g-games" placeholder="@demo/simple,@demo/multi-round"></textarea>
+        </div>
       </div>
-      <div class="field">
-        <label for="ctrl-games">games (comma-sep, overrides game)</label>
-        <textarea id="ctrl-games" placeholder="@demo/simple,@demo/multi-round"></textarea>
+      <div class="actions">
+        <button class="primary" id="g-apply">Apply &amp; remount</button>
+        <button class="secondary" id="g-reset">Reset</button>
       </div>
-    </div>
-    <div class="actions">
-      <button class="primary" id="btn-apply">Apply &amp; remount</button>
-      <button class="secondary" id="btn-reset">Reset to defaults</button>
-    </div>
-  </section>
+    </section>
 
-  <!-- ============ CODE PREVIEW ============ -->
-  <section class="section">
-    <h2>Markup</h2>
-    <div class="code" id="code-preview"><button class="copy" id="btn-copy">copy</button><span id="code-content"></span></div>
-  </section>
+    <section class="section">
+      <h2>Markup</h2>
+      <div class="code"><button class="copy" data-copy="game">copy</button><span id="g-code"></span></div>
+    </section>
 
-  <!-- ============ WIDGET PREVIEW ============ -->
-  <section class="section">
-    <h2>Widget</h2>
-    <div id="widget-mount"></div>
-  </section>
+    <section class="section">
+      <h2>Widget</h2>
+      <div class="mount" id="g-mount"></div>
+    </section>
 
-  <!-- ============ EVENT LOG ============ -->
-  <section class="section">
-    <h2>Events</h2>
-    <div class="log" id="log"></div>
-  </section>
+    <section class="section">
+      <h2>Events</h2>
+      <div class="log" id="g-log"></div>
+    </section>
+  </div>
 
   <script>
-    // ---------------- defaults ----------------
-    const DEFAULTS = {
-      mode: 'simple',
-      trigger: 'auto',
-      layout: '',
-      size: 'normal',
-      widthMode: 'auto',
-      widthPx: '',
-      heightPx: '',
-      game: '',
-      games: '',
-    };
-
     const SITEKEY = 'cpt_pub_WVQVqTdVl92Sh_bxokoz_wCw';
-
     const GAME_SRC = {
       '@demo/simple': '/examples/simple-game.js',
       '@demo/multi-round': '/examples/multi-round-game.js',
       '@demo/failing': '/examples/failing-game.js',
     };
 
-    // ---------------- presets ----------------
-    const PRESETS = [
-      { label: 'Simple · auto', cfg: { mode: 'simple', trigger: 'auto' } },
-      { label: 'Simple · click', cfg: { mode: 'simple', trigger: 'click' } },
-      { label: 'Simple · form-submit', cfg: { mode: 'simple', trigger: 'form-submit' } },
-      { label: 'Simple · manual', cfg: { mode: 'simple', trigger: 'manual' } },
-      { label: 'Invisible · auto', cfg: { mode: 'invisible', trigger: 'auto' } },
-      { label: 'Inline game', cfg: { mode: 'game', trigger: 'auto', layout: 'inline', game: '@demo/simple' } },
-      { label: 'Modal game', cfg: { mode: 'game', trigger: 'auto', layout: 'modal', game: '@demo/simple' } },
-      { label: 'Fullscreen game', cfg: { mode: 'game', trigger: 'click', layout: 'fullscreen', game: '@demo/simple' } },
-      { label: 'Game · manual (customer-hosted)', cfg: { mode: 'game', trigger: 'manual' } },
-      { label: 'Game-only (no cap)', cfg: { mode: 'game-only', game: '@demo/simple' } },
-      { label: 'Multi-round', cfg: { mode: 'game', trigger: 'auto', layout: 'inline', game: '@demo/multi-round' } },
-      { label: 'Failing game', cfg: { mode: 'game', trigger: 'auto', layout: 'inline', game: '@demo/failing' } },
-      { label: 'Compact', cfg: { mode: 'simple', trigger: 'auto', size: 'compact' } },
-      { label: 'Full width', cfg: { mode: 'simple', trigger: 'auto', widthMode: 'full' } },
-      { label: 'Custom dims (500×400)', cfg: { mode: 'game', trigger: 'auto', layout: 'inline', game: '@demo/simple', widthMode: 'pixels', widthPx: '500', heightPx: '400' } },
-    ];
-
-    // ---------------- DOM refs ----------------
-    const $ = (id) => document.getElementById(id);
-    const ctrlMode = $('ctrl-mode');
-    const ctrlTrigger = $('ctrl-trigger');
-    const ctrlLayout = $('ctrl-layout');
-    const ctrlSize = $('ctrl-size');
-    const ctrlWidthMode = $('ctrl-width-mode');
-    const ctrlWidthPx = $('ctrl-width-px');
-    const ctrlHeightPx = $('ctrl-height-px');
-    const ctrlGame = $('ctrl-game');
-    const ctrlGames = $('ctrl-games');
-    const codeContent = $('code-content');
-    const mount = $('widget-mount');
-    const log = $('log');
-    const presetsBox = $('presets');
-
-    // ---------------- state ----------------
-    function readControls() {
+    // ---------- URL state ----------
+    function readUrl() {
+      const p = new URLSearchParams(location.search);
       return {
-        mode: ctrlMode.value,
-        trigger: ctrlTrigger.value,
-        layout: ctrlLayout.value,
-        size: ctrlSize.value,
-        widthMode: ctrlWidthMode.value,
-        widthPx: ctrlWidthPx.value,
-        heightPx: ctrlHeightPx.value,
-        game: ctrlGame.value,
-        games: ctrlGames.value.trim(),
+        tab: p.get('tab') || 'widget',
+        // widget state
+        wMode: p.get('w.mode') || 'simple',
+        wTrigger: p.get('w.trigger') || 'auto',
+        wSize: p.get('w.size') || 'normal',
+        wWidthMode: p.get('w.widthMode') || 'auto',
+        wWidthPx: p.get('w.widthPx') || '',
+        // game state
+        gSitekeyMode: p.get('g.sitekey') || 'present',
+        gTrigger: p.get('g.trigger') || 'auto',
+        gLayout: p.get('g.layout') || 'auto',
+        gSize: p.get('g.size') || 'normal',
+        gWidthMode: p.get('g.widthMode') || 'auto',
+        gWidthPx: p.get('g.widthPx') || '',
+        gHeightPx: p.get('g.heightPx') || '',
+        gGame: p.get('g.game') || '@demo/simple',
+        gGames: p.get('g.games') || '',
       };
     }
-    function writeControls(cfg) {
-      const merged = { ...DEFAULTS, ...cfg };
-      ctrlMode.value = merged.mode;
-      ctrlTrigger.value = merged.trigger;
-      ctrlLayout.value = merged.layout;
-      ctrlSize.value = merged.size;
-      ctrlWidthMode.value = merged.widthMode;
-      ctrlWidthPx.value = merged.widthPx;
-      ctrlHeightPx.value = merged.heightPx;
-      ctrlGame.value = merged.game;
-      ctrlGames.value = merged.games;
-      ctrlWidthPx.disabled = merged.widthMode !== 'pixels';
-      syncCodePreview();
+    function writeUrl(s) {
+      const p = new URLSearchParams();
+      p.set('tab', s.tab);
+      Object.entries({
+        'w.mode': s.wMode, 'w.trigger': s.wTrigger, 'w.size': s.wSize,
+        'w.widthMode': s.wWidthMode, 'w.widthPx': s.wWidthPx,
+        'g.sitekey': s.gSitekeyMode, 'g.trigger': s.gTrigger,
+        'g.layout': s.gLayout, 'g.size': s.gSize,
+        'g.widthMode': s.gWidthMode, 'g.widthPx': s.gWidthPx,
+        'g.heightPx': s.gHeightPx, 'g.game': s.gGame, 'g.games': s.gGames,
+      }).forEach(([k, v]) => { if (v) p.set(k, v); });
+      history.replaceState(null, '', '?' + p.toString());
     }
 
-    function configToAttrs(cfg) {
-      const attrs = { sitekey: SITEKEY, mode: cfg.mode };
-      if (cfg.trigger && cfg.trigger !== 'auto') attrs.trigger = cfg.trigger;
-      if (cfg.layout) attrs.layout = cfg.layout;
-      if (cfg.size && cfg.size !== 'normal') attrs.size = cfg.size;
-      if (cfg.widthMode === 'full') attrs.width = 'full';
-      else if (cfg.widthMode === 'pixels' && cfg.widthPx) attrs.width = cfg.widthPx;
-      if (cfg.heightPx) attrs.height = cfg.heightPx;
-      if (cfg.games) {
-        attrs.games = cfg.games;
-        if (GAME_SRC[cfg.games.split(',')[0].trim()]) attrs['game-src'] = GAME_SRC[cfg.games.split(',')[0].trim()];
-      } else if (cfg.game) {
-        attrs.game = cfg.game;
-        if (GAME_SRC[cfg.game]) attrs['game-src'] = GAME_SRC[cfg.game];
-      }
-      return attrs;
+    // ---------- presets ----------
+    const WIDGET_PRESETS = [
+      ['Simple · auto', { wMode: 'simple', wTrigger: 'auto' }],
+      ['Simple · click', { wMode: 'simple', wTrigger: 'click' }],
+      ['Simple · form-submit', { wMode: 'simple', wTrigger: 'form-submit' }],
+      ['Simple · manual', { wMode: 'simple', wTrigger: 'manual' }],
+      ['Invisible · auto', { wMode: 'invisible', wTrigger: 'auto' }],
+      ['Invisible · form-submit', { wMode: 'invisible', wTrigger: 'form-submit' }],
+      ['Invisible · manual', { wMode: 'invisible', wTrigger: 'manual' }],
+      ['Compact', { wMode: 'simple', wTrigger: 'auto', wSize: 'compact' }],
+      ['Full width', { wMode: 'simple', wTrigger: 'auto', wWidthMode: 'full' }],
+      ['Custom width 500', { wMode: 'simple', wTrigger: 'auto', wWidthMode: 'pixels', wWidthPx: '500' }],
+    ];
+
+    const GAME_PRESETS = [
+      ['Inline game · auto', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/simple' }],
+      ['Modal game · click', { gSitekeyMode: 'present', gTrigger: 'click', gLayout: 'modal', gGame: '@demo/simple' }],
+      ['Fullscreen game · click', { gSitekeyMode: 'present', gTrigger: 'click', gLayout: 'fullscreen', gGame: '@demo/simple' }],
+      ['Layout auto', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'auto', gGame: '@demo/simple' }],
+      ['Game · manual (customer-hosted)', { gSitekeyMode: 'present', gTrigger: 'manual', gLayout: 'inline', gGame: '' }],
+      ['Game-only (no sitekey)', { gSitekeyMode: 'absent', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/simple' }],
+      ['Multi-round', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/multi-round' }],
+      ['Failing game', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/failing' }],
+      ['Compact inline', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/simple', gSize: 'compact' }],
+      ['Full width inline', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'full' }],
+      ['Custom dims 500×400', { gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'pixels', gWidthPx: '500', gHeightPx: '400' }],
+    ];
+
+    // ---------- state ----------
+    const state = readUrl();
+
+    function applyStateToControls() {
+      document.getElementById('w-mode').value = state.wMode;
+      document.getElementById('w-trigger').value = state.wTrigger;
+      document.getElementById('w-size').value = state.wSize;
+      document.getElementById('w-width-mode').value = state.wWidthMode;
+      document.getElementById('w-width-px').value = state.wWidthPx;
+      document.getElementById('w-width-px').disabled = state.wWidthMode !== 'pixels';
+
+      document.getElementById('g-sitekey-mode').value = state.gSitekeyMode;
+      document.getElementById('g-trigger').value = state.gTrigger;
+      document.getElementById('g-layout').value = state.gLayout;
+      document.getElementById('g-size').value = state.gSize;
+      document.getElementById('g-width-mode').value = state.gWidthMode;
+      document.getElementById('g-width-px').value = state.gWidthPx;
+      document.getElementById('g-width-px').disabled = state.gWidthMode !== 'pixels';
+      document.getElementById('g-height-px').value = state.gHeightPx;
+      document.getElementById('g-game').value = state.gGame;
+      document.getElementById('g-games').value = state.gGames;
     }
 
-    function attrsToMarkup(attrs) {
-      const parts = Object.entries(attrs).map(([k, v]) => `${k}="${v}"`);
-      return `<caputchin-widget ${parts.join(' ')}></caputchin-widget>`;
+    function readWidgetControls() {
+      state.wMode = document.getElementById('w-mode').value;
+      state.wTrigger = document.getElementById('w-trigger').value;
+      state.wSize = document.getElementById('w-size').value;
+      state.wWidthMode = document.getElementById('w-width-mode').value;
+      state.wWidthPx = document.getElementById('w-width-px').value;
+      document.getElementById('w-width-px').disabled = state.wWidthMode !== 'pixels';
+    }
+    function readGameControls() {
+      state.gSitekeyMode = document.getElementById('g-sitekey-mode').value;
+      state.gTrigger = document.getElementById('g-trigger').value;
+      state.gLayout = document.getElementById('g-layout').value;
+      state.gSize = document.getElementById('g-size').value;
+      state.gWidthMode = document.getElementById('g-width-mode').value;
+      state.gWidthPx = document.getElementById('g-width-px').value;
+      document.getElementById('g-width-px').disabled = state.gWidthMode !== 'pixels';
+      state.gHeightPx = document.getElementById('g-height-px').value;
+      state.gGame = document.getElementById('g-game').value;
+      state.gGames = document.getElementById('g-games').value;
     }
 
-    function syncCodePreview() {
-      const cfg = readControls();
-      codeContent.textContent = attrsToMarkup(configToAttrs(cfg));
-      writeUrl(cfg);
+    // ---------- markup generation ----------
+    function widthAttr(mode, px) {
+      if (mode === 'auto') return '';
+      if (mode === 'full') return ' width="full"';
+      if (mode === 'pixels' && px) return ` width="${px}"`;
+      return '';
     }
 
-    // ---------------- URL persistence ----------------
-    function readUrl() {
-      const params = new URLSearchParams(location.search);
-      const cfg = { ...DEFAULTS };
-      for (const k of Object.keys(DEFAULTS)) {
-        if (params.has(k)) cfg[k] = params.get(k);
-      }
-      return cfg;
-    }
-    function writeUrl(cfg) {
-      const params = new URLSearchParams();
-      for (const [k, v] of Object.entries(cfg)) {
-        if (v !== DEFAULTS[k] && v !== '') params.set(k, v);
-      }
-      const query = params.toString();
-      history.replaceState(null, '', location.pathname + (query ? '?' + query : ''));
+    function widgetMarkup() {
+      let attrs = ` sitekey="${SITEKEY}" mode="${state.wMode}"`;
+      if (state.wTrigger !== 'auto') attrs += ` trigger="${state.wTrigger}"`;
+      if (state.wSize !== 'normal') attrs += ` size="${state.wSize}"`;
+      attrs += widthAttr(state.wWidthMode, state.wWidthPx);
+      return `<caputchin-widget${attrs}></caputchin-widget>`;
     }
 
-    // ---------------- log ----------------
-    function append(kind, detail) {
-      const ts = new Date().toISOString().slice(11, 23);
-      const line = document.createElement('div');
-      const tsSpan = document.createElement('span');
-      tsSpan.className = 'ts';
-      tsSpan.textContent = '[' + ts + ']';
-      const ev = document.createElement('span');
-      ev.className = 'ev-' + kind;
-      ev.textContent = kind;
-      line.appendChild(tsSpan);
-      line.appendChild(document.createTextNode(' '));
-      line.appendChild(ev);
-      line.appendChild(document.createTextNode(' ' + JSON.stringify(detail ?? {})));
-      log.appendChild(line);
-      log.scrollTop = log.scrollHeight;
+    function gameMarkup() {
+      let attrs = '';
+      if (state.gSitekeyMode === 'present') attrs += ` sitekey="${SITEKEY}"`;
+      if (state.gTrigger !== 'auto') attrs += ` trigger="${state.gTrigger}"`;
+      if (state.gLayout !== 'auto') attrs += ` layout="${state.gLayout}"`;
+      if (state.gSize !== 'normal') attrs += ` size="${state.gSize}"`;
+      attrs += widthAttr(state.gWidthMode, state.gWidthPx);
+      if (state.gHeightPx) attrs += ` height="${state.gHeightPx}"`;
+      if (state.gGames) attrs += ` games="${state.gGames}"`;
+      else if (state.gGame) attrs += ` game="${state.gGame}"`;
+      return `<caputchin-game${attrs}></caputchin-game>`;
     }
 
-    // ---------------- mount / remount ----------------
-    const EVENTS = ['start', 'pass', 'nickname', 'error', 'layout-resolved'];
+    function refreshCodePreviews() {
+      document.getElementById('w-code').textContent = widgetMarkup();
+      document.getElementById('g-code').textContent = gameMarkup();
+    }
 
-    function remount() {
-      mount.innerHTML = '';
-      log.innerHTML = '';
-      append('start', { _note: 'remount — settings applied' });
+    // ---------- logging ----------
+    function makeLogger(logEl) {
+      logEl.textContent = '';
+      return (kind, payload) => {
+        const ts = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0');
+        const line = document.createElement('div');
+        line.innerHTML =
+          `<span class="ts">[${ts}]</span><span class="ev-${kind}">${kind}</span> ` +
+          (payload === undefined ? '' : JSON.stringify(payload));
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+      };
+    }
 
-      const cfg = readControls();
-      const attrs = configToAttrs(cfg);
-      const widget = document.createElement('caputchin-widget');
-      for (const [k, v] of Object.entries(attrs)) widget.setAttribute(k, v);
-      widget.id = 'w-playground';
-
-      // Wire listeners BEFORE upgrade (script tag at bottom upgrades elements; the
-      // widget is created here AFTER script loaded, so addEventListener works fine).
-      EVENTS.forEach((ev) => {
-        widget.addEventListener(ev, (e) => append(ev, e.detail));
+    // ---------- mounting ----------
+    function loadGameScript(gameId) {
+      if (!gameId || !GAME_SRC[gameId]) return Promise.resolve();
+      if (document.querySelector(`script[data-game="${gameId}"]`)) return Promise.resolve();
+      return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = GAME_SRC[gameId];
+        s.dataset.game = gameId;
+        s.onload = resolve; s.onerror = resolve;
+        document.head.appendChild(s);
       });
+    }
 
-      // Trigger-specific wrapper: form-submit needs a <form>; manual gets buttons.
-      let container = mount;
-      if (cfg.trigger === 'form-submit') {
-        const form = document.createElement('form');
-        form.id = 'pg-form';
-        form.addEventListener('submit', (e) => {
-          e.preventDefault();
-          append('submit', { form: 'pg-form' });
-        });
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'sample form field';
-        const btn = document.createElement('button');
-        btn.type = 'submit';
-        btn.textContent = 'Submit';
-        form.appendChild(widget);
-        form.appendChild(input);
-        form.appendChild(btn);
-        mount.appendChild(form);
-      } else {
-        mount.appendChild(widget);
+    async function mountWidget() {
+      const mountEl = document.getElementById('w-mount');
+      mountEl.textContent = '';
+      const log = makeLogger(document.getElementById('w-log'));
+
+      const markup = widgetMarkup();
+      const wrap = (state.wTrigger === 'form-submit')
+        ? `<form id="w-form"><input type="text" placeholder="some field" required />${markup}<button type="submit">Submit</button></form>`
+        : markup;
+      mountEl.insertAdjacentHTML('beforeend', wrap);
+
+      const el = mountEl.querySelector('caputchin-widget');
+      ['start', 'pass', 'nickname', 'error', 'layout-resolved'].forEach((evt) => {
+        el.addEventListener(evt, (e) => log(evt, e.detail));
+      });
+      const form = mountEl.querySelector('form');
+      if (form) form.addEventListener('submit', (e) => { e.preventDefault(); log('submit', { ok: true }); });
+
+      if (state.wTrigger === 'manual') {
+        const controls = document.createElement('div');
+        controls.className = 'manual-controls';
+        controls.innerHTML = `<button id="w-mstart">widget.start()</button>`;
+        mountEl.appendChild(controls);
+        document.getElementById('w-mstart').onclick = () => el.start();
       }
 
-      const showManual = cfg.trigger === 'manual' || (cfg.mode === 'game' && cfg.trigger === 'manual');
-      if (showManual) {
-        const ctrls = document.createElement('div');
-        ctrls.className = 'manual-controls';
-        const start = document.createElement('button');
-        start.textContent = 'widget.start()';
-        start.addEventListener('click', () => widget.start());
-        ctrls.appendChild(start);
+      log('start', { _note: 'remount — settings applied' });
+    }
 
-        if (cfg.mode === 'game') {
-          const pass = document.createElement('button');
-          pass.textContent = 'widget.pass({score:0.9, durationMs:4200})';
-          pass.addEventListener('click', () => widget.pass({ score: 0.9, durationMs: 4200 }));
-          ctrls.appendChild(pass);
+    async function mountGame() {
+      const mountEl = document.getElementById('g-mount');
+      mountEl.textContent = '';
+      const log = makeLogger(document.getElementById('g-log'));
+
+      await loadGameScript(state.gGame);
+      if (state.gGames) {
+        for (const g of state.gGames.split(',').map((s) => s.trim()).filter(Boolean)) {
+          await loadGameScript(g);
         }
+      }
 
-        const nick = document.createElement('button');
-        nick.textContent = 'widget.setNickname("ABC")';
-        nick.addEventListener('click', () => {
-          try { widget.setNickname('ABC'); }
-          catch (err) { append('error', { code: 'method-threw', message: String(err) }); }
-        });
-        ctrls.appendChild(nick);
+      const markup = gameMarkup();
+      const wrap = (state.gTrigger === 'form-submit')
+        ? `<form id="g-form"><input type="text" placeholder="some field" required />${markup}<button type="submit">Submit</button></form>`
+        : markup;
+      mountEl.insertAdjacentHTML('beforeend', wrap);
 
-        mount.appendChild(ctrls);
+      const el = mountEl.querySelector('caputchin-game');
+      ['start', 'pass', 'nickname', 'error', 'layout-resolved'].forEach((evt) => {
+        el.addEventListener(evt, (e) => log(evt, e.detail));
+      });
+      const form = mountEl.querySelector('form');
+      if (form) form.addEventListener('submit', (e) => { e.preventDefault(); log('submit', { ok: true }); });
+
+      if (state.gTrigger === 'manual' && state.gSitekeyMode === 'present') {
+        const controls = document.createElement('div');
+        controls.className = 'manual-controls';
+        controls.innerHTML = `
+          <button id="g-mstart">widget.start()</button>
+          <button id="g-mpass">widget.pass({score:0.85})</button>
+        `;
+        mountEl.appendChild(controls);
+        document.getElementById('g-mstart').onclick = () => el.start();
+        document.getElementById('g-mpass').onclick = () => el.pass({ score: 0.85, durationMs: 1200 });
+      }
+
+      log('start', { _note: 'remount — settings applied' });
+    }
+
+    // ---------- presets render ----------
+    function renderPresets(rootId, list, applyFn) {
+      const root = document.getElementById(rootId);
+      root.textContent = '';
+      for (const [label, patch] of list) {
+        const b = document.createElement('button');
+        b.className = 'preset'; b.type = 'button'; b.textContent = label;
+        b.onclick = () => { applyFn(patch); };
+        root.appendChild(b);
       }
     }
 
-    // ---------------- wire UI ----------------
-    function wire() {
-      // Sync code preview as user types (predictive, not remount).
-      [ctrlMode, ctrlTrigger, ctrlLayout, ctrlSize, ctrlGame, ctrlGames, ctrlHeightPx, ctrlWidthPx].forEach((el) => {
-        el.addEventListener('input', syncCodePreview);
-        el.addEventListener('change', syncCodePreview);
-      });
-      ctrlWidthMode.addEventListener('change', () => {
-        ctrlWidthPx.disabled = ctrlWidthMode.value !== 'pixels';
-        syncCodePreview();
-      });
-
-      $('btn-apply').addEventListener('click', remount);
-      $('btn-reset').addEventListener('click', () => {
-        writeControls(DEFAULTS);
-        remount();
-      });
-      $('btn-copy').addEventListener('click', () => {
-        navigator.clipboard.writeText(codeContent.textContent || '');
-      });
-
-      // Presets
-      PRESETS.forEach((preset) => {
-        const btn = document.createElement('button');
-        btn.className = 'preset';
-        btn.textContent = preset.label;
-        btn.addEventListener('click', () => {
-          writeControls(preset.cfg);
-          remount();
-        });
-        presetsBox.appendChild(btn);
-      });
+    function applyWidgetPreset(patch) {
+      Object.assign(state, patch);
+      applyStateToControls();
+      refreshCodePreviews();
+      writeUrl(state);
+      mountWidget();
+    }
+    function applyGamePreset(patch) {
+      Object.assign(state, patch);
+      applyStateToControls();
+      refreshCodePreviews();
+      writeUrl(state);
+      mountGame();
     }
 
-    // ---------------- init ----------------
-    wire();
-    writeControls(readUrl());
-    remount();
+    // ---------- tab switching ----------
+    function setTab(name) {
+      state.tab = name;
+      document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === `panel-${name}`));
+      writeUrl(state);
+    }
+
+    // ---------- wire ----------
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      if (e.target.matches('.tab')) setTab(e.target.dataset.tab);
+    });
+
+    ['w-mode','w-trigger','w-size','w-width-mode','w-width-px'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => { readWidgetControls(); refreshCodePreviews(); });
+    });
+    ['g-sitekey-mode','g-trigger','g-layout','g-size','g-width-mode','g-width-px','g-height-px','g-game','g-games'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => { readGameControls(); refreshCodePreviews(); });
+    });
+
+    document.getElementById('w-apply').onclick = () => {
+      readWidgetControls(); refreshCodePreviews(); writeUrl(state); mountWidget();
+    };
+    document.getElementById('g-apply').onclick = () => {
+      readGameControls(); refreshCodePreviews(); writeUrl(state); mountGame();
+    };
+    document.getElementById('w-reset').onclick = () => {
+      Object.assign(state, {
+        wMode: 'simple', wTrigger: 'auto', wSize: 'normal', wWidthMode: 'auto', wWidthPx: '',
+      });
+      applyStateToControls(); refreshCodePreviews(); writeUrl(state); mountWidget();
+    };
+    document.getElementById('g-reset').onclick = () => {
+      Object.assign(state, {
+        gSitekeyMode: 'present', gTrigger: 'auto', gLayout: 'auto', gSize: 'normal',
+        gWidthMode: 'auto', gWidthPx: '', gHeightPx: '', gGame: '@demo/simple', gGames: '',
+      });
+      applyStateToControls(); refreshCodePreviews(); writeUrl(state); mountGame();
+    };
+    document.querySelectorAll('.copy').forEach((b) => {
+      b.onclick = () => {
+        const txt = b.dataset.copy === 'widget' ? widgetMarkup() : gameMarkup();
+        navigator.clipboard.writeText(txt);
+      };
+    });
+
+    renderPresets('widget-presets', WIDGET_PRESETS, applyWidgetPreset);
+    renderPresets('game-presets', GAME_PRESETS, applyGamePreset);
+    applyStateToControls();
+    refreshCodePreviews();
+    setTab(state.tab);
+
+    // initial mount of both — script tag below registers both elements
+    window.addEventListener('DOMContentLoaded', () => {
+      mountWidget();
+      mountGame();
+    });
   </script>
-  <script src="/packages/widget/dist/widget.js"></script>
+  <script src="/packages/widget/dist/all.js"></script>
 </body>
 </html>

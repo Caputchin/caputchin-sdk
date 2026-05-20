@@ -1,4 +1,5 @@
-import type { WidgetMode, WidgetTrigger, WidgetWidth, WidgetSize } from '../config.js';
+import type { WidgetTrigger, WidgetWidth, WidgetSize } from '../config/shared.js';
+import type { WidgetMode } from '../config/widget.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -30,18 +31,14 @@ export interface PresentationFactoryInput {
 }
 
 /**
- * Lightweight presentations only (invisible, simple). The `game` and
- * `game-only` modes are orchestrated directly in element.ts because they
- * reuse the IframeHost + LayoutPresenter machinery already there.
+ * Lightweight presentations for the cap widget (invisible, simple). Game
+ * presentation lives in `./game.ts` (consumed by `<caputchin-game>`).
  */
-export function createPresentation(mode: WidgetMode, input: PresentationFactoryInput): Presentation | null {
+export function createPresentation(mode: WidgetMode, input: PresentationFactoryInput): Presentation {
   switch (mode) {
     case 'invisible':
       return createInvisiblePresentation();
     case 'simple':
       return createSimplePresentation(input);
-    case 'game':
-    case 'game-only':
-      return null;
   }
 }

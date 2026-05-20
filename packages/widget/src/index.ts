@@ -1,28 +1,37 @@
 import { installCustomFetch } from './cap/custom-fetch.js';
-import { CaputchinElement } from './element.js';
+import { CaputchinWidget } from './elements/widget.js';
+import { CaputchinGame } from './elements/game.js';
 
 installCustomFetch();
 
-if (!customElements.get('caputchin-widget')) {
-  customElements.define('caputchin-widget', CaputchinElement);
+if (typeof customElements !== 'undefined') {
+  if (!customElements.get('caputchin-widget')) {
+    customElements.define('caputchin-widget', CaputchinWidget);
+  }
+  if (!customElements.get('caputchin-game')) {
+    customElements.define('caputchin-game', CaputchinGame);
+  }
 }
 
+export { CaputchinWidget, CaputchinGame };
 export type {
   CaputchinEventMap,
+  CaputchinWidgetShape,
+  CaputchinGameShape,
   StartEventDetail,
   PassEventDetail,
   NicknameEventDetail,
   ErrorEventDetail,
   LayoutResolvedEventDetail,
-  CaputchinElementShape,
   Layout,
   LayoutAttr,
   LayoutSource,
   WidgetMode,
   WidgetTrigger,
   WidgetWidth,
+  WidgetHeight,
   WidgetSize,
 } from './types.js';
 export type { ErrorCode } from './errors.js';
-export type { ParsedConfig } from './config.js';
-export { CaputchinElement } from './element.js';
+export type { WidgetConfig } from './config/widget.js';
+export type { GameConfig } from './config/game.js';

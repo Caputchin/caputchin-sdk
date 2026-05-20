@@ -1,4 +1,4 @@
-import { canonicalizeGameUrl, validateGameUrl } from '../config.js';
+import { canonicalizeGameUrl, validateGameUrl } from '../config/shared.js';
 
 const INTEGRITY_RE = /^sha384-[A-Za-z0-9+/=]{60,100}$/;
 

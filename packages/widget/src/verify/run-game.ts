@@ -4,33 +4,44 @@ import { injectHiddenInput } from '../form.js';
 import { IframeHost } from '../iframe/host.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
 import type { WrappedToken } from '../token.js';
-import type { WidgetState } from './state.js';
+import type { GameState } from './state-game.js';
 import { makeWidgetId, resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
 import { recordAdditionalRound } from './record-round.js';
 
 /**
- * Verification path for `mode = invisible | simple | game`. Trigger has
- * already decided "now" — this runs the verification + (if game mode and
- * trigger ≠ manual) mounts the iframe in parallel.
+ * Orchestrator for `<caputchin-game>`. Two paths:
+ *   - sitekey present → cap.solve + iframe in parallel; `pass` event carries
+ *     wrapped token + game score.
+ *   - sitekey absent → game-only; no cap; `pass` event carries `token: null`.
+ *
+ * Trigger has already decided "now" — this builds the iframe, wires the
+ * callbacks, and (when sitekey is set) kicks off Cap.
  */
-export async function runVerification(el: HTMLElement, state: WidgetState, apiHost: string): Promise<void> {
+export async function runGame(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
   if (!state.config) return;
   const cfg = state.config;
+  if (cfg.sitekey) {
+    await runGameWithVerify(el, state, apiHost);
+  } else {
+    await runGameOnly(el, state, apiHost);
+  }
+}
+
+async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
+  const cfg = state.config!;
   const gameId = resolveGameId(cfg);
 
-  state.presentation?.setState('verifying');
+  state.gamePresentation?.setState('verifying');
 
   let gameUrl: string | null = cfg.gameSrc;
   let integrity: string | null = null;
 
-  const wantsIframe = cfg.mode === 'game' && cfg.trigger !== 'manual';
-
-  if (wantsIframe && gameId && !gameUrl) {
+  if (cfg.trigger !== 'manual' && gameId && !gameUrl) {
     const resolution = await fetchMarketplaceResolution(gameId, apiHost);
     if (!resolution.ok) {
       fireError(el, 'game-load-failed', resolution.message, resolution.code);
-      state.presentation?.setState('error');
+      state.gamePresentation?.setState('error');
       return;
     }
     gameUrl = resolution.url;
@@ -39,13 +50,10 @@ export async function runVerification(el: HTMLElement, state: WidgetState, apiHo
 
   let wrappedToken: WrappedToken | null = null;
   const sessionCtx = {
-    platform: { sitekey: cfg.sitekey, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
+    platform: { sitekey: cfg.sitekey!, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
-  // Per-widget id encoded into the Cap library's apiEndpoint path so the
-  // custom-fetch router can attach session context without any shared
-  // mutable state. 50 widgets solve in parallel; no queue, no race.
   if (!state.widgetId) state.widgetId = makeWidgetId();
   const client = createCapClient(state.widgetId, apiHost, sessionCtx);
   state.capClient = client;
@@ -58,6 +66,8 @@ export async function runVerification(el: HTMLElement, state: WidgetState, apiHo
       composed: true,
     }));
   };
+
+  const wantsIframe = cfg.trigger !== 'manual';
 
   if (wantsIframe && (gameId !== null || gameUrl !== null)) {
     let firstClickHappened = false;
@@ -88,7 +98,7 @@ export async function runVerification(el: HTMLElement, state: WidgetState, apiHo
       (code, message) => {
         client.releaseGate({ score: null, durationMs: null });
         fireError(el, 'game-load-failed', message, code);
-        state.presentation?.setState('error');
+        state.gamePresentation?.setState('error');
         client.dispose();
         state.iframeHost = null;
       },
@@ -99,37 +109,29 @@ export async function runVerification(el: HTMLElement, state: WidgetState, apiHo
       },
     );
   } else {
-    // No iframe in the verification path: invisible, simple, or game-manual.
-    // For game-manual the Cap gate stays armed until widget.pass() releases.
-    if (cfg.mode !== 'game') {
-      // invisible / simple: no game payload to wait for — release immediately
-      // so Cap's redeem can proceed end-to-end.
-      client.releaseGate({ score: null, durationMs: null });
-    }
+    // Manual trigger: no iframe here. Customer hosts the game and drives
+    // widget.pass() — gate stays armed until that fires.
     dispatchStart();
   }
 
   try {
     await client.solve();
   } catch (err) {
-    // Game-error already fired a dedicated error event; don't double-report.
     if (!state.gameErrored) {
       fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
     }
-    state.presentation?.setState('error');
+    state.gamePresentation?.setState('error');
     return;
   }
 
   if (state.gameErrored) {
-    // Game told us it failed — even if cap.solve somehow returned, the
-    // verification is invalid. Drop the wrapped token, no pass event.
-    state.presentation?.setState('error');
+    state.gamePresentation?.setState('error');
     return;
   }
 
   if (!wrappedToken) {
     fireError(el, 'verification-failed', 'No wrapped token received from platform', 'cap-redeem-failed');
-    state.presentation?.setState('error');
+    state.gamePresentation?.setState('error');
     return;
   }
 
@@ -140,11 +142,73 @@ export async function runVerification(el: HTMLElement, state: WidgetState, apiHo
     injectHiddenInput(form, token);
   }
 
-  state.presentation?.setState('verified');
+  state.gamePresentation?.setState('verified');
   state.lockedToken = token;
   el.dispatchEvent(new CustomEvent('pass', {
     detail: { token, score, durationMs },
     bubbles: true,
     composed: true,
   }));
+}
+
+async function runGameOnly(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
+  const cfg = state.config!;
+  const gameId = resolveGameId(cfg);
+
+  let gameUrl: string | null = cfg.gameSrc;
+  let integrity: string | null = null;
+
+  if (gameId === null && gameUrl === null) {
+    console.warn('[caputchin] game widget mounted without sitekey + without game configured — widget is inert');
+    return;
+  }
+
+  if (gameId && !gameUrl) {
+    const resolution = await fetchMarketplaceResolution(gameId, apiHost);
+    if (!resolution.ok) {
+      fireError(el, 'game-load-failed', resolution.message, resolution.code);
+      return;
+    }
+    gameUrl = resolution.url;
+    integrity = resolution.integrity;
+  }
+
+  const dispatchStart = (): void => {
+    if (state.gameStartedEmitted) return;
+    state.gameStartedEmitted = true;
+    el.dispatchEvent(new CustomEvent('start', {
+      detail: { gameId },
+      bubbles: true,
+      composed: true,
+    }));
+  };
+
+  const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
+    if (msg.kind === 'game-pass') {
+      state.gamePresentation?.setState('verified');
+      el.dispatchEvent(new CustomEvent('pass', {
+        detail: { token: null, score: msg.score, durationMs: msg.durationMs },
+        bubbles: true,
+        composed: true,
+      }));
+    } else if (msg.kind === 'game-error') {
+      const { code, originalCode } = mapIframeErrorCode(msg.code);
+      fireError(el, code, msg.message, originalCode);
+      state.gamePresentation?.setState('error');
+    }
+  });
+  state.iframeHost = host;
+
+  await installGameFrame(
+    el,
+    state.gamePresentation,
+    cfg,
+    host,
+    (code, message) => {
+      fireError(el, 'game-load-failed', message, code);
+      state.gamePresentation?.setState('error');
+      state.iframeHost = null;
+    },
+    dispatchStart,
+  );
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { CaputchinElement } from '../../src/element.js';
+import { CaputchinGame } from '../../src/elements/game.js';
 import { installCustomFetch } from '../../src/cap/custom-fetch.js';
-import { getTestElement } from '../fixtures/test-element.js';
+import { getGame } from '../fixtures/test-element.js';
 
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
 (globalThis as Record<string, unknown>)['__IFRAME_RUNTIME__'] = '';
@@ -17,9 +17,7 @@ beforeAll(() => {
       close?: () => void;
     };
     if (typeof proto.showModal !== 'function') {
-      proto.showModal = function () {
-        this.setAttribute('open', '');
-      };
+      proto.showModal = function () { this.setAttribute('open', ''); };
     }
     if (typeof proto.close !== 'function') {
       proto.close = function () {
@@ -30,50 +28,32 @@ beforeAll(() => {
   }
 });
 
-describe('CaputchinElement — layout integration', () => {
+describe('CaputchinGame — layout integration', () => {
   it('observedAttributes includes layout', () => {
-    expect(CaputchinElement.observedAttributes).toContain('layout');
+    expect(CaputchinGame.observedAttributes).toContain('layout');
   });
 
-  it('mounts without throwing with layout="inline"', () => {
-    const el = getTestElement({ sitekey: 'k', layout: 'inline' });
-    expect(() => document.body.appendChild(el)).not.toThrow();
-    el.remove();
-  });
+  for (const layout of ['inline', 'modal', 'fullscreen', 'auto'] as const) {
+    it(`mounts without throwing with layout="${layout}"`, () => {
+      const el = getGame({ sitekey: 'k', game: '@x/y', layout });
+      expect(() => document.body.appendChild(el)).not.toThrow();
+      el.remove();
+    });
+  }
 
-  it('mounts without throwing with layout="modal"', () => {
-    const el = getTestElement({ sitekey: 'k', layout: 'modal' });
-    expect(() => document.body.appendChild(el)).not.toThrow();
-    el.remove();
-  });
-
-  it('mounts without throwing with layout="fullscreen"', () => {
-    const el = getTestElement({ sitekey: 'k', layout: 'fullscreen' });
-    expect(() => document.body.appendChild(el)).not.toThrow();
-    el.remove();
-  });
-
-  it('mounts without throwing with layout="auto"', () => {
-    const el = getTestElement({ sitekey: 'k', layout: 'auto' });
-    expect(() => document.body.appendChild(el)).not.toThrow();
-    el.remove();
-  });
-
-  it('attaches shadow root when game-only with game-src and layout="modal"', async () => {
-    const el = getTestElement({
+  it('attaches shadow root for game-only with game-src and layout="modal"', async () => {
+    const el = getGame({
       'game-src': 'https://example.com/game.js',
-      mode: 'game-only',
       layout: 'modal',
     });
     document.body.appendChild(el);
-    // Let the microtasks before manifest-await drain
     await Promise.resolve();
     expect(el.shadowRoot).not.toBeNull();
     el.remove();
   });
 
-  it('fires invalid-config error event on invalid layout value but does not throw', () => {
-    const el = getTestElement({ sitekey: 'k', layout: 'bogus' });
+  it('fires invalid-config error on bogus layout but does not throw', () => {
+    const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'bogus' });
     const errors: CustomEvent[] = [];
     el.addEventListener('error', (e) => errors.push(e as CustomEvent));
     expect(() => document.body.appendChild(el)).not.toThrow();
