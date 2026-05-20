@@ -1,10 +1,11 @@
 import { createCapClient } from '../cap/client.js';
 import { fireError } from '../errors.js';
-import { injectHiddenInput } from '../form.js';
-import type { WrappedToken } from '../token.js';
+import { emitStart, emitPass } from './events.js';
+import { injectTokenIntoEnclosingForm } from './form.js';
+import { makeWidgetId } from './id.js';
 import type { WidgetState } from './state.js';
 import type { GameConfig } from '../config/game.js';
-import { makeWidgetId } from './id.js';
+import type { WrappedToken } from '../token.js';
 
 /**
  * Manual orchestrator for `<caputchin-game trigger="manual">` — the customer
@@ -30,11 +31,7 @@ export function runManual(
   const dispatchStart = (): void => {
     if (state.gameStartedEmitted) return;
     state.gameStartedEmitted = true;
-    el.dispatchEvent(new CustomEvent('start', {
-      detail: { gameId: null },
-      bubbles: true,
-      composed: true,
-    }));
+    emitStart(el, null);
   };
 
   if (cfg.sitekey === null) {
@@ -47,7 +44,7 @@ export function runManual(
   // Cap + manual: armed gate; customer releases via pass() or aborts via fail().
   let wrappedToken: WrappedToken | null = null;
   const sessionCtx = {
-    platform: { sitekey: cfg.sitekey, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
+    platform: { sitekey: cfg.sitekey, score: null, durationMs: null } as Record<string, unknown>,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
@@ -70,17 +67,10 @@ export function runManual(
         return;
       }
       const { token, score, durationMs } = wrappedToken;
-      const form = el.closest('form');
-      if (form instanceof HTMLFormElement) {
-        injectHiddenInput(form, token);
-      }
+      injectTokenIntoEnclosingForm(el, token);
       state.gamePresentation?.setState('verified');
       state.lockedToken = token;
-      el.dispatchEvent(new CustomEvent('pass', {
-        detail: { token, score, durationMs },
-        bubbles: true,
-        composed: true,
-      }));
+      emitPass(el, { token, score, durationMs });
     })
     .catch((err) => {
       if (!state.gameErrored) {

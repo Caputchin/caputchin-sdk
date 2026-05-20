@@ -1,4 +1,6 @@
 import { fireError } from '../errors.js';
+import { emitPass } from './events.js';
+import { normalizeOptionalNumber, type ManualPassPayload, type ManualFailPayload } from './payload.js';
 import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
 import type { GameConfig } from '../config/game.js';
@@ -16,23 +18,19 @@ import type { GameConfig } from '../config/game.js';
  */
 export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): void {
   Object.defineProperty(el, 'pass', {
-    value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
+    value: (payload?: ManualPassPayload): void => {
       if (!state.config) return;
       if (state.config.trigger !== 'manual') {
         fireError(el, 'invalid-call', 'pass() only callable when trigger="manual"');
         return;
       }
-      const score = typeof payload?.score === 'number' ? payload.score : null;
-      const durationMs = typeof payload?.durationMs === 'number' ? payload.durationMs : null;
+      const score = normalizeOptionalNumber(payload?.score);
+      const durationMs = normalizeOptionalNumber(payload?.durationMs);
 
       if (state.config.sitekey === null) {
         // Game-only manual: no cap to release. Every pass fires a fresh
         // event — multi-round works out of the box.
-        el.dispatchEvent(new CustomEvent('pass', {
-          detail: { token: null, score, durationMs },
-          bubbles: true,
-          composed: true,
-        }));
+        emitPass(el, { token: null, score, durationMs });
         state.gamePresentation?.setState('verified');
         return;
       }
@@ -51,12 +49,9 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
         state.firstPassFired = true;
         state.capClient.releaseGate({ score, durationMs });
       } else {
-        // Subsequent pass: record an additional round directly against
-        // /verify/pass, then emit the pass event with the locked token.
-        // `recordAdditionalRound` silently no-ops if `lockedToken` isn't
-        // set yet (race: customer called pass() faster than cap.solve
-        // completed); customers normally wait for the `pass` event before
-        // scoring again.
+        // Subsequent pass: record an additional round + emit the pass event
+        // with the locked token. recordAdditionalRound silently no-ops if
+        // lockedToken isn't set yet (race against cap.solve completion).
         void recordAdditionalRound(el, state, apiHost, { score, durationMs });
       }
     },
@@ -66,7 +61,7 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
   });
 
   Object.defineProperty(el, 'fail', {
-    value: (payload?: { code?: string; message?: string }): void => {
+    value: (payload?: ManualFailPayload): void => {
       if (!state.config) return;
       if (state.config.trigger !== 'manual') {
         fireError(el, 'invalid-call', 'fail() only callable when trigger="manual"');

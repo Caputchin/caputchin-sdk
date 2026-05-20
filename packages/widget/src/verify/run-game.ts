@@ -1,6 +1,7 @@
 import { createCapClient } from '../cap/client.js';
 import { fireError, mapIframeErrorCode } from '../errors.js';
-import { injectHiddenInput } from '../form.js';
+import { emitStart, emitPass } from './events.js';
+import { injectTokenIntoEnclosingForm } from './form.js';
 import { IframeHost } from '../iframe/host.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
 import type { WrappedToken } from '../token.js';
@@ -52,7 +53,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
 
   let wrappedToken: WrappedToken | null = null;
   const sessionCtx = {
-    platform: { sitekey: cfg.sitekey!, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
+    platform: { sitekey: cfg.sitekey!, score: null, durationMs: null } as Record<string, unknown>,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
@@ -61,13 +62,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   state.capClient = client;
   if (state.triggerCtx) state.triggerCtx.capClient = client;
 
-  const dispatchStart = (): void => {
-    el.dispatchEvent(new CustomEvent('start', {
-      detail: { gameId },
-      bubbles: true,
-      composed: true,
-    }));
-  };
+  const dispatchStart = (): void => emitStart(el, gameId);
 
   if (gameId === null && gameUrl === null) {
     console.warn('[caputchin] game widget mounted without game configured — verification will run but no iframe will mount');
@@ -136,19 +131,10 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   }
 
   const { token, score, durationMs } = wrappedToken;
-
-  const form = el.closest('form');
-  if (form instanceof HTMLFormElement) {
-    injectHiddenInput(form, token);
-  }
-
+  injectTokenIntoEnclosingForm(el, token);
   state.gamePresentation?.setState('verified');
   state.lockedToken = token;
-  el.dispatchEvent(new CustomEvent('pass', {
-    detail: { token, score, durationMs },
-    bubbles: true,
-    composed: true,
-  }));
+  emitPass(el, { token, score, durationMs });
 }
 
 async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
@@ -176,21 +162,13 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
   const dispatchStart = (): void => {
     if (state.gameStartedEmitted) return;
     state.gameStartedEmitted = true;
-    el.dispatchEvent(new CustomEvent('start', {
-      detail: { gameId },
-      bubbles: true,
-      composed: true,
-    }));
+    emitStart(el, gameId);
   };
 
   const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
     if (msg.kind === 'game-pass') {
       state.gamePresentation?.setState('verified');
-      el.dispatchEvent(new CustomEvent('pass', {
-        detail: { token: null, score: msg.score, durationMs: msg.durationMs },
-        bubbles: true,
-        composed: true,
-      }));
+      emitPass(el, { token: null, score: msg.score, durationMs: msg.durationMs });
     } else if (msg.kind === 'game-error') {
       const { code, originalCode } = mapIframeErrorCode(msg.code);
       fireError(el, code, msg.message, originalCode);
