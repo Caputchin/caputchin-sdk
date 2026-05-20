@@ -4,6 +4,44 @@
   "displayName": "Caputchin Widget",
   "description": "Customer-facing CAPTCHA + game widgets for the Caputchin platform",
   "languages": {
+    "schema": {
+      "simpleVerify": {
+        "name": "Verify label (idle)",
+        "description": "Text shown next to the shield before verification starts."
+      },
+      "simpleVerifying": {
+        "name": "Verify label (in progress)",
+        "description": "Text shown while the proof-of-work and Cap redeem are running."
+      },
+      "simpleVerified": {
+        "name": "Verify label (success)",
+        "description": "Text shown after verification succeeds."
+      },
+      "simpleFailed": {
+        "name": "Verify label (failure)",
+        "description": "Text shown when verification fails."
+      },
+      "brandName": {
+        "name": "Brand wordmark",
+        "description": "Product name shown next to the leaf logo in the brand block."
+      },
+      "brandTag": {
+        "name": "Brand tagline",
+        "description": "Small tagline under the wordmark linking to the legal page."
+      },
+      "simpleAriaCheckbox": {
+        "name": "Checkbox aria-label",
+        "description": "Screen-reader label for the clickable verify shield. Used when trigger=click."
+      },
+      "simpleAriaStatus": {
+        "name": "Status aria-label",
+        "description": "Screen-reader label for the non-interactive status shield. Used for auto / form-submit triggers."
+      },
+      "overlayClose": {
+        "name": "Close button aria-label",
+        "description": "Screen-reader label for the close (x) button on the fullscreen game dialog."
+      }
+    },
     "presets": {
       "en": {
         "_iso": "en",
