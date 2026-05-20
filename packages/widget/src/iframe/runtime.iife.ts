@@ -137,6 +137,20 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         return;
       }
 
+      // Single helper for both auto-measure + bridge.setSize. Tracks the
+      // last posted dimensions so repeat triggers (e.g., a ResizeObserver
+      // firing twice with the same size) don't spam the host.
+      let lastPostedW = -1;
+      let lastPostedH = -1;
+      function postDimensions(w: number, h: number, source: 'auto' | 'explicit'): void {
+        const wInt = Math.max(1, Math.round(w));
+        const hInt = Math.max(1, Math.round(h));
+        if (wInt === lastPostedW && hInt === lastPostedH) return;
+        lastPostedW = wInt;
+        lastPostedH = hInt;
+        postToParent({ kind: 'dimensions-measured', seq, width: wInt, height: hInt, source });
+      }
+
       const bridge: Bridge = {
         pass({ score, durationMs }) {
           postToParent({
@@ -149,6 +163,9 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         error({ code, message }) {
           postError(code, message ?? '');
         },
+        setSize(width, height) {
+          postDimensions(width, height, 'explicit');
+        },
         get layout(): Layout | null {
           return currentLayout;
         },
@@ -159,6 +176,32 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       } catch (err) {
         postError('game-error-relayed', String(err));
         return;
+      }
+
+      // Auto-measure the game's first rendered child. Works for intrinsic-
+      // sized roots (canvas with width/height attrs, fixed-px divs) — the
+      // ResizeObserver fires with the natural content size which differs
+      // from the iframe's CSS size. For CSS-percentage layouts the measured
+      // size will equal the iframe size (no useful signal) — those games
+      // call bridge.setSize() explicitly instead.
+      if (typeof ResizeObserver === 'function') {
+        const ro = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const rect = entry.contentRect;
+            if (rect.width > 0 && rect.height > 0) {
+              postDimensions(rect.width, rect.height, 'auto');
+            }
+          }
+        });
+        const target = root.firstElementChild ?? root;
+        ro.observe(target);
+        // Single-shot per design — viewport changes mid-session are an
+        // antipattern. Disconnect after the first paint settles.
+        // Use a microtask + raf to give the game a chance to render then
+        // disconnect on next frame.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => ro.disconnect());
+        });
       }
 
       postToParent({ kind: 'game-started', seq });
