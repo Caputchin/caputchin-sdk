@@ -66,10 +66,10 @@ type CatalogueCache = {
  * server creation it captures the env config and registers two
  * top-level handlers (`tools/list`, `tools/call`); both merge:
  *
- *  - Local-only tools (`local-tools.ts`) — offline snippet generators
+ *  - Local-only tools (`local-tools.ts`): offline snippet generators
  *    that need no Caputchin account.
- *  - Remote tools fetched from the platform's `/api/mcp` endpoint —
- *    the canonical management-surface catalogue.
+ *  - Remote tools fetched from the platform's `/api/mcp` endpoint
+ *    (the canonical management-surface catalogue).
  *
  * The remote fetch is lazy (first `tools/list` call triggers it). If
  * the platform is unreachable the local tools still work; the bridge
