@@ -1,34 +1,15 @@
-import { fireError } from '../errors.js';
 import type { GameState } from './state-game.js';
 
 /**
- * Public methods on `<caputchin-game>`. `pass()` is only meaningful for
- * `trigger="manual"` with a sitekey (customer-hosted game). Without a
- * sitekey the widget is game-only and `pass()` fires an `invalid-call`
- * error event.
+ * Public methods on `<caputchin-game>`. There is no `pass()` here — the
+ * game widget always hosts the game inside its sandboxed iframe; the iframe
+ * relays game-pass / game-error via postMessage, never the customer code.
  */
 export function installGameMethods(el: HTMLElement, state: GameState): void {
   Object.defineProperty(el, 'start', {
     value: (): void => {
       if (!state.config) return;
       state.trigger?.forceStart?.(state.triggerCtx!);
-    },
-    configurable: true,
-    writable: false,
-    enumerable: false,
-  });
-
-  Object.defineProperty(el, 'pass', {
-    value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
-      if (!state.config) return;
-      const inManualVerify = state.config.trigger === 'manual' && state.config.sitekey !== null;
-      if (!inManualVerify) {
-        fireError(el, 'invalid-call', 'pass() only callable with sitekey + trigger="manual"');
-        return;
-      }
-      const score = typeof payload?.score === 'number' ? payload.score : null;
-      const durationMs = typeof payload?.durationMs === 'number' ? payload.durationMs : null;
-      state.triggerCtx?.releaseManualPass({ score, durationMs });
     },
     configurable: true,
     writable: false,

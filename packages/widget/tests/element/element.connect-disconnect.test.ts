@@ -17,7 +17,7 @@ beforeAll(() => {
 
 describe('CaputchinWidget lifecycle', () => {
   it('observedAttributes covers cap surface', () => {
-    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'mode', 'trigger', 'width', 'size']);
+    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'mode', 'trigger', 'width', 'height', 'size']);
   });
 
   it('does NOT observe game attrs (game attrs belong on <caputchin-game>)', () => {
@@ -53,12 +53,16 @@ describe('CaputchinWidget lifecycle', () => {
 describe('CaputchinGame lifecycle', () => {
   it('observedAttributes covers game surface', () => {
     expect(CaputchinGame.observedAttributes).toEqual(
-      ['sitekey', 'trigger', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout']
+      ['sitekey', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout']
     );
   });
 
   it('does NOT observe mode (no mode on game widget)', () => {
     expect(CaputchinGame.observedAttributes).not.toContain('mode');
+  });
+
+  it('does NOT observe trigger (trigger is implicit per layout on game widget)', () => {
+    expect(CaputchinGame.observedAttributes).not.toContain('trigger');
   });
 
   it('mounts without sitekey (game-only path) without throwing', () => {

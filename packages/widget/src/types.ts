@@ -68,7 +68,6 @@ export interface CaputchinWidgetShape extends HTMLElement {
 /** Public shape of `<caputchin-game>` — game host with optional verification. */
 export interface CaputchinGameShape extends HTMLElement {
   start(): void;
-  pass(payload?: { score?: number | null; durationMs?: number | null }): void;
   setNickname(letters: string): void;
   addEventListener<K extends keyof CaputchinEventMap>(
     type: K,

@@ -148,6 +148,15 @@ export class IframeHost {
     send(this.iframe, { kind: 'layout-context', seq: 0, layout });
   }
 
+  /** Tell the iframe runtime the dialog visibility changed. The runtime
+   *  suspends every AudioContext it has created when visible=false (and
+   *  resumes them on visible=true) so the hidden dialog can't leak sound.
+   *  Game logic keeps running regardless. */
+  setVisibility(visible: boolean): void {
+    if (!this.iframe) return;
+    send(this.iframe, { kind: 'visibility', seq: 0, visible });
+  }
+
   kickoff(seq: number): void {
     if (!this.iframe) return;
     send(this.iframe, {

@@ -1,4 +1,6 @@
 import { inspectGameConfig } from '../config/game.js';
+import type { WidgetTrigger } from '../config/shared.js';
+import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
@@ -12,12 +14,14 @@ import { runGame } from '../verify/run-game.js';
  *   - sitekey absent → game-only (no verification, `pass` event carries
  *     `token: null`).
  *
- * Three layouts: inline (default), modal, fullscreen. Inline embeds a
- * simple-compact brand strip below the iframe; modal/fullscreen open from
- * a simple-normal checkbox entry.
+ * Layout drives both rendering and triggering:
+ *   - `inline` (default) → iframe up on mount (trigger=auto).
+ *   - `modal` / `fullscreen` → checkbox entry; iframe opens on click (trigger=click).
+ *
+ * There is no `trigger` attribute on this widget — the layout decides.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout'];
 
   private state: GameState = createInitialGameState();
 
@@ -37,13 +41,13 @@ export class CaputchinGame extends HTMLElement {
     const apiHost = __CAPUTCHIN_API_HOST__;
     const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
-    const layout = (state.config.layout && state.config.layout !== 'auto')
-      ? state.config.layout
-      : 'inline';
+    const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
+    const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
+
     const gp = createGamePresentation({
       host: this,
       root: shadow,
-      trigger: state.config.trigger,
+      trigger: derivedTrigger,
       width: state.config.width,
       size: state.config.size,
       layout,
@@ -57,13 +61,13 @@ export class CaputchinGame extends HTMLElement {
       return;
     }
 
-    state.trigger = createTriggerStrategy(state.config.trigger);
+    state.trigger = createTriggerStrategy(derivedTrigger);
     state.triggerCtx = {
       el: this,
       presentation: gp,
       runVerification: () => runGame(this, state, apiHost),
-      releaseManualPass: (payload) => {
-        state.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
+      releaseManualPass: () => {
+        // Game widget has no pass() method — no manual gate to release.
       },
       capClient: null,
     };
@@ -98,4 +102,8 @@ export class CaputchinGame extends HTMLElement {
       console.warn(`[caputchin] attribute "${name}" changed mid-flight — ignored`);
     }
   }
+}
+
+function resolveLayout(attr: LayoutAttr): 'inline' | 'modal' | 'fullscreen' {
+  return attr === 'auto' ? 'inline' : attr;
 }

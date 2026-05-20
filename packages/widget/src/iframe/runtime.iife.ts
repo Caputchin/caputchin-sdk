@@ -16,6 +16,42 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
 
   const W = window as unknown as Record<string, unknown>;
 
+  // ---- audio mute on hide ----
+  // Wrap AudioContext constructors so every instance the game creates is
+  // tracked. When the host page postMessages visibility=false, suspend them
+  // all; on visibility=true, resume. This guarantees the iframe stays
+  // silent while the modal/fullscreen dialog is closed even though the
+  // iframe document keeps running.
+  type AudioCtxLike = AudioContext & { suspend?: () => Promise<void>; resume?: () => Promise<void> };
+  const audioContexts: AudioCtxLike[] = [];
+  let suspendedByHost = false;
+
+  function wrapAudio(name: 'AudioContext' | 'webkitAudioContext'): void {
+    const Orig = (window as unknown as Record<string, unknown>)[name];
+    if (typeof Orig !== 'function') return;
+    const Wrapped = function (this: unknown, ...args: unknown[]) {
+      const ctx = new (Orig as unknown as new (...a: unknown[]) => AudioCtxLike)(...args);
+      audioContexts.push(ctx);
+      if (suspendedByHost) { try { ctx.suspend?.(); } catch { /* */ } }
+      return ctx;
+    } as unknown as typeof Orig;
+    // Preserve prototype chain for `instanceof` checks the game might do.
+    (Wrapped as unknown as { prototype: unknown }).prototype = (Orig as unknown as { prototype: unknown }).prototype;
+    (window as unknown as Record<string, unknown>)[name] = Wrapped;
+  }
+  wrapAudio('AudioContext');
+  wrapAudio('webkitAudioContext');
+
+  function setAudioSuspended(suspended: boolean): void {
+    suspendedByHost = suspended;
+    for (const ctx of audioContexts) {
+      try {
+        if (suspended) ctx.suspend?.();
+        else ctx.resume?.();
+      } catch { /* best effort */ }
+    }
+  }
+
   // Read embedded game id from the runtime script tag (srcdoc sets data-game-id).
   const runtimeScript = document.querySelector('script[data-game-id]');
   const embeddedRaw = runtimeScript ? runtimeScript.getAttribute('data-game-id') : null;
@@ -67,6 +103,14 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       if (raw === 'inline' || raw === 'modal' || raw === 'fullscreen') {
         currentLayout = raw;
       }
+      return;
+    }
+
+    if (data['kind'] === 'visibility') {
+      // Host signals dialog visibility (modal/fullscreen open/close). Game
+      // logic keeps running; only audio context is suspended so the hidden
+      // dialog can't leak sound through the host page.
+      setAudioSuspended(data['visible'] === false);
       return;
     }
 

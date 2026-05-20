@@ -1,4 +1,4 @@
-import type { WidgetTrigger, WidgetWidth, WidgetSize } from '../config/shared.js';
+import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetMode } from '../config/widget.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
@@ -27,6 +27,10 @@ export interface PresentationFactoryInput {
   root: ShadowRoot;
   trigger: WidgetTrigger;
   width: WidgetWidth;
+  /** Explicit pixel height. `null` means "auto" — fit to content. Applied to
+   *  the host element so the brand strip can fill it. Game widget plumbs its
+   *  own height into the iframe; cap-widget uses this only for simple mode. */
+  height?: WidgetHeight;
   size: WidgetSize;
 }
 
