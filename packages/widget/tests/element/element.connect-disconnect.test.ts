@@ -53,8 +53,12 @@ describe('CaputchinWidget lifecycle', () => {
 describe('CaputchinGame lifecycle', () => {
   it('observedAttributes covers game surface', () => {
     expect(CaputchinGame.observedAttributes).toEqual(
-      ['sitekey', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout']
+      ['sitekey', 'width', 'height', 'game', 'games', 'game-src', 'layout']
     );
+  });
+
+  it('does NOT observe size (size is implicit per layout on game widget)', () => {
+    expect(CaputchinGame.observedAttributes).not.toContain('size');
   });
 
   it('does NOT observe mode (no mode on game widget)', () => {

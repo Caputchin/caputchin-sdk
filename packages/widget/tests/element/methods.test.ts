@@ -33,9 +33,9 @@ describe('CaputchinWidget methods', () => {
     el.remove();
   });
 
-  it('setNickname() throws not-implemented', () => {
+  it('does NOT expose setNickname() (scoreboards are game-only)', () => {
     mount({ sitekey: 'k', mode: 'simple' });
-    expect(() => el.setNickname('ABC')).toThrow(/not implemented/);
+    expect((el as unknown as Record<string, unknown>)['setNickname']).toBeUndefined();
     el.remove();
   });
 });
