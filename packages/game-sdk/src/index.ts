@@ -10,7 +10,7 @@ export interface Bridge {
    *  child after factory runs; this is the explicit escape hatch.
    *
    *  Call AFTER your first paint. Calling repeatedly mid-session works but
-   *  is discouraged — viewport changes during play are an antipattern. */
+   *  is discouraged; viewport changes during play are an antipattern. */
   setSize(width: number, height: number): void;
   readonly layout: Layout | null;
 }
@@ -39,7 +39,7 @@ export function register(id: string, factory: GameFactory, opts?: RegisterOption
 
   if (!g['Caputchin']) {
     console.warn(
-      '[caputchin/game-sdk] Caputchin global not found — was the SDK loaded outside a Caputchin iframe?',
+      '[caputchin/game-sdk] Caputchin global not found; was the SDK loaded outside a Caputchin iframe?',
     );
     g['Caputchin'] = { games: {}, gameOpts: {} } satisfies Caputchin;
   }
@@ -48,7 +48,7 @@ export function register(id: string, factory: GameFactory, opts?: RegisterOption
   if (!caputchin.gameOpts) caputchin.gameOpts = {};
 
   if (Object.prototype.hasOwnProperty.call(caputchin.games, id)) {
-    console.warn(`[caputchin/game-sdk] duplicate game id "${id}" — last-write-wins`);
+    console.warn(`[caputchin/game-sdk] duplicate game id "${id}"; last-write-wins`);
   }
 
   caputchin.games[id] = factory;

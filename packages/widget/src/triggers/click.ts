@@ -2,7 +2,7 @@ import type { TriggerStrategy, TriggerContext } from './index.js';
 
 /**
  * Click trigger: defer verification until the user clicks the presentation's
- * clickable surface. Only valid with mode="simple" and mode="game" — modes
+ * clickable surface. Only valid with mode="simple" and mode="game"; modes
  * without a click surface coerce to "auto" upstream (in config inspection).
  */
 export function createClickTrigger(): TriggerStrategy {

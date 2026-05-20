@@ -7,7 +7,7 @@ import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
 
 /** Per-mount mutable state. Generic in the config shape so both element
- *  classes share one definition — cap-only widgets simply leave the iframe
+ *  classes share one definition; cap-only widgets simply leave the iframe
  *  / game fields undefined. Keeps every helper (run-cap, run-manual, the
  *  presentation hooks, methods) free of type juggling. */
 export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig | GameConfig> {

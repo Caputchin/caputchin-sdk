@@ -3,7 +3,7 @@ import { listen, send } from '../protocol/channel.js';
 import type { IframeToWidget, ManifestMessage } from '../protocol/messages.js';
 import type { Layout } from '@caputchin/game-sdk';
 
-// srcdoc iframes always fire `load` for the wrapper document — even on CSP block or 404.
+// srcdoc iframes always fire `load` for the wrapper document; even on CSP block or 404.
 // The real readiness signal is `game-started` postMessage from the runtime.
 const KICKOFF_ACK_TIMEOUT_MS = 10_000;
 
@@ -86,7 +86,7 @@ export class IframeHost {
         return;
       }
       if (msg.kind === 'dimensions-measured') {
-        // Apply directly to the iframe — outer chrome (inline frame /
+        // Apply directly to the iframe; outer chrome (inline frame /
         // overlay dialog) re-flows automatically. Iframe-slot `data-fill`
         // path (customer-pinned inline) intentionally overrides via CSS
         // so customer attrs still win over auto-measure.
@@ -111,7 +111,7 @@ export class IframeHost {
   /**
    * Wait for the iframe runtime to post its manifest. Resolves to the message
    * if received within `timeoutMs`, or `null` on timeout. Safe to call multiple
-   * times — subsequent calls reuse the buffered manifest.
+   * times; subsequent calls reuse the buffered manifest.
    */
   waitManifest(timeoutMs: number): Promise<ManifestMessage | null> {
     if (this.bufferedManifest) {
@@ -173,7 +173,7 @@ export class IframeHost {
       gameId: this.gameId,
     });
 
-    // Start ack timer after kickoff is sent — waiting for game-started postMessage.
+    // Start ack timer after kickoff is sent; waiting for game-started postMessage.
     this.kickoffAckTimer = setTimeout(() => {
       this.kickoffAckTimer = null;
       this.onLoadFailed?.('iframe-load-failed', 'Game did not send game-started within 10s');

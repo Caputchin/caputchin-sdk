@@ -56,7 +56,7 @@ export interface ManifestMessage {
 /** Initial-render size measurement / explicit `bridge.setSize()` from the
  *  game. Widget re-applies via IframeHost.setSize so the iframe fits the
  *  actual content. Fires at most a few times during initial render; not
- *  intended as a mid-game live-resize channel (per design — games that
+ *  intended as a mid-game live-resize channel (per design; games that
  *  resize their viewport mid-session are an antipattern). */
 export interface DimensionsMeasuredMessage {
   kind: 'dimensions-measured';

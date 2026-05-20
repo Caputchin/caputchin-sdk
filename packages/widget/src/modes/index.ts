@@ -22,11 +22,11 @@ export interface Presentation {
 export interface PresentationFactoryInput {
   /** The custom-element host (used for host-level styling like full-width). */
   host: HTMLElement;
-  /** Where to append DOM — shadow root by default; isolated from page CSS. */
+  /** Where to append DOM; shadow root by default; isolated from page CSS. */
   root: ShadowRoot;
   trigger: WidgetTrigger;
   width: WidgetWidth;
-  /** Explicit pixel height. `null` means "auto" — fit to content. Applied to
+  /** Explicit pixel height. `null` means "auto"; fit to content. Applied to
    *  the host element so the brand strip can fill it. Game widget plumbs its
    *  own height into the iframe; cap-widget uses this only for simple mode. */
   height?: WidgetHeight;

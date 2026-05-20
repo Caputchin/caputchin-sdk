@@ -1,6 +1,6 @@
 # @caputchin/game-sdk
 
-TypeScript helpers and types for authors building games that run inside the Caputchin widget. First-party and third-party games use the same public API — no private contract.
+TypeScript helpers and types for authors building games that run inside the Caputchin widget. First-party and third-party games use the same public API; no private contract.
 
 ## Install
 
@@ -16,7 +16,7 @@ import { register } from '@caputchin/game-sdk';
 register('my-game-id', (container, bridge) => {
   // Render your game UI into container (inside the sandboxed iframe).
   // Call bridge.pass() only when the player passes the round.
-  // If the player fails or abandons, do not call bridge.pass — silence is the failure signal.
+  // If the player fails or abandons, do not call bridge.pass; silence is the failure signal.
   bridge.pass({ score: 850, durationMs: 4200 });
 
   // Return an optional cleanup function.
@@ -28,6 +28,6 @@ register('my-game-id', (container, bridge) => {
 
 ## Full reference
 
-[docs/game-sdk.md](../../docs/game-sdk.md) — `register()` signature, Bridge interface, score semantics.
+[docs/game-sdk.md](../../docs/game-sdk.md); `register()` signature, Bridge interface, score semantics.
 
-[Publishing to the marketplace](../../docs/guides/publish-to-marketplace.md) — how to list your game.
+[Publishing to the marketplace](../../docs/guides/publish-to-marketplace.md); how to list your game.

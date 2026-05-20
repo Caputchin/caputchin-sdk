@@ -54,7 +54,7 @@ export async function installGameFrame(
  *   - modal/fullscreen: customer dims set the entry-checkbox size; iframe
  *     gets manifest-preferred dimensions and the dialog shrink-wraps to it.
  *
- * The only special case here is `width="full"` on inline — the iframe
+ * The only special case here is `width="full"` on inline; the iframe
  * stretches to 100% of the (full-width) frame.
  */
 export function applyIframeSize(

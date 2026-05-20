@@ -5,7 +5,7 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
  * indicator on the left, state text ("Verify" / "Verifying…" / "Verified" /
  * "Failed") right next to it, then the brand block (logo + Caputchin +
- * "see no data" link) on the right. The brand block is stable — the "see
+ * "see no data" link) on the right. The brand block is stable; the "see
  * no data" tag never gets overridden by the verification state.
  *
  * Indicator shape depends on the trigger:
@@ -219,7 +219,7 @@ function createShieldIndicator(input: {
 
   const shield = document.createElementNS(SVG_NS, 'path');
   shield.setAttribute('d', SHIELD_PATH);
-  // Always 1px stroke — keeps the shield a clean glyph regardless of size or state.
+  // Always 1px stroke; keeps the shield a clean glyph regardless of size or state.
   shield.setAttribute('stroke-width', '1');
   shield.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(shield);

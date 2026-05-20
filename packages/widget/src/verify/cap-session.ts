@@ -10,16 +10,16 @@ import type { WrappedToken } from '../token.js';
  * Facade over the cap client lifecycle. Two helpers cover the boilerplate
  * shared by every runner (run-cap, run-manual, run-game):
  *
- *   1. `setupCapSession` — build the per-widget id + session context + cap
+ *   1. `setupCapSession`; build the per-widget id + session context + cap
  *      client; wire onto state; return a closure to read the wrapped token
  *      once redeem completes.
- *   2. `awaitCapAndEmitPass` — wait for cap.solve; on success inject the
+ *   2. `awaitCapAndEmitPass`; wait for cap.solve; on success inject the
  *      token into the enclosing form, set verified state, lock the token,
  *      and emit the pass event. On failure / aborted gate, fire the
  *      appropriate error and set error state.
  *
  * Runners differ on how the gate gets released (immediately vs via iframe
- * postMessage vs via customer pass() method) — that's the "strategy"
+ * postMessage vs via customer pass() method); that's the "strategy"
  * portion left to each caller. Everything else flows through here.
  */
 

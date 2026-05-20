@@ -50,7 +50,7 @@ export interface CaputchinEventMap {
   'dialog-hidden': CustomEvent<DialogVisibilityDetail>;
 }
 
-/** Public shape of `<caputchin-widget>` — cap verification only. */
+/** Public shape of `<caputchin-widget>`; cap verification only. */
 export interface CaputchinWidgetShape extends HTMLElement {
   start(): void;
   addEventListener<K extends keyof CaputchinEventMap>(
@@ -75,14 +75,14 @@ export interface CaputchinWidgetShape extends HTMLElement {
   ): void;
 }
 
-/** Public shape of `<caputchin-game>` — game host with optional verification.
- *  No `start()` — verification auto-kicks on mount for inline, on first
+/** Public shape of `<caputchin-game>`; game host with optional verification.
+ *  No `start()`; verification auto-kicks on mount for inline, on first
  *  dialog open for modal/fullscreen. */
 export interface CaputchinGameShape extends HTMLElement {
-  /** Manual mode (`trigger="manual"`) only — release the cap gate with the
+  /** Manual mode (`trigger="manual"`) only; release the cap gate with the
    *  game payload and fire the `pass` event. */
   pass(payload?: { score?: number | null; durationMs?: number | null }): void;
-  /** Manual mode only — abort cap verification + fire `game-error-relayed`. */
+  /** Manual mode only; abort cap verification + fire `game-error-relayed`. */
   fail(payload?: { code?: string; message?: string }): void;
   setNickname(letters: string): void;
   addEventListener<K extends keyof CaputchinEventMap>(

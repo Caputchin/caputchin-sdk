@@ -3,7 +3,7 @@ import { isIframeToWidget } from './messages.js';
 
 export function send(iframe: HTMLIFrameElement, msg: WidgetToIframe): void {
   // Sandboxed iframe has opaque origin "null". postMessage spec only accepts
-  // "*", "/", or an absolute URL as targetOrigin — "null" is silently
+  // "*", "/", or an absolute URL as targetOrigin; "null" is silently
   // dropped by modern browsers. The receiving runtime validates by
   // `event.source === window.parent` so "*" is safe here (no third party
   // can intercept; the sandbox blocks credential leakage either way).

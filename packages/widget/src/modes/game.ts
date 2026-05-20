@@ -38,7 +38,7 @@ export interface GamePresentationInput {
   /** Customer's `width` attr. Applied to the OUTER chrome (inline frame
    *  or modal/fullscreen entry checkbox), not the iframe. */
   width: WidgetWidth;
-  /** Customer's `height` attr. Same routing as width — outer chrome only. */
+  /** Customer's `height` attr. Same routing as width; outer chrome only. */
   height: WidgetHeight;
   layout: 'inline' | 'modal' | 'fullscreen';
   /** When true: render a `<slot></slot>` in place of the iframe slot so
@@ -93,7 +93,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       renderRoot.appendChild(frame);
 
       // Per spec: inline game frame embeds a standalone simple × compact × auto
-      // widget below the iframe. No style overrides — it looks like a regular
+      // widget below the iframe. No style overrides; it looks like a regular
       // cap widget the customer might place on the page elsewhere.
       subSimple = createSimplePresentation({
         host,
@@ -185,7 +185,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   const activateListeners: Array<() => void> = [];
   let backdropWired = false;
   // Latched once the user makes the first activation. Subsequent activations
-  // (re-opens after a close-mid-verify) just open the dialog — they must not
+  // (re-opens after a close-mid-verify) just open the dialog; they must not
   // re-fire the trigger callbacks that start a second verification session.
   let firstActivationFired = false;
   // Mirrors the most recent state passed to setState. Used in close() to
@@ -205,14 +205,14 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       container = document.createElement('div');
       container.setAttribute('part', 'game-overlay-host');
 
-      // Click-to-open entry — visually the simple-normal checkbox UI.
+      // Click-to-open entry; visually the simple-normal checkbox UI.
       // Sub-simple is mounted with trigger='click' so it shows the checkbox
       // shape; we wire our own onActivate on top to open the dialog.
       checkboxSlot = document.createElement('div');
       checkboxSlot.setAttribute('part', 'game-overlay-checkbox');
       container.appendChild(checkboxSlot);
 
-      // Dialog with iframe slot. Built once, never re-parented — moving the
+      // Dialog with iframe slot. Built once, never re-parented; moving the
       // iframe between DOM nodes reloads its srcdoc.
       dialog = document.createElement('dialog');
       dialog.setAttribute('part', 'game-overlay-dialog');
@@ -340,7 +340,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
     },
 
     close(): void {
-      // Hide only — iframe stays mounted inside the dialog so game state
+      // Hide only; iframe stays mounted inside the dialog so game state
       // is preserved across close/reopen. The post-close work (mute audio,
       // revert simple-shield to clickable idle on mid-verify dismissal)
       // happens in the dialog 'close' event listener wired in mount(), so
@@ -402,7 +402,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:rgba(0,0,0,0.8)}',
     // Overlay (modal + fullscreen): iframe stays at its manifest preferred
     // size (set by applyIframeSize); slot fills the dialog interior and
-    // centers the iframe both axes. Matters most for fullscreen — the
+    // centers the iframe both axes. Matters most for fullscreen; the
     // dialog is 100vw/100vh, the game might be 280×160, and we want it
     // centered with backdrop space rather than stretched and pixelated.
     // For modal the dialog shrink-wraps to the iframe so centering is a
@@ -414,7 +414,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---
     // Modal: 180ms scale + fade. Fullscreen: 220ms slide-up + fade.
     // Older browsers (lacking @starting-style + allow-discrete) pop in/out
-    // exactly like before — feature degrades cleanly.
+    // exactly like before; feature degrades cleanly.
     '[part="game-overlay-dialog"]{opacity:0;transition:opacity 180ms ease,transform 180ms ease,overlay 180ms ease allow-discrete,display 180ms ease allow-discrete}',
     '[part="game-overlay-dialog"][data-layout="modal"]{transform:scale(0.95)}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]{transform:translateY(24px);transition-duration:220ms}',

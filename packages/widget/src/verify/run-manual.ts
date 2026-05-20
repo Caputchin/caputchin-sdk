@@ -4,7 +4,7 @@ import type { WidgetState } from './state.js';
 import type { GameConfig } from '../config/game.js';
 
 /**
- * Manual orchestrator for `<caputchin-game trigger="manual">` — the customer
+ * Manual orchestrator for `<caputchin-game trigger="manual">`; the customer
  * hosts the game UX in their own DOM (slotted into the layout chrome) and
  * drives completion via `widget.pass({ score, durationMs })` /
  * `widget.fail({ code, message })`. No iframe mounts.
@@ -12,7 +12,7 @@ import type { GameConfig } from '../config/game.js';
  * With sitekey: cap.solve runs in parallel; pass releases the gate with the
  *   game payload (via methods-game's pass() → capClient.releaseGate), fail
  *   aborts (via methods-game's fail() → capClient.abortGate).
- * Without sitekey: pure event shell — start fires immediately; pass / fail
+ * Without sitekey: pure event shell; start fires immediately; pass / fail
  *   flow through methods-game and emit events directly.
  */
 export function runManual(

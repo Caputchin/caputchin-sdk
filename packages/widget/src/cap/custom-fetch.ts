@@ -14,7 +14,7 @@ interface GateEntry {
 
 // All per-widget state is keyed by the widget's unique id. The id is encoded
 // into the Cap library's apiEndpoint path so each fetch carries its own id.
-// No mutable module-level "active widget" state — the URL is the identifier.
+// No mutable module-level "active widget" state; the URL is the identifier.
 const sessionContexts = new Map<string, SessionContext>();
 const sessionIds = new Map<string, string>();
 const redeemGates = new Map<string, GateEntry>();
@@ -73,7 +73,7 @@ export function releaseRedeemGate(id: string, platform: Record<string, unknown>)
 }
 
 /**
- * Abort the gate — the redeem fetch (already awaiting or arriving later)
+ * Abort the gate; the redeem fetch (already awaiting or arriving later)
  * throws instead of fetching. Used when the game itself reported a fatal
  * error and verification must NOT continue.
  */
@@ -101,7 +101,7 @@ export function installCustomFetch(): void {
   if (customFetchInstalled) return;
   customFetchInstalled = true;
 
-  // Pure URL router. Stateless across calls — every widget's session lives
+  // Pure URL router. Stateless across calls; every widget's session lives
   // in the per-id maps above and is looked up deterministically from the
   // path. 50 widgets calling concurrently route to 50 independent contexts.
   window.CAP_CUSTOM_FETCH = async (
@@ -140,7 +140,7 @@ export function installCustomFetch(): void {
             sessionIds.set(widgetId, data.platform.sessionId);
           }
         } catch {
-          // body parse failure — sessionId won't propagate; pass will fire missing-session-id
+          // body parse failure; sessionId won't propagate; pass will fire missing-session-id
         }
       }
       return startResponse;
@@ -177,7 +177,7 @@ export function installCustomFetch(): void {
           }));
         }
       } catch {
-        // Body parse failure — token will be absent; element.ts fires verification-failed.
+        // Body parse failure; token will be absent; element.ts fires verification-failed.
       }
     }
 

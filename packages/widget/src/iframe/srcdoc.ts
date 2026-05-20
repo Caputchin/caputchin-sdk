@@ -30,7 +30,7 @@ export function buildSrcdoc(opts: SrcdocOptions): string {
   if (gameUrl) {
     const urlErr = validateGameUrl(gameUrl);
     if (urlErr) {
-      throw new Error(`buildSrcdoc: invalid gameUrl — ${urlErr}`);
+      throw new Error(`buildSrcdoc: invalid gameUrl; ${urlErr}`);
     }
     // Same-origin paths need to be resolved to absolute URLs so they're valid
     // CSP source-list entries (paths alone are not valid CSP sources).

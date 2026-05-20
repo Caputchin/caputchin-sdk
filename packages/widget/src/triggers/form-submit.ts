@@ -12,7 +12,7 @@ export function createFormSubmitTrigger(): TriggerStrategy {
     activate(ctx: TriggerContext): void {
       form = findEnclosingForm(ctx.el);
       // Per graceful-degradation: if no form, fall back to "first interaction
-      // or widget.start()". Don't fire an error — the absence of a form just
+      // or widget.start()". Don't fire an error; the absence of a form just
       // means there's nothing to intercept; verification runs on widget.start()
       // (force-start escape hatch). Silent fallback for widgets dragged outside
       // their original <form>.
