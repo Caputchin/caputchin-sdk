@@ -3,16 +3,18 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
 
 /**
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
- * checkbox on the left, state text ("Verify" / "Verifying…" / "Verified" /
+ * indicator on the left, state text ("Verify" / "Verifying…" / "Verified" /
  * "Failed") right next to it, then the brand block (logo + Caputchin +
  * "see no data" link) on the right. The brand block is stable — the "see
  * no data" tag never gets overridden by the verification state.
  *
- * The checkbox is interactive only for `trigger="click"`. For `auto`,
- * `form-submit`, and `manual` it stays as a passive visual indicator.
+ * Indicator shape depends on the trigger:
+ * - `trigger="click"` → interactive checkbox the user can click.
+ * - everything else  → passive shield SVG. Same state transitions, no
+ *   click affordance (the widget drives itself).
  *
- * Compact size keeps the same three-part structure on a single row with
- * smaller glyphs and tighter padding.
+ * Label width is locked to fit the widest state string so transitions
+ * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
   const { host, root: renderRoot, trigger, width, height, size } = input;
@@ -23,7 +25,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   const pxHeight = typeof height === 'number' ? height : null;
 
   let root: HTMLDivElement | null = null;
-  let statusIcon: HTMLDivElement | null = null;
+  let indicator: { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } | null = null;
   let label: HTMLSpanElement | null = null;
   let brand: HTMLDivElement | null = null;
   const activateListeners: Array<() => void> = [];
@@ -56,8 +58,6 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     logoSpan.innerHTML = LOGO_PRIMARY;
     const svg = logoSpan.querySelector('svg');
     if (svg) {
-      // Strip the source SVG's id + 100% width so CSS in the shadow stylesheet
-      // controls the rendered size per variant (normal 32px / compact 14px).
       svg.removeAttribute('id');
       svg.removeAttribute('width');
       svg.removeAttribute('height');
@@ -112,43 +112,23 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      statusIcon = document.createElement('div');
-      statusIcon.setAttribute('part', 'simple-checkbox-box');
-      // Static layout/sizing lives in the shadow stylesheet so size variants
-      // (`data-size="compact"`) can override without inline-style specificity
-      // fights. Dynamic bits (background/border/animation) stay in setState.
-      statusIcon.style.cssText = [
-        'border:2px solid #6e7681',
-        'border-radius:0.25rem',
-        'background:#fff',
-        'color:#fff',
-      ].join(';');
-      if (isInteractive) {
-        statusIcon.tabIndex = 0;
-        statusIcon.setAttribute('role', 'checkbox');
-        statusIcon.setAttribute('aria-checked', 'false');
-        statusIcon.setAttribute('aria-label', 'Verify you are human');
-        statusIcon.addEventListener('click', onPointer);
-        statusIcon.addEventListener('keydown', onKey);
-      } else {
-        // Passive indicator — not focusable, not clickable. Use aria-live so
-        // state changes announce.
-        statusIcon.setAttribute('role', 'img');
-        statusIcon.setAttribute('aria-label', 'Caputchin verification status');
-        statusIcon.style.cursor = 'default';
-      }
+      indicator = isInteractive
+        ? createCheckboxIndicator(onPointer, onKey)
+        : createShieldIndicator();
 
       label = document.createElement('span');
       label.setAttribute('part', 'simple-checkbox-label');
       label.setAttribute('aria-live', 'polite');
-      // flex:1 absorbs the slack so brand block hugs the right edge.
-      // min-width:0 lets the label shrink below intrinsic content width.
-      label.style.cssText = 'flex:1 1 auto;min-width:0';
+      // Width-locked: longest text fits, transitions don't reflow.
+      label.style.cssText = 'flex:0 0 auto;text-align:left';
 
-      root.appendChild(statusIcon);
+      root.appendChild(indicator.el);
       root.appendChild(label);
 
       brand = buildBrand();
+      // Spacer pushes brand to the right edge without depending on label
+      // width changes.
+      brand.style.marginLeft = 'auto';
       root.appendChild(brand);
 
       if (isFullWidth) {
@@ -173,10 +153,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     unmount(): void {
       if (!root) return;
-      if (statusIcon && isInteractive) {
-        statusIcon.removeEventListener('click', onPointer);
-        statusIcon.removeEventListener('keydown', onKey);
-      }
+      indicator?.dispose();
+      indicator = null;
       if (isFullWidth || pxWidth !== null || pxHeight !== null) {
         host.style.display = '';
         host.style.width = '';
@@ -184,14 +162,15 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       }
       root.remove();
       root = null;
-      statusIcon = null;
       label = null;
       brand = null;
       activateListeners.length = 0;
     },
 
     setState(state: PresentationState): void {
-      if (statusIcon && label) applyState(statusIcon, label, state, isInteractive);
+      if (!indicator || !label) return;
+      indicator.setState(state);
+      label.textContent = STATE_LABEL[state];
     },
 
     onActivate(handler: () => void): () => void {
@@ -204,52 +183,139 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   };
 }
 
-function applyState(box: HTMLDivElement, label: HTMLSpanElement, state: PresentationState, interactive: boolean): void {
-  switch (state) {
-    case 'idle':
-      box.textContent = '';
-      box.style.background = '#fff';
-      box.style.borderColor = '#6e7681';
-      box.style.borderRadius = '0.25rem';
-      box.style.borderTopColor = '#6e7681';
-      box.style.animation = '';
-      box.style.color = '#fff';
-      label.textContent = 'Verify';
-      if (interactive) box.setAttribute('aria-checked', 'false');
-      break;
-    case 'verifying':
-      box.textContent = '';
-      box.style.background = '#fff';
-      box.style.borderColor = '#2F6640';
-      box.style.borderTopColor = 'transparent';
-      box.style.borderRadius = '50%';
-      box.style.animation = 'caputchin-spin 0.8s linear infinite';
-      label.textContent = 'Verifying…';
-      if (interactive) box.setAttribute('aria-checked', 'mixed');
-      break;
-    case 'verified':
-      box.style.animation = '';
-      box.style.background = '#2F6640';
-      box.style.borderColor = '#2F6640';
-      box.style.borderRadius = '0.25rem';
-      box.style.borderTopColor = '#2F6640';
-      box.textContent = '✓';
-      label.textContent = 'Verified';
-      if (interactive) box.setAttribute('aria-checked', 'true');
-      break;
-    case 'error':
-      box.style.animation = '';
-      box.style.background = '#fff';
-      box.style.borderColor = '#c2410c';
-      box.style.borderRadius = '0.25rem';
-      box.style.borderTopColor = '#c2410c';
-      box.style.color = '#c2410c';
-      box.textContent = '!';
-      label.textContent = 'Failed';
-      if (interactive) box.setAttribute('aria-checked', 'false');
-      break;
-  }
+const STATE_LABEL: Record<PresentationState, string> = {
+  idle: 'Verify',
+  verifying: 'Verifying…',
+  verified: 'Verified',
+  error: 'Failed',
+};
+
+// ---------------- indicator builders ----------------
+
+function createCheckboxIndicator(
+  onPointer: () => void,
+  onKey: (e: KeyboardEvent) => void,
+): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
+  const box = document.createElement('div');
+  box.setAttribute('part', 'simple-checkbox-box');
+  box.style.cssText = 'border:2px solid #6e7681;border-radius:0.25rem;background:#fff;color:#fff';
+  box.tabIndex = 0;
+  box.setAttribute('role', 'checkbox');
+  box.setAttribute('aria-checked', 'false');
+  box.setAttribute('aria-label', 'Verify you are human');
+  box.addEventListener('click', onPointer);
+  box.addEventListener('keydown', onKey);
+
+  return {
+    el: box,
+    dispose() {
+      box.removeEventListener('click', onPointer);
+      box.removeEventListener('keydown', onKey);
+    },
+    setState(state: PresentationState): void {
+      switch (state) {
+        case 'idle':
+          box.textContent = '';
+          box.style.background = '#fff';
+          box.style.borderColor = '#6e7681';
+          box.style.borderRadius = '0.25rem';
+          box.style.borderTopColor = '#6e7681';
+          box.style.animation = '';
+          box.style.color = '#fff';
+          box.setAttribute('aria-checked', 'false');
+          break;
+        case 'verifying':
+          box.textContent = '';
+          box.style.background = '#fff';
+          box.style.borderColor = '#2F6640';
+          box.style.borderTopColor = 'transparent';
+          box.style.borderRadius = '50%';
+          box.style.animation = 'caputchin-spin 0.8s linear infinite';
+          box.setAttribute('aria-checked', 'mixed');
+          break;
+        case 'verified':
+          box.style.animation = '';
+          box.style.background = '#2F6640';
+          box.style.borderColor = '#2F6640';
+          box.style.borderRadius = '0.25rem';
+          box.style.borderTopColor = '#2F6640';
+          box.textContent = '✓';
+          box.setAttribute('aria-checked', 'true');
+          break;
+        case 'error':
+          box.style.animation = '';
+          box.style.background = '#fff';
+          box.style.borderColor = '#c2410c';
+          box.style.borderRadius = '0.25rem';
+          box.style.borderTopColor = '#c2410c';
+          box.style.color = '#c2410c';
+          box.textContent = '!';
+          box.setAttribute('aria-checked', 'false');
+          break;
+      }
+    },
+  };
 }
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const SHIELD_PATH = 'M12 2 L20 5 V11 C20 16 16.5 19.5 12 22 C7.5 19.5 4 16 4 11 V5 Z';
+
+function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('part', 'simple-shield-box');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Caputchin verification status');
+
+  const shield = document.createElementNS(SVG_NS, 'path');
+  shield.setAttribute('d', SHIELD_PATH);
+  shield.setAttribute('stroke-width', '2');
+  shield.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(shield);
+
+  // Glyph overlay (✓ for verified, ! for error). Hidden in idle / verifying.
+  const glyph = document.createElementNS(SVG_NS, 'text');
+  glyph.setAttribute('x', '12');
+  glyph.setAttribute('y', '16');
+  glyph.setAttribute('text-anchor', 'middle');
+  glyph.setAttribute('font-size', '12');
+  glyph.setAttribute('font-weight', '700');
+  glyph.setAttribute('font-family', 'system-ui, sans-serif');
+  glyph.setAttribute('fill', '#fff');
+  svg.appendChild(glyph);
+
+  return {
+    el: svg as unknown as HTMLElement,
+    dispose() { /* no listeners */ },
+    setState(state: PresentationState): void {
+      svg.style.animation = '';
+      glyph.textContent = '';
+      switch (state) {
+        case 'idle':
+          shield.setAttribute('stroke', '#6e7681');
+          shield.setAttribute('fill', 'transparent');
+          break;
+        case 'verifying':
+          shield.setAttribute('stroke', '#2F6640');
+          shield.setAttribute('fill', 'transparent');
+          svg.style.animation = 'caputchin-pulse 1.2s ease-in-out infinite';
+          break;
+        case 'verified':
+          shield.setAttribute('stroke', '#2F6640');
+          shield.setAttribute('fill', '#2F6640');
+          glyph.textContent = '✓';
+          break;
+        case 'error':
+          shield.setAttribute('stroke', '#c2410c');
+          shield.setAttribute('fill', '#c2410c');
+          glyph.textContent = '!';
+          break;
+      }
+    },
+  };
+}
+
+// ---------------- shadow styles ----------------
 
 const stylesInjectedSet = new WeakSet<ShadowRoot>();
 function ensureStyles(root: ShadowRoot): void {
@@ -258,10 +324,14 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
+    '@keyframes caputchin-pulse{0%,100%{opacity:1}50%{opacity:0.45}}',
 
     // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
     '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
-    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem}',
+    // --- shield SVG: same footprint as checkbox so swapping doesn't reflow ---
+    '[part="simple-shield-box"]{width:1.5rem;height:1.5rem;flex:0 0 auto;display:block}',
+    // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
+    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:left}',
 
     // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
     '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
@@ -270,7 +340,6 @@ function ensureStyles(root: ShadowRoot): void {
     '[part="simple-brand-name"]{grid-column:2;grid-row:1;place-self:center;text-align:center;font-size:0.85rem}',
     '[part="simple-brand-tag"]{grid-column:2;grid-row:2;place-self:center;text-align:center;font-size:0.65rem}',
 
-    // --- link styling ---
     '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
@@ -278,7 +347,8 @@ function ensureStyles(root: ShadowRoot): void {
     // --- size="compact": single-row inline strip, dialed down ---
     '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
     '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
-    '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap}',
+    '[data-size="compact"] [part="simple-shield-box"]{width:0.95rem;height:0.95rem}',
+    '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap;min-width:3.6rem}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
     '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
@@ -286,7 +356,6 @@ function ensureStyles(root: ShadowRoot): void {
     '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:#c0c0c0;margin-left:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
-    // Don't hide the label anymore — state text is the primary signal.
     '@media (max-width:28rem){',
       '[part="simple-checkbox"]:not([data-size="compact"]){padding:0.625rem 0.75rem;gap:0.5rem}',
       '[part="simple-checkbox-box"]:not([data-size="compact"] *){width:1.75rem;height:1.75rem}',
