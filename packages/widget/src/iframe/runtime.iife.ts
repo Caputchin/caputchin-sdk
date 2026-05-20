@@ -178,30 +178,37 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         return;
       }
 
-      // Auto-measure the game's first rendered child. Works for intrinsic-
-      // sized roots (canvas with width/height attrs, fixed-px divs) — the
-      // ResizeObserver fires with the natural content size which differs
-      // from the iframe's CSS size. For CSS-percentage layouts the measured
-      // size will equal the iframe size (no useful signal) — those games
-      // call bridge.setSize() explicitly instead.
+      // Auto-measure the game's natural content size. Probes the document
+      // root's scrollWidth / scrollHeight — those exceed the iframe size
+      // whenever content overflows in either axis, which is the universal
+      // signal the SDK can read regardless of how the game lays its DOM
+      // out (canvas with intrinsic dimensions, CSS-percentage flex/grid,
+      // absolute-positioned). When scroll measurements match the iframe
+      // size, content fits inside and no resize is needed.
+      //
+      // Single-shot per design — viewport changes mid-session are an
+      // antipattern. The observer fires on every layout shift during the
+      // initial paint window then disconnects after 2 RAFs (long enough
+      // for a typical first paint + a styles-loaded reflow, short enough
+      // to not catch in-game animations).
+      function measureDocumentSize(): void {
+        const docEl = document.documentElement;
+        const w = Math.max(docEl.scrollWidth, document.body?.scrollWidth ?? 0);
+        const h = Math.max(docEl.scrollHeight, document.body?.scrollHeight ?? 0);
+        if (w > 0 && h > 0) postDimensions(w, h, 'auto');
+      }
       if (typeof ResizeObserver === 'function') {
-        const ro = new ResizeObserver((entries) => {
-          for (const entry of entries) {
-            const rect = entry.contentRect;
-            if (rect.width > 0 && rect.height > 0) {
-              postDimensions(rect.width, rect.height, 'auto');
-            }
-          }
-        });
-        const target = root.firstElementChild ?? root;
-        ro.observe(target);
-        // Single-shot per design — viewport changes mid-session are an
-        // antipattern. Disconnect after the first paint settles.
-        // Use a microtask + raf to give the game a chance to render then
-        // disconnect on next frame.
+        const ro = new ResizeObserver(() => measureDocumentSize());
+        ro.observe(document.documentElement);
+        if (document.body) ro.observe(document.body);
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => ro.disconnect());
+          requestAnimationFrame(() => {
+            measureDocumentSize();
+            ro.disconnect();
+          });
         });
+      } else {
+        requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
       }
 
       postToParent({ kind: 'game-started', seq });
