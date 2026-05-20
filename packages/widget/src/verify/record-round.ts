@@ -1,4 +1,5 @@
 import { getSessionId } from '../cap/custom-fetch.js';
+import { emitPass } from './events.js';
 import type { WidgetState } from './state.js';
 
 /**
@@ -32,9 +33,5 @@ export async function recordAdditionalRound(
   } catch {
     // best-effort scoreboard recording — fire the pass event regardless
   }
-  el.dispatchEvent(new CustomEvent('pass', {
-    detail: { token: lockedToken, score, durationMs },
-    bubbles: true,
-    composed: true,
-  }));
+  emitPass(el, { token: lockedToken, score, durationMs });
 }

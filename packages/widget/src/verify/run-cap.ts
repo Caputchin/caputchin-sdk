@@ -1,10 +1,11 @@
 import { createCapClient } from '../cap/client.js';
 import { fireError } from '../errors.js';
-import { injectHiddenInput } from '../form.js';
-import type { WrappedToken } from '../token.js';
+import { emitStart, emitPass } from './events.js';
+import { injectTokenIntoEnclosingForm } from './form.js';
+import { makeWidgetId } from './id.js';
 import type { WidgetState } from './state.js';
 import type { WidgetConfig } from '../config/widget.js';
-import { makeWidgetId } from './id.js';
+import type { WrappedToken } from '../token.js';
 
 /**
  * Cap-only verification path for `<caputchin-widget>` (modes invisible | simple).
@@ -19,7 +20,7 @@ export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, 
 
   let wrappedToken: WrappedToken | null = null;
   const sessionCtx = {
-    platform: { sitekey: cfg.sitekey, score: null as unknown, durationMs: null as unknown } as Record<string, unknown>,
+    platform: { sitekey: cfg.sitekey, score: null, durationMs: null } as Record<string, unknown>,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
@@ -34,12 +35,7 @@ export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, 
   // No game payload to wait for — release the gate immediately so Cap's
   // redeem can proceed end-to-end.
   client.releaseGate({ score: null, durationMs: null });
-
-  el.dispatchEvent(new CustomEvent('start', {
-    detail: { gameId: null },
-    bubbles: true,
-    composed: true,
-  }));
+  emitStart(el, null);
 
   try {
     await client.solve();
@@ -56,17 +52,8 @@ export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, 
   }
 
   const { token, score, durationMs } = wrappedToken;
-
-  const form = el.closest('form');
-  if (form instanceof HTMLFormElement) {
-    injectHiddenInput(form, token);
-  }
-
+  injectTokenIntoEnclosingForm(el, token);
   state.presentation?.setState('verified');
   state.lockedToken = token;
-  el.dispatchEvent(new CustomEvent('pass', {
-    detail: { token, score, durationMs },
-    bubbles: true,
-    composed: true,
-  }));
+  emitPass(el, { token, score, durationMs });
 }

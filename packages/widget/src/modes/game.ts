@@ -1,6 +1,7 @@
 import type { Presentation, PresentationState } from './index.js';
 import type { WidgetTrigger, WidgetWidth, WidgetSize } from '../config/shared.js';
 import { createSimplePresentation } from './simple.js';
+import { emitDialogShown, emitDialogHidden } from '../verify/events.js';
 
 /**
  * Game presentation for `<caputchin-game>`. Three layouts:
@@ -221,11 +222,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
           logicalState = 'idle';
           subSimple?.setState('idle');
         }
-        host.dispatchEvent(new CustomEvent('dialog-hidden', {
-          detail: { layout },
-          bubbles: true,
-          composed: true,
-        }));
+        emitDialogHidden(host, layout as 'modal' | 'fullscreen');
       });
 
       container.appendChild(dialog);
@@ -301,11 +298,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         backdropWired = true;
       }
       signalVisibility(iframeSlot, true);
-      host.dispatchEvent(new CustomEvent('dialog-shown', {
-        detail: { layout },
-        bubbles: true,
-        composed: true,
-      }));
+      emitDialogShown(host, layout as 'modal' | 'fullscreen');
     },
 
     close(): void {
