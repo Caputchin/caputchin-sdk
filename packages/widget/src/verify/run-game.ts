@@ -1,26 +1,21 @@
-import { createCapClient } from '../cap/client.js';
+import { setupCapSession, awaitCapAndEmitPass } from './cap-session.js';
 import { fireError, mapIframeErrorCode } from '../errors.js';
 import { emitStart, emitPass } from './events.js';
-import { injectTokenIntoEnclosingForm } from './form.js';
 import { IframeHost } from '../iframe/host.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
-import type { WrappedToken } from '../token.js';
-import type { WidgetState } from './state.js';
-import type { GameConfig } from '../config/game.js';
-import { makeWidgetId, resolveGameId } from './id.js';
+import { resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
 import { recordAdditionalRound } from './record-round.js';
+import type { WidgetState } from './state.js';
+import type { GameConfig } from '../config/game.js';
 
 /**
- * Orchestrator for `<caputchin-game>`. Two paths:
+ * Orchestrator for `<caputchin-game>` iframe paths.
  *   - sitekey present → cap.solve + iframe in parallel; `pass` event carries
  *     wrapped token + game score.
  *   - sitekey absent → game-only; no cap; `pass` event carries `token: null`.
  *
- * The game iframe always mounts on this widget — there is no manual /
- * customer-hosted-game path here. Customers who want to host the game
- * themselves should use `<caputchin-widget>` (cap only) and drive the
- * game lifecycle independently.
+ * For customer-hosted games (no iframe), see `run-manual.ts`.
  */
 export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   if (!state.config) return;
@@ -31,37 +26,43 @@ export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, a
   }
 }
 
-async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
-  const cfg = state.config!;
+/** Resolve the game URL (from cfg.gameSrc directly or via marketplace
+ *  lookup), or fire game-load-failed + return null. Returns null when the
+ *  widget has no game configured at all (caller decides whether that's a
+ *  warning or hard error). */
+async function resolveGameUrl(
+  el: HTMLElement,
+  cfg: GameConfig,
+  apiHost: string,
+  onError: () => void,
+): Promise<{ url: string | null; integrity: string | null; gameId: string | null }> {
   const gameId = resolveGameId(cfg);
-
-  state.gamePresentation?.setState('verifying');
-
-  let gameUrl: string | null = cfg.gameSrc;
+  let url: string | null = cfg.gameSrc;
   let integrity: string | null = null;
-
-  if (gameId && !gameUrl) {
+  if (gameId && !url) {
     const resolution = await fetchMarketplaceResolution(gameId, apiHost);
     if (!resolution.ok) {
       fireError(el, 'game-load-failed', resolution.message, resolution.code);
-      state.gamePresentation?.setState('error');
-      return;
+      onError();
+      return { url: null, integrity: null, gameId };
     }
-    gameUrl = resolution.url;
+    url = resolution.url;
     integrity = resolution.integrity;
   }
+  return { url, integrity, gameId };
+}
 
-  let wrappedToken: WrappedToken | null = null;
-  const sessionCtx = {
-    platform: { sitekey: cfg.sitekey!, score: null, durationMs: null } as Record<string, unknown>,
-    onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
-  };
+async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
+  const cfg = state.config!;
+  state.gamePresentation?.setState('verifying');
 
-  if (!state.widgetId) state.widgetId = makeWidgetId();
-  const client = createCapClient(state.widgetId, apiHost, sessionCtx);
-  state.capClient = client;
-  if (state.triggerCtx) state.triggerCtx.capClient = client;
+  const resolved = await resolveGameUrl(el, cfg, apiHost, () => {
+    state.gamePresentation?.setState('error');
+  });
+  if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
+  const { url: gameUrl, integrity, gameId } = resolved;
+  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!);
   const dispatchStart = (): void => emitStart(el, gameId);
 
   if (gameId === null && gameUrl === null) {
@@ -72,8 +73,6 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
     let firstClickHappened = false;
     const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
       if (msg.kind === 'game-pass') {
-        sessionCtx.platform['score'] = msg.score;
-        sessionCtx.platform['durationMs'] = msg.durationMs;
         if (!firstClickHappened) {
           firstClickHappened = true;
           client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
@@ -109,54 +108,18 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
     );
   }
 
-  try {
-    await client.solve();
-  } catch (err) {
-    if (!state.gameErrored) {
-      fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
-    }
-    state.gamePresentation?.setState('error');
-    return;
-  }
-
-  if (state.gameErrored) {
-    state.gamePresentation?.setState('error');
-    return;
-  }
-
-  if (!wrappedToken) {
-    fireError(el, 'verification-failed', 'No wrapped token received from platform', 'cap-redeem-failed');
-    state.gamePresentation?.setState('error');
-    return;
-  }
-
-  const { token, score, durationMs } = wrappedToken;
-  injectTokenIntoEnclosingForm(el, token);
-  state.gamePresentation?.setState('verified');
-  state.lockedToken = token;
-  emitPass(el, { token, score, durationMs });
+  await awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null);
 }
 
 async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   const cfg = state.config!;
-  const gameId = resolveGameId(cfg);
+  const resolved = await resolveGameUrl(el, cfg, apiHost, () => { /* game-only has no presentation state to flip */ });
+  if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
-  let gameUrl: string | null = cfg.gameSrc;
-  let integrity: string | null = null;
-
+  const { url: gameUrl, integrity, gameId } = resolved;
   if (gameId === null && gameUrl === null) {
     console.warn('[caputchin] game widget mounted without sitekey + without game configured — widget is inert');
     return;
-  }
-
-  if (gameId && !gameUrl) {
-    const resolution = await fetchMarketplaceResolution(gameId, apiHost);
-    if (!resolution.ok) {
-      fireError(el, 'game-load-failed', resolution.message, resolution.code);
-      return;
-    }
-    gameUrl = resolution.url;
-    integrity = resolution.integrity;
   }
 
   const dispatchStart = (): void => {
