@@ -43,6 +43,24 @@ export interface GameContext {
   lang: ResolvedLanguage | null;
 }
 
+/** Documentation entry for a single text key in `languages.presets`.
+ *  Optional and additive: omitting `schema` entirely or omitting individual
+ *  keys does not affect resolution. Schema is consumed by author tooling,
+ *  translator workflows, and the future per-site-key override dashboard;
+ *  the widget runtime ignores it. */
+export interface LanguageKeySchema {
+  /** Short readable label translators see in tooling and dashboard. */
+  name: string;
+  /** Longer helper text: what this string IS in the UX, not where it
+   *  appears in code. */
+  description: string;
+  /** Token placeholder names this string interpolates (without braces).
+   *  Declared once at the manifest level so dashboards can render labeled
+   *  inputs and CI checks can assert every locale preserves the tokens.
+   *  Omit when the string has no interpolation. */
+  tokens?: string[];
+}
+
 /** The full package manifest the game ships in `caputchin.json`. Authors
  *  import this file and pass the parsed object to `register`. The widget
  *  reads runtime hints (preferred layout / size, language presets) directly
@@ -65,6 +83,9 @@ export interface GameManifest {
   preferredWidth?: number;
   preferredHeight?: number;
   languages?: {
+    /** Optional per-key documentation. Drives translator tooling and the
+     *  future dashboard override editor. Not read at runtime. */
+    schema?: Record<string, LanguageKeySchema>;
     presets: Record<string, LanguagePreset>;
   };
 }
