@@ -68,15 +68,36 @@ describe('CaputchinGame methods', () => {
     el.remove();
   });
 
-  it('does NOT expose pass() — game always runs inside the iframe', () => {
-    mount({ sitekey: 'k', game: '@x/y' });
-    expect((el as unknown as Record<string, unknown>)['pass']).toBeUndefined();
+  it('exposes pass()/fail() — manual mode customer-driven release/abort', () => {
+    mount({ sitekey: 'k', trigger: 'manual' });
+    expect(typeof (el as unknown as Record<string, unknown>)['pass']).toBe('function');
+    expect(typeof (el as unknown as Record<string, unknown>)['fail']).toBe('function');
     el.remove();
   });
 
-  it('warns on explicit trigger attr (ignored — trigger is implicit per layout)', () => {
-    mount({ sitekey: 'k', game: '@x/y', trigger: 'manual' });
+  it('pass() fires invalid-call when trigger is not manual (iframe drives outcome)', () => {
+    mount({ sitekey: 'k', game: '@x/y' });
+    el.pass({ score: 0.5 });
+    expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('pass'))).toBe(true);
+    el.remove();
+  });
+
+  it('fail() fires invalid-call when trigger is not manual', () => {
+    mount({ sitekey: 'k', game: '@x/y' });
+    el.fail({ code: 'x', message: 'y' });
+    expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('fail'))).toBe(true);
+    el.remove();
+  });
+
+  it('warns on bogus trigger value (only "manual" is accepted)', () => {
+    mount({ sitekey: 'k', game: '@x/y', trigger: 'bogus' });
     expect(errors.some((e) => e.code === 'invalid-config' && e.message.includes('trigger='))).toBe(true);
+    el.remove();
+  });
+
+  it('manual mode strips game / games / game-src attrs with a warning', () => {
+    mount({ sitekey: 'k', trigger: 'manual', game: '@x/y', 'game-src': '/x.js' });
+    expect(errors.some((e) => e.code === 'invalid-config' && e.message.includes('manual'))).toBe(true);
     el.remove();
   });
 

@@ -53,7 +53,7 @@ describe('CaputchinWidget lifecycle', () => {
 describe('CaputchinGame lifecycle', () => {
   it('observedAttributes covers game surface', () => {
     expect(CaputchinGame.observedAttributes).toEqual(
-      ['sitekey', 'width', 'height', 'game', 'games', 'game-src', 'layout']
+      ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout']
     );
   });
 
@@ -65,8 +65,8 @@ describe('CaputchinGame lifecycle', () => {
     expect(CaputchinGame.observedAttributes).not.toContain('mode');
   });
 
-  it('does NOT observe trigger (trigger is implicit per layout on game widget)', () => {
-    expect(CaputchinGame.observedAttributes).not.toContain('trigger');
+  it('observes trigger (only "manual" is customer-settable; auto/click are layout-derived)', () => {
+    expect(CaputchinGame.observedAttributes).toContain('trigger');
   });
 
   it('mounts without sitekey (game-only path) without throwing', () => {

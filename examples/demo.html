@@ -90,6 +90,11 @@
       background: #2F6640; color: #fff; border: 0;
       border-radius: 6px; cursor: pointer; max-width: 8rem;
     }
+    .demo-manual-game {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 160px; background: #f3eafe; color: #3d2a5e;
+      font-style: italic; font-size: 0.9rem; padding: 1.5rem;
+    }
     .manual-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .manual-controls button {
       font-size: 0.75rem; padding: 0.3rem 0.6rem;
@@ -221,6 +226,13 @@
           </select>
         </div>
         <div class="field">
+          <label for="g-trigger">trigger</label>
+          <select id="g-trigger">
+            <option value="" selected>(derived from layout)</option>
+            <option value="manual">manual (customer-hosted)</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="g-layout">layout</label>
           <select id="g-layout">
             <option value="auto" selected>auto</option>
@@ -299,8 +311,10 @@
         wWidthMode: p.get('w.widthMode') || 'auto',
         wWidthPx: p.get('w.widthPx') || '',
         wHeightPx: p.get('w.heightPx') || '',
-        // game state (no trigger / no size — derived from layout)
+        // game state (size implicit per layout; trigger is "" for layout-derived
+        // or "manual" for customer-hosted)
         gSitekeyMode: p.get('g.sitekey') || 'present',
+        gTrigger: p.get('g.trigger') || '',
         gLayout: p.get('g.layout') || 'auto',
         gWidthMode: p.get('g.widthMode') || 'auto',
         gWidthPx: p.get('g.widthPx') || '',
@@ -316,6 +330,7 @@
         'w.mode': s.wMode, 'w.trigger': s.wTrigger, 'w.size': s.wSize,
         'w.widthMode': s.wWidthMode, 'w.widthPx': s.wWidthPx, 'w.heightPx': s.wHeightPx,
         'g.sitekey': s.gSitekeyMode,
+        'g.trigger': s.gTrigger,
         'g.layout': s.gLayout,
         'g.widthMode': s.gWidthMode, 'g.widthPx': s.gWidthPx,
         'g.heightPx': s.gHeightPx, 'g.game': s.gGame, 'g.games': s.gGames,
@@ -339,17 +354,21 @@
     ];
 
     const GAME_PRESETS = [
-      ['Inline game', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple' }],
-      ['Modal game', { gSitekeyMode: 'present', gLayout: 'modal', gGame: '@demo/simple' }],
-      ['Fullscreen game', { gSitekeyMode: 'present', gLayout: 'fullscreen', gGame: '@demo/simple' }],
-      ['Layout auto (defaults inline)', { gSitekeyMode: 'present', gLayout: 'auto', gGame: '@demo/simple' }],
-      ['Game-only inline (no sitekey)', { gSitekeyMode: 'absent', gLayout: 'inline', gGame: '@demo/simple' }],
-      ['Game-only modal (no sitekey)', { gSitekeyMode: 'absent', gLayout: 'modal', gGame: '@demo/simple' }],
-      ['Multi-round inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/multi-round' }],
-      ['Failing game inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/failing' }],
-      ['Compact inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple' }],
-      ['Full width inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'full' }],
-      ['Custom dims 500×400', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'pixels', gWidthPx: '500', gHeightPx: '400' }],
+      ['Inline game', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/simple' }],
+      ['Modal game', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'modal', gGame: '@demo/simple' }],
+      ['Fullscreen game', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'fullscreen', gGame: '@demo/simple' }],
+      ['Layout auto (defaults inline)', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'auto', gGame: '@demo/simple' }],
+      ['Game-only inline (no sitekey)', { gSitekeyMode: 'absent', gTrigger: '', gLayout: 'inline', gGame: '@demo/simple' }],
+      ['Game-only modal (no sitekey)', { gSitekeyMode: 'absent', gTrigger: '', gLayout: 'modal', gGame: '@demo/simple' }],
+      ['Multi-round inline', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/multi-round' }],
+      ['Failing game inline', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/failing' }],
+      ['Manual inline (customer-hosted)', { gSitekeyMode: 'present', gTrigger: 'manual', gLayout: 'inline' }],
+      ['Manual modal (customer-hosted)', { gSitekeyMode: 'present', gTrigger: 'manual', gLayout: 'modal' }],
+      ['Manual fullscreen', { gSitekeyMode: 'present', gTrigger: 'manual', gLayout: 'fullscreen' }],
+      ['Manual game-only inline', { gSitekeyMode: 'absent', gTrigger: 'manual', gLayout: 'inline' }],
+      ['Compact inline', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/simple' }],
+      ['Full width inline', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'full' }],
+      ['Custom dims 500×400', { gSitekeyMode: 'present', gTrigger: '', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'pixels', gWidthPx: '500', gHeightPx: '400' }],
     ];
 
     // ---------- state ----------
@@ -365,6 +384,7 @@
       document.getElementById('w-height-px').value = state.wHeightPx;
 
       document.getElementById('g-sitekey-mode').value = state.gSitekeyMode;
+      document.getElementById('g-trigger').value = state.gTrigger;
       document.getElementById('g-layout').value = state.gLayout;
       document.getElementById('g-width-mode').value = state.gWidthMode;
       document.getElementById('g-width-px').value = state.gWidthPx;
@@ -385,6 +405,7 @@
     }
     function readGameControls() {
       state.gSitekeyMode = document.getElementById('g-sitekey-mode').value;
+      state.gTrigger = document.getElementById('g-trigger').value;
       state.gLayout = document.getElementById('g-layout').value;
       state.gWidthMode = document.getElementById('g-width-mode').value;
       state.gWidthPx = document.getElementById('g-width-px').value;
@@ -413,22 +434,28 @@
 
     function gameMarkup() {
       let attrs = '';
+      const isManual = state.gTrigger === 'manual';
       if (state.gSitekeyMode === 'present') attrs += ` sitekey="${SITEKEY}"`;
+      if (isManual) attrs += ` trigger="manual"`;
       if (state.gLayout !== 'auto') attrs += ` layout="${state.gLayout}"`;
       attrs += widthAttr(state.gWidthMode, state.gWidthPx);
       if (state.gHeightPx) attrs += ` height="${state.gHeightPx}"`;
-      if (state.gGames) {
-        attrs += ` games="${state.gGames}"`;
-      } else if (state.gGame) {
-        attrs += ` game="${state.gGame}"`;
-        // Demo games are customer-hosted; pass game-src so the iframe can
-        // fetch the script directly without going through the (404 in dev)
-        // marketplace resolve endpoint. Same-origin relative path bypasses
-        // the HTTPS-required URL check (http://localhost would fail it).
-        const src = GAME_SRC[state.gGame];
-        if (src) attrs += ` game-src="${src}"`;
+      // game/games/game-src are ignored in manual mode (no iframe to load into).
+      if (!isManual) {
+        if (state.gGames) {
+          attrs += ` games="${state.gGames}"`;
+        } else if (state.gGame) {
+          attrs += ` game="${state.gGame}"`;
+          const src = GAME_SRC[state.gGame];
+          if (src) attrs += ` game-src="${src}"`;
+        }
       }
-      return `<caputchin-game${attrs}></caputchin-game>`;
+      // Manual mode: include a tiny stub game in the light DOM so customers
+      // see the slot pattern in action.
+      const slotted = isManual
+        ? '\n  <div class="demo-manual-game">My custom game DOM</div>\n'
+        : '';
+      return `<caputchin-game${attrs}>${slotted}</caputchin-game>`;
     }
 
     function refreshCodePreviews() {
@@ -497,19 +524,40 @@
       mountEl.textContent = '';
       const log = makeLogger(document.getElementById('g-log'));
 
-      await loadGameScript(state.gGame);
-      if (state.gGames) {
-        for (const g of state.gGames.split(',').map((s) => s.trim()).filter(Boolean)) {
-          await loadGameScript(g);
+      const isManual = state.gTrigger === 'manual';
+
+      if (!isManual) {
+        await loadGameScript(state.gGame);
+        if (state.gGames) {
+          for (const g of state.gGames.split(',').map((s) => s.trim()).filter(Boolean)) {
+            await loadGameScript(g);
+          }
         }
       }
 
       mountEl.insertAdjacentHTML('beforeend', gameMarkup());
 
       const el = mountEl.querySelector('caputchin-game');
-      ['start', 'pass', 'nickname', 'error', 'layout-resolved'].forEach((evt) => {
+      ['start', 'pass', 'nickname', 'error', 'layout-resolved', 'dialog-shown', 'dialog-hidden'].forEach((evt) => {
         el.addEventListener(evt, (e) => log(evt, e.detail));
       });
+
+      // Manual-mode controls: explicit start (only meaningful for inline) +
+      // pass / fail buttons to drive the customer-hosted lifecycle.
+      if (isManual) {
+        const controls = document.createElement('div');
+        controls.className = 'manual-controls';
+        const needsStart = state.gLayout === 'inline' || state.gLayout === 'auto';
+        controls.innerHTML = `
+          ${needsStart ? '<button id="g-mstart">widget.start()</button>' : ''}
+          <button id="g-mpass">widget.pass({score:0.85,durationMs:1200})</button>
+          <button id="g-mfail">widget.fail({code:"too-slow"})</button>
+        `;
+        mountEl.appendChild(controls);
+        document.getElementById('g-mstart')?.addEventListener('click', () => el.start());
+        document.getElementById('g-mpass').addEventListener('click', () => el.pass({ score: 0.85, durationMs: 1200 }));
+        document.getElementById('g-mfail').addEventListener('click', () => el.fail({ code: 'too-slow', message: 'demo failure' }));
+      }
 
       log('start', { _note: 'remount — settings applied' });
     }
@@ -572,7 +620,7 @@
         readWidgetControls(); refreshCodePreviews(); writeUrl(state); remountWidgetDebounced();
       });
     });
-    ['g-sitekey-mode','g-layout','g-width-mode','g-width-px','g-height-px','g-game','g-games'].forEach((id) => {
+    ['g-sitekey-mode','g-trigger','g-layout','g-width-mode','g-width-px','g-height-px','g-game','g-games'].forEach((id) => {
       document.getElementById(id).addEventListener('input', () => {
         readGameControls(); refreshCodePreviews(); writeUrl(state); remountGameDebounced();
       });
@@ -588,7 +636,7 @@
     };
     document.getElementById('g-reset').onclick = () => {
       Object.assign(state, {
-        gSitekeyMode: 'present', gLayout: 'auto',
+        gSitekeyMode: 'present', gTrigger: '', gLayout: 'auto',
         gWidthMode: 'auto', gWidthPx: '', gHeightPx: '', gGame: '@demo/simple', gGames: '',
       });
       applyStateToControls(); refreshCodePreviews(); writeUrl(state); mountGame();
