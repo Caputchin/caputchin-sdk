@@ -274,15 +274,18 @@ function ensureGameStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     // --- inline frame ---
-    // Container is just a flex column — the iframe panel and the standalone
-    // simple-compact widget below it each carry their own border + radius.
-    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;gap:0.5rem;width:fit-content;max-width:100%;box-sizing:border-box}',
+    // One unified bordered card containing the iframe + a brand strip below.
+    // The simple widget inside the badge slot has its own border/radius/bg
+    // stripped so the outer frame border reads as the only edge.
+    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
     '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
-    // Iframe panel: its own bordered card.
-    '[part="game-iframe-slot"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden}',
+    '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
     '[part="game-iframe-slot"] iframe{display:block;border:0;background:#fff}',
-    // Badge slot: holds a standalone simple widget — no style override.
-    '[part="game-badge-slot"]{display:flex}',
+    // Badge slot: thin separator line between iframe and brand strip.
+    '[part="game-badge-slot"]{display:flex;border-top:1px solid #d0d7de;background:#fff}',
+    // Strip the embedded simple widget of its own border/radius/bg so it
+    // visually merges with the outer game-frame card.
+    '[part="game-badge-slot"] [part="simple-checkbox"]{border:none !important;border-radius:0 !important;background:transparent !important}',
 
     // --- overlay (modal / fullscreen) ---
     '[part="game-overlay-host"]{display:inline-block}',
