@@ -145,8 +145,16 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       let lastPostedW = -1;
       let lastPostedH = -1;
       function postDimensions(w: number, h: number, source: 'auto' | 'explicit'): void {
-        const wInt = Math.max(1, Math.round(w));
-        const hInt = Math.max(1, Math.round(h));
+        let wInt = Math.max(1, Math.round(w));
+        let hInt = Math.max(1, Math.round(h));
+        // Auto-measure is grow-only — pin each axis to the max of measured
+        // and last-posted. Explicit (bridge.setSize) bypasses this guard
+        // so games can deliberately resize down too.
+        if (source === 'auto' && lastPostedW > 0 && lastPostedH > 0) {
+          if (wInt <= lastPostedW && hInt <= lastPostedH) return;
+          wInt = Math.max(wInt, lastPostedW);
+          hInt = Math.max(hInt, lastPostedH);
+        }
         if (wInt === lastPostedW && hInt === lastPostedH) return;
         lastPostedW = wInt;
         lastPostedH = hInt;
@@ -193,18 +201,18 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       // iframe too. The `postDimensions` dedupe guard suppresses spam from
       // animations that don't change layout dimensions. Cleaned up in the
       // 'dispose' handler below alongside the rest of the game lifecycle.
-      // documentElement.scrollWidth/Height: max(viewport, content overflow).
-      // GROWS reliably (content > iframe → measurement = content size →
-      // iframe resizes up). Does NOT detect shrinks below viewport — the
-      // measurement floor-clamps to iframe size. We accept this limitation
-      // because the alternative (measuring body directly) creates a death
-      // spiral: body shrinks with iframe → measurement gets smaller →
-      // iframe shrinks more → measurement gets smaller, etc.
+      // Auto-measure the game's natural content size. Probes documentElement
+      // scrollWidth/Height — those exceed the iframe size whenever content
+      // overflows in either axis. ResizeObserver catches the iframe being
+      // resized externally; MutationObserver catches game DOM additions
+      // that grow content past the current iframe (e.g., a post-game replay
+      // button appears under the game tiles).
       //
-      // For games whose post-game UI shifts SHRINK content (replay button
-      // appears then disappears), the iframe stays at the larger size after
-      // the resize-up. Acceptable trade-off — games can use bridge.setSize
-      // for explicit shrink if they need it.
+      // Grow-only: auto-measure can only EXPAND the iframe, never shrink
+      // it. A game whose content shrinks mid-session (button removed,
+      // panel collapsed) is allowed — the iframe stays at the grown size.
+      // Games that genuinely need to shrink can call `bridge.setSize(w, h)`
+      // explicitly; that path bypasses the grow-only guard.
       function measureDocumentSize(): void {
         const docEl = document.documentElement;
         const w = Math.max(docEl.scrollWidth, document.body?.scrollWidth ?? 0);
