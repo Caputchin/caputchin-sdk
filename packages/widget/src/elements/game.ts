@@ -89,9 +89,10 @@ export class CaputchinGame extends HTMLElement {
 
     state.trigger.activate(state.triggerCtx);
 
-    // For inline + manual there's no entry click — customer must call start()
-    // to kick verification. For modal/fullscreen + manual the simple-click
-    // entry on the dialog opens it AND fires the trigger, same as iframe mode.
+    // For inline (manual or iframe) verification auto-kicks on mount via the
+    // auto trigger above. For modal/fullscreen the simple-click entry opens
+    // the dialog AND fires the trigger on the first click. No start() exists
+    // on this widget — pass() / fail() drive completion in manual mode.
   }
 
   disconnectedCallback(): void {
