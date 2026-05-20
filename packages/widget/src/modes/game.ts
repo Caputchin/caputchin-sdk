@@ -140,6 +140,14 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   let subSimple: Presentation | null = null;
   const activateListeners: Array<() => void> = [];
   let backdropWired = false;
+  // Latched once the user makes the first activation. Subsequent activations
+  // (re-opens after a close-mid-verify) just open the dialog — they must not
+  // re-fire the trigger callbacks that start a second verification session.
+  let firstActivationFired = false;
+  // Mirrors the most recent state passed to setState. Used in close() to
+  // decide whether to revert the simple-shield back to clickable idle when
+  // the user dismisses the dialog before the game finishes.
+  let logicalState: PresentationState = 'idle';
 
   function fireActivate(): void {
     for (const h of activateListeners) h();
@@ -181,6 +189,18 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       iframeSlot.setAttribute('part', 'game-iframe-slot');
       dialog.appendChild(iframeSlot);
 
+      // Native `close` event fires for every dismissal path (Escape key,
+      // backdrop click, button close, programmatic close). Centralize the
+      // post-close work here so all paths revert the shield + mute audio
+      // consistently.
+      dialog.addEventListener('close', () => {
+        signalVisibility(iframeSlot, false);
+        if (logicalState === 'verifying') {
+          logicalState = 'idle';
+          subSimple?.setState('idle');
+        }
+      });
+
       container.appendChild(dialog);
       renderRoot.appendChild(container);
 
@@ -196,7 +216,10 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       subSimple.mount();
       subSimple.onActivate(() => {
         this.open();
-        fireActivate();
+        if (!firstActivationFired) {
+          firstActivationFired = true;
+          fireActivate();
+        }
       });
     },
 
@@ -215,6 +238,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
     },
 
     setState(state: PresentationState): void {
+      logicalState = state;
       subSimple?.setState(state);
       if (state === 'verified' || state === 'error') {
         // Auto-close shortly after a terminal state so the user returns to
@@ -254,16 +278,22 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
 
     close(): void {
       // Hide only — iframe stays mounted inside the dialog so game state
-      // is preserved across close/reopen. Audio is muted via postMessage
-      // so the still-running game can't leak sound behind the closed dialog.
+      // is preserved across close/reopen. The post-close work (mute audio,
+      // revert simple-shield to clickable idle on mid-verify dismissal)
+      // happens in the dialog 'close' event listener wired in mount(), so
+      // it covers Escape / backdrop / button / programmatic dismissal alike.
       if (!dialog) return;
-      signalVisibility(iframeSlot, false);
       const d = dialog as HTMLDialogElement & { close?: () => void };
       let fired = false;
       if (typeof d.close === 'function') {
         try { d.close(); fired = true; } catch {}
       }
-      if (!fired) dialog.removeAttribute('open');
+      if (!fired) {
+        // Fallback path: no native close() support. Fire the listener manually
+        // so the shield + audio still revert.
+        dialog.removeAttribute('open');
+        dialog.dispatchEvent(new Event('close'));
+      }
     },
   };
 }
