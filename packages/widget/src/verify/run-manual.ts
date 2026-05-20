@@ -2,7 +2,8 @@ import { createCapClient } from '../cap/client.js';
 import { fireError } from '../errors.js';
 import { injectHiddenInput } from '../form.js';
 import type { WrappedToken } from '../token.js';
-import type { GameState } from './state-game.js';
+import type { WidgetState } from './state.js';
+import type { GameConfig } from '../config/game.js';
 import { makeWidgetId } from './id.js';
 
 /**
@@ -12,15 +13,13 @@ import { makeWidgetId } from './id.js';
  * `widget.fail({ code, message })`. No iframe mounts.
  *
  * With sitekey: cap.solve runs in parallel; pass releases the gate with the
- *   game payload, fail aborts.
+ *   game payload (via methods-game's pass() → capClient.releaseGate), fail
+ *   aborts (via methods-game's fail() → capClient.abortGate).
  * Without sitekey: pure event shell — start/pass/error fire, no cap.
- *
- * Returns a handle exposing `releaseManualPass` / `abortManual` so the
- * element can wire them to its public methods.
  */
 export function runManual(
   el: HTMLElement,
-  state: GameState,
+  state: WidgetState<GameConfig>,
   apiHost: string,
 ): void {
   if (!state.config) return;

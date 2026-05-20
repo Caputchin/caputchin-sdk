@@ -4,7 +4,8 @@ import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
-import { createInitialGameState, type GameState } from '../verify/state-game.js';
+import { createInitialState, type WidgetState } from '../verify/state.js';
+import type { GameConfig } from '../config/game.js';
 import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
@@ -26,7 +27,7 @@ import { runManual } from '../verify/run-manual.js';
 export class CaputchinGame extends HTMLElement {
   static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout'];
 
-  private state: GameState = createInitialGameState();
+  private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
   connectedCallback(): void {
     const state = this.state;
@@ -83,12 +84,6 @@ export class CaputchinGame extends HTMLElement {
         }
         return runGame(this, state, apiHost);
       },
-      releaseManualPass: (payload) => {
-        // In iframe mode this releases the cap gate with the game payload
-        // from postMessage. In manual mode the public pass() method routes
-        // through the same path, so cap solve completes with score/duration.
-        state.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
-      },
       capClient: null,
     };
 
@@ -119,7 +114,7 @@ export class CaputchinGame extends HTMLElement {
     s.gameErrored = false;
     s.firstPassFired = false;
     s.connected = false;
-    this.state = createInitialGameState();
+    this.state = createInitialState<GameConfig>();
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {

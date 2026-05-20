@@ -10,11 +10,6 @@ export interface TriggerContext {
   el: HTMLElement;
   presentation: Presentation;
   runVerification: () => Promise<void>;
-  /**
-   * Customer-supplied payload from `widget.pass({score, durationMs})` — only
-   * meaningful for trigger="manual" in `game` mode. Released via the Cap gate.
-   */
-  releaseManualPass: (payload: { score: number | null; durationMs: number | null }) => void;
   capClient: CapClient | null;
 }
 

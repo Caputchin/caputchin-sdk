@@ -2,7 +2,8 @@ import { createCapClient } from '../cap/client.js';
 import { fireError } from '../errors.js';
 import { injectHiddenInput } from '../form.js';
 import type { WrappedToken } from '../token.js';
-import type { WidgetState } from './state-widget.js';
+import type { WidgetState } from './state.js';
+import type { WidgetConfig } from '../config/widget.js';
 import { makeWidgetId } from './id.js';
 
 /**
@@ -10,7 +11,7 @@ import { makeWidgetId } from './id.js';
  * No iframe, no game gating — cap.solve runs end-to-end and the wrapped
  * token is dispatched as the `pass` event.
  */
-export async function runCap(el: HTMLElement, state: WidgetState, apiHost: string): Promise<void> {
+export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, apiHost: string): Promise<void> {
   if (!state.config) return;
   const cfg = state.config;
 

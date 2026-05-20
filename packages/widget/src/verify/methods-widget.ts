@@ -1,4 +1,5 @@
-import type { WidgetState } from './state-widget.js';
+import type { WidgetState } from './state.js';
+import type { WidgetConfig } from '../config/widget.js';
 
 /**
  * Public methods on `<caputchin-widget>`. Called early in `connectedCallback`
@@ -8,7 +9,7 @@ import type { WidgetState } from './state-widget.js';
  * `setNickname` is not exposed here — scoreboards are game-only. See
  * `<caputchin-game>` for the scoreboard surface.
  */
-export function installWidgetMethods(el: HTMLElement, state: WidgetState): void {
+export function installWidgetMethods(el: HTMLElement, state: WidgetState<WidgetConfig>): void {
   Object.defineProperty(el, 'start', {
     value: (): void => {
       if (!state.config) return;
