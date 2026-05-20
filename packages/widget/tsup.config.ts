@@ -20,25 +20,44 @@ if (fs.existsSync(metaPath)) {
   );
 }
 
-export default defineConfig({
-  entry: { widget: 'src/index.ts' },
-  format: ['esm', 'iife'],
-  globalName: 'Caputchin',
-  dts: true,
-  target: 'es2020',
-  minify: false,
-  clean: true,
-  outExtension({ format }) {
-    if (format === 'esm') return { js: '.mjs' };
-    if (format === 'iife') return { js: '.js' };
-    return { js: '.js' };
+const sharedDefine = {
+  __CAPUTCHIN_API_HOST__: JSON.stringify(
+    process.env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com'
+  ),
+  __IFRAME_RUNTIME__: JSON.stringify(iframeRuntime),
+  __IFRAME_RUNTIME_SHA256__: JSON.stringify(iframeRuntimeSha256),
+  'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+};
+
+// Two builds:
+//   1. ESM single entry (`widget.mjs`) — npm consumers import {CaputchinWidget,
+//      CaputchinGame} from '@caputchin/widget'. Tree-shakable.
+//   2. IIFE three entries — `widget.js` (cap only), `game.js` (game only),
+//      `all.js` (both). jsDelivr / script-tag picks per use case.
+export default defineConfig([
+  {
+    entry: { widget: 'src/index.ts' },
+    format: ['esm'],
+    dts: true,
+    target: 'es2020',
+    minify: false,
+    clean: true,
+    outExtension: () => ({ js: '.mjs' }),
+    define: sharedDefine,
   },
-  define: {
-    __CAPUTCHIN_API_HOST__: JSON.stringify(
-      process.env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com'
-    ),
-    __IFRAME_RUNTIME__: JSON.stringify(iframeRuntime),
-    __IFRAME_RUNTIME_SHA256__: JSON.stringify(iframeRuntimeSha256),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+  {
+    entry: {
+      widget: 'src/entries/widget.ts',
+      game: 'src/entries/game.ts',
+      all: 'src/entries/all.ts',
+    },
+    format: ['iife'],
+    globalName: 'Caputchin',
+    dts: false,
+    target: 'es2020',
+    minify: false,
+    clean: false,
+    outExtension: () => ({ js: '.js' }),
+    define: sharedDefine,
   },
-});
+]);

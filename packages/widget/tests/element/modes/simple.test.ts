@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getTestElement } from '../../fixtures/test-element';
+import { getWidget } from '../../fixtures/test-element';
 
 declare global {
   var __CAPUTCHIN_API_HOST__: string;
@@ -8,7 +8,7 @@ declare global {
 
 describe('mode="simple" presentation', () => {
   it('renders a checkbox with Caputchin branding on mount (inside shadow root)', () => {
-    const el = getTestElement({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+    const el = getWidget({ sitekey: 'k', mode: 'simple', trigger: 'click' });
     document.body.appendChild(el);
     const shadow = el.shadowRoot;
     expect(shadow).not.toBeNull();
@@ -22,7 +22,7 @@ describe('mode="simple" presentation', () => {
   });
 
   it('removes the checkbox on disconnect', () => {
-    const el = getTestElement({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+    const el = getWidget({ sitekey: 'k', mode: 'simple', trigger: 'click' });
     document.body.appendChild(el);
     expect(el.shadowRoot!.querySelector('[role="checkbox"]')).not.toBeNull();
     el.remove();
@@ -32,7 +32,7 @@ describe('mode="simple" presentation', () => {
 
 describe('mode="invisible" presentation', () => {
   it('renders no DOM', () => {
-    const el = getTestElement({ sitekey: 'k', mode: 'invisible' });
+    const el = getWidget({ sitekey: 'k', mode: 'invisible' });
     document.body.appendChild(el);
     expect(el.children.length).toBe(0);
     expect(el.textContent?.trim()).toBe('');

@@ -1,4 +1,3 @@
-import type { ParsedConfig } from '../config.js';
 import { pickFromGamesAttr } from '../pool.js';
 
 let widgetIdCounter = 0;
@@ -13,7 +12,7 @@ export function makeWidgetId(): string {
   return `cpt_${widgetIdCounter}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function resolveGameId(config: ParsedConfig): string | null {
-  if (config.games) return pickFromGamesAttr(config.games);
-  return config.game ?? null;
+export function resolveGameId(input: { game: string | null; games: string | null }): string | null {
+  if (input.games) return pickFromGamesAttr(input.games);
+  return input.game ?? null;
 }

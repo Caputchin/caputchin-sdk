@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { inspectConfig } from '../../src/config';
+import { inspectWidgetConfig } from '../../src/config/widget';
+import { inspectGameConfig } from '../../src/config/game';
 
 function el(attrs: Record<string, string>): HTMLElement {
   const e = document.createElement('div');
@@ -7,9 +8,9 @@ function el(attrs: Record<string, string>): HTMLElement {
   return e;
 }
 
-describe('inspectConfig — graceful defaults', () => {
+describe('inspectWidgetConfig — defaults', () => {
   it('defaults mode to "simple"', () => {
-    const r = inspectConfig(el({ sitekey: 'k' }));
+    const r = inspectWidgetConfig(el({ sitekey: 'k' }));
     expect(r.config.mode).toBe('simple');
     expect(r.config.trigger).toBe('auto');
     expect(r.issues).toEqual([]);
@@ -17,137 +18,136 @@ describe('inspectConfig — graceful defaults', () => {
   });
 
   it('reads explicit mode + trigger', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'form-submit' }));
+    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'form-submit' }));
     expect(r.config.mode).toBe('invisible');
     expect(r.config.trigger).toBe('form-submit');
     expect(r.issues).toEqual([]);
   });
 });
 
-describe('inspectConfig — mode validation', () => {
+describe('inspectWidgetConfig — mode validation', () => {
   it('falls back to simple on unknown mode + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'bogus' }));
+    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'bogus' }));
     expect(r.config.mode).toBe('simple');
     expect(r.issues[0]!.message).toContain('mode="bogus"');
   });
+
+  it('rejects mode="game" (game widget territory) + emits issue', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'game' }));
+    expect(r.config.mode).toBe('simple');
+    expect(r.issues[0]!.message).toContain('mode="game"');
+  });
 });
 
-describe('inspectConfig — trigger × mode coercion', () => {
+describe('inspectWidgetConfig — trigger × mode coercion', () => {
   it('coerces invisible+click → invisible+auto + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'click' }));
+    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'click' }));
     expect(r.config.trigger).toBe('auto');
     expect(r.issues.some((i) => i.message.includes('trigger="click"') && i.message.includes('mode="invisible"'))).toBe(true);
   });
-
-  it('strips trigger on game-only + emits issue', () => {
-    const r = inspectConfig(el({ mode: 'game-only', game: '@x/y', trigger: 'manual' }));
-    expect(r.config.trigger).toBe('auto');
-    expect(r.issues.some((i) => i.message.includes('game-only'))).toBe(true);
-  });
 });
 
-describe('inspectConfig — game attrs gating', () => {
-  it('strips game attrs on invisible + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'invisible', game: '@x/y' }));
-    expect(r.config.game).toBeNull();
-    expect(r.issues.some((i) => i.message.includes('game') && i.message.includes('invisible'))).toBe(true);
-  });
-
-  it('keeps game attrs on game mode', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: '@x/y' }));
-    expect(r.config.game).toBe('@x/y');
-    expect(r.issues).toEqual([]);
-  });
-});
-
-describe('inspectConfig — layout gating', () => {
-  it('strips layout on simple + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'simple', layout: 'modal' }));
-    expect(r.config.layout).toBeNull();
-    expect(r.issues.some((i) => i.message.includes('layout') && i.message.includes('simple'))).toBe(true);
-  });
-
-  it('keeps layout on game mode', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: '@x/y', layout: 'modal' }));
-    expect(r.config.layout).toBe('modal');
-    expect(r.issues).toEqual([]);
-  });
-
-  it('emits issue on unknown layout value', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: '@x/y', layout: 'bogus' }));
-    expect(r.config.layout).toBeNull();
-    expect(r.issues.some((i) => i.message.includes('layout="bogus"'))).toBe(true);
-  });
-});
-
-describe('inspectConfig — sitekey rules', () => {
-  it('marks inert + emits issue when sitekey missing in verification mode', () => {
-    const r = inspectConfig(el({ mode: 'simple' }));
+describe('inspectWidgetConfig — sitekey rules', () => {
+  it('marks inert + emits issue when sitekey missing', () => {
+    const r = inspectWidgetConfig(el({ mode: 'simple' }));
     expect(r.inert).toBe(true);
     expect(r.issues.some((i) => i.message.includes('sitekey'))).toBe(true);
   });
-
-  it('does not mark inert when sitekey missing in game-only mode', () => {
-    const r = inspectConfig(el({ mode: 'game-only', game: '@x/y' }));
-    expect(r.inert).toBe(false);
-    expect(r.issues).toEqual([]);
-  });
-
-  it('emits issue when sitekey present with game-only', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game-only', game: '@x/y' }));
-    expect(r.inert).toBe(false);
-    expect(r.issues.some((i) => i.message.includes('sitekey') && i.message.includes('game-only'))).toBe(true);
-  });
 });
 
-describe('inspectConfig — size', () => {
-  it('defaults to normal', () => {
-    const r = inspectConfig(el({ sitekey: 'k' }));
+describe('inspectWidgetConfig — size + width', () => {
+  it('defaults size=normal width=auto', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k' }));
     expect(r.config.size).toBe('normal');
-  });
-
-  it('accepts size="compact"', () => {
-    const r = inspectConfig(el({ sitekey: 'k', size: 'compact' }));
-    expect(r.config.size).toBe('compact');
-    expect(r.issues).toEqual([]);
-  });
-
-  it('falls back to normal on unknown size + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', size: 'huge' }));
-    expect(r.config.size).toBe('normal');
-    expect(r.issues.some((i) => i.message.includes('size="huge"'))).toBe(true);
-  });
-});
-
-describe('inspectConfig — width', () => {
-  it('defaults to auto', () => {
-    const r = inspectConfig(el({ sitekey: 'k' }));
     expect(r.config.width).toBe('auto');
   });
 
-  it('accepts width="full"', () => {
-    const r = inspectConfig(el({ sitekey: 'k', width: 'full' }));
+  it('accepts compact + full', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k', size: 'compact', width: 'full' }));
+    expect(r.config.size).toBe('compact');
     expect(r.config.width).toBe('full');
     expect(r.issues).toEqual([]);
   });
 
-  it('falls back to auto on unknown width + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', width: 'bogus' }));
+  it('accepts width=<pixels>', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k', width: '500' }));
+    expect(r.config.width).toBe(500);
+  });
+
+  it('falls back to auto on bogus width + emits issue', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k', width: 'bogus' }));
     expect(r.config.width).toBe('auto');
     expect(r.issues.some((i) => i.message.includes('width="bogus"'))).toBe(true);
   });
 });
 
-describe('inspectConfig — game-src validation', () => {
-  it('strips invalid game-src URL + emits issue', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: 'gid', 'game-src': 'javascript:alert(1)' }));
+describe('inspectGameConfig — sitekey-optional', () => {
+  it('null sitekey when absent (game-only path)', () => {
+    const r = inspectGameConfig(el({ game: '@x/y' }));
+    expect(r.config.sitekey).toBeNull();
+    expect(r.inert).toBe(false);
+    expect(r.issues).toEqual([]);
+  });
+
+  it('reads sitekey when present (play+verify path)', () => {
+    const r = inspectGameConfig(el({ sitekey: 'k', game: '@x/y' }));
+    expect(r.config.sitekey).toBe('k');
+    expect(r.inert).toBe(false);
+  });
+
+  it('never marks inert', () => {
+    const r = inspectGameConfig(el({}));
+    expect(r.inert).toBe(false);
+  });
+});
+
+describe('inspectGameConfig — layout', () => {
+  it('defaults layout=auto', () => {
+    const r = inspectGameConfig(el({ game: '@x/y' }));
+    expect(r.config.layout).toBe('auto');
+  });
+
+  it('accepts inline|modal|fullscreen', () => {
+    expect(inspectGameConfig(el({ game: '@x/y', layout: 'inline' })).config.layout).toBe('inline');
+    expect(inspectGameConfig(el({ game: '@x/y', layout: 'modal' })).config.layout).toBe('modal');
+    expect(inspectGameConfig(el({ game: '@x/y', layout: 'fullscreen' })).config.layout).toBe('fullscreen');
+  });
+
+  it('falls back to auto on bogus + emits issue', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', layout: 'bogus' }));
+    expect(r.config.layout).toBe('auto');
+    expect(r.issues.some((i) => i.message.includes('layout="bogus"'))).toBe(true);
+  });
+});
+
+describe('inspectGameConfig — game-src validation', () => {
+  it('strips javascript: scheme + emits issue', () => {
+    const r = inspectGameConfig(el({ sitekey: 'k', 'game-src': 'javascript:alert(1)' }));
     expect(r.config.gameSrc).toBeNull();
     expect(r.issues.some((i) => i.message.includes('blocked scheme'))).toBe(true);
   });
 
-  it('accepts https game-src', () => {
-    const r = inspectConfig(el({ sitekey: 'k', mode: 'game', game: 'gid', 'game-src': 'https://example.com/g.js' }));
+  it('accepts https URL', () => {
+    const r = inspectGameConfig(el({ sitekey: 'k', 'game-src': 'https://example.com/g.js' }));
     expect(r.config.gameSrc).toBe('https://example.com/g.js');
     expect(r.issues).toEqual([]);
+  });
+});
+
+describe('inspectGameConfig — height attr', () => {
+  it('defaults to null (auto)', () => {
+    const r = inspectGameConfig(el({ game: '@x/y' }));
+    expect(r.config.height).toBeNull();
+  });
+
+  it('accepts pixel value', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', height: '300' })).config.height;
+    expect(r).toBe(300);
+  });
+
+  it('ignores bogus value + emits issue', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', height: 'bogus' }));
+    expect(r.config.height).toBeNull();
+    expect(r.issues.some((i) => i.message.includes('height="bogus"'))).toBe(true);
   });
 });

@@ -1,20 +1,16 @@
 import { fireError } from '../errors.js';
-import type { WidgetState } from './state.js';
+import type { GameState } from './state-game.js';
 
 /**
- * Define the public methods (`start`, `pass`, `setNickname`) on the element.
- * Called early in `connectedCallback` so they exist even when the widget is
- * inert (missing sitekey, etc.). Methods close over the live `state` ref —
- * field updates land before the method body runs.
+ * Public methods on `<caputchin-game>`. `pass()` is only meaningful for
+ * `trigger="manual"` with a sitekey (customer-hosted game). Without a
+ * sitekey the widget is game-only and `pass()` fires an `invalid-call`
+ * error event.
  */
-export function installMethods(el: HTMLElement, state: WidgetState): void {
+export function installGameMethods(el: HTMLElement, state: GameState): void {
   Object.defineProperty(el, 'start', {
     value: (): void => {
       if (!state.config) return;
-      if (state.config.mode === 'game-only') {
-        fireError(el, 'invalid-call', 'start() not applicable in mode="game-only"');
-        return;
-      }
       state.trigger?.forceStart?.(state.triggerCtx!);
     },
     configurable: true,
@@ -25,9 +21,9 @@ export function installMethods(el: HTMLElement, state: WidgetState): void {
   Object.defineProperty(el, 'pass', {
     value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
       if (!state.config) return;
-      const inGameManual = state.config.mode === 'game' && state.config.trigger === 'manual';
-      if (!inGameManual) {
-        fireError(el, 'invalid-call', 'pass() only callable in mode="game" trigger="manual"');
+      const inManualVerify = state.config.trigger === 'manual' && state.config.sitekey !== null;
+      if (!inManualVerify) {
+        fireError(el, 'invalid-call', 'pass() only callable with sitekey + trigger="manual"');
         return;
       }
       const score = typeof payload?.score === 'number' ? payload.score : null;

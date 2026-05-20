@@ -1,19 +1,13 @@
-import type { ParsedConfig } from '../config.js';
+import type { GameConfig } from '../config/game.js';
 import type { CapClient } from '../cap/client.js';
 import type { IframeHost } from '../iframe/host.js';
-import type { Presentation } from '../modes/index.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
 
-/**
- * Mutable per-mount state for a single widget. Owned by `CaputchinElement`,
- * threaded through `verify/*` helpers so the element class stays a thin
- * lifecycle shell. Reset on `disconnectedCallback`.
- */
-export interface WidgetState {
-  config: ParsedConfig | null;
+/** Per-mount state for `<caputchin-game>`. */
+export interface GameState {
+  config: GameConfig | null;
   widgetId: string | null;
-  presentation: Presentation | null;
   gamePresentation: GamePresentation | null;
   iframeHost: IframeHost | null;
   capClient: CapClient | null;
@@ -29,11 +23,10 @@ export interface WidgetState {
   connected: boolean;
 }
 
-export function createInitialState(): WidgetState {
+export function createInitialGameState(): GameState {
   return {
     config: null,
     widgetId: null,
-    presentation: null,
     gamePresentation: null,
     iframeHost: null,
     capClient: null,

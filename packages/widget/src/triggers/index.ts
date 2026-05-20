@@ -1,5 +1,5 @@
 import type { CapClient } from '../cap/client.js';
-import type { WidgetTrigger } from '../config.js';
+import type { WidgetTrigger } from '../config/shared.js';
 import type { Presentation } from '../modes/index.js';
 import { createAutoTrigger } from './auto.js';
 import { createClickTrigger } from './click.js';

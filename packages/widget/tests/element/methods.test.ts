@@ -1,14 +1,47 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getTestElement } from '../fixtures/test-element';
-import type { CaputchinElementShape } from '../../src/types';
+import { getWidget, getGame } from '../fixtures/test-element';
+import type { CaputchinWidgetShape, CaputchinGameShape } from '../../src/types';
 
 declare global {
   var __CAPUTCHIN_API_HOST__: string;
 }
 (globalThis as unknown as { __CAPUTCHIN_API_HOST__: string }).__CAPUTCHIN_API_HOST__ = 'https://api.test.com';
 
-describe('widget methods — out-of-scope behavior', () => {
-  let el: CaputchinElementShape;
+describe('CaputchinWidget methods', () => {
+  let el: CaputchinWidgetShape;
+
+  function mount(attrs: Record<string, string>): void {
+    el = getWidget(attrs) as unknown as CaputchinWidgetShape;
+    document.body.appendChild(el);
+  }
+
+  it('start() is callable on simple mode', () => {
+    mount({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+    expect(() => el.start()).not.toThrow();
+    el.remove();
+  });
+
+  it('start() is callable on invisible mode', () => {
+    mount({ sitekey: 'k', mode: 'invisible', trigger: 'manual' });
+    expect(() => el.start()).not.toThrow();
+    el.remove();
+  });
+
+  it('does NOT expose pass() (cap widget has no game payload)', () => {
+    mount({ sitekey: 'k', mode: 'simple' });
+    expect((el as unknown as Record<string, unknown>)['pass']).toBeUndefined();
+    el.remove();
+  });
+
+  it('setNickname() throws not-implemented', () => {
+    mount({ sitekey: 'k', mode: 'simple' });
+    expect(() => el.setNickname('ABC')).toThrow(/not implemented/);
+    el.remove();
+  });
+});
+
+describe('CaputchinGame methods', () => {
+  let el: CaputchinGameShape;
   let errors: Array<{ code: string; message: string }>;
 
   beforeEach(() => {
@@ -16,42 +49,41 @@ describe('widget methods — out-of-scope behavior', () => {
   });
 
   function mount(attrs: Record<string, string>): void {
-    el = getTestElement(attrs) as unknown as CaputchinElementShape;
+    el = getGame(attrs) as unknown as CaputchinGameShape;
     el.addEventListener('error', (e) => {
       errors.push((e as CustomEvent).detail as { code: string; message: string });
     });
     document.body.appendChild(el);
   }
 
-  it('start() is callable on simple mode (force-start)', () => {
-    mount({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+  it('start() callable on play+verify (sitekey + click trigger)', () => {
+    mount({ sitekey: 'k', game: '@x/y', trigger: 'click' });
     expect(() => el.start()).not.toThrow();
     el.remove();
   });
 
-  it('start() noops + fires invalid-call on game-only', () => {
-    mount({ mode: 'game-only', game: '@x/y' });
-    el.start();
-    expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('start'))).toBe(true);
+  it('pass() callable on sitekey + manual trigger (customer-hosted game)', () => {
+    mount({ sitekey: 'k', game: '@x/y', trigger: 'manual' });
+    expect(() => el.pass({ score: 0.5, durationMs: 100 })).not.toThrow();
     el.remove();
   });
 
-  it('pass() noops + fires invalid-call on simple mode', () => {
-    mount({ sitekey: 'k', mode: 'simple', trigger: 'manual' });
+  it('pass() fires invalid-call on sitekey + non-manual trigger', () => {
+    mount({ sitekey: 'k', game: '@x/y', trigger: 'auto' });
     el.pass({ score: 0.5 });
     expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('pass'))).toBe(true);
     el.remove();
   });
 
-  it('pass() noops + fires invalid-call on game+auto', () => {
-    mount({ sitekey: 'k', mode: 'game', trigger: 'auto', game: '@x/y' });
+  it('pass() fires invalid-call on game-only (no sitekey)', () => {
+    mount({ game: '@x/y' });
     el.pass({ score: 0.5 });
-    expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('pass'))).toBe(true);
+    expect(errors.some((e) => e.code === 'invalid-call')).toBe(true);
     el.remove();
   });
 
   it('setNickname() throws not-implemented', () => {
-    mount({ sitekey: 'k', mode: 'simple' });
+    mount({ sitekey: 'k', game: '@x/y' });
     expect(() => el.setNickname('ABC')).toThrow(/not implemented/);
     el.remove();
   });

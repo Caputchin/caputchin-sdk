@@ -1,9 +1,9 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
-import type { WidgetSize, WidgetTrigger, WidgetMode } from '../config.js';
+import type { WidgetSize, WidgetTrigger } from '../config/shared.js';
 import { createSimplePresentation } from './simple.js';
 
 /**
- * Game / game-only presentation. Three layouts:
+ * Game presentation for `<caputchin-game>`. Three layouts:
  *
  * - **inline**: bordered panel with iframe + simple-compact brand strip flush
  *   below. Brand strip doubles as state indicator.
@@ -12,10 +12,8 @@ import { createSimplePresentation } from './simple.js';
  * - **fullscreen**: simple-normal checkbox as entry. Click opens a fullscreen
  *   overlay with the iframe + a close button.
  *
- * State mapping:
- *   - `mode="game"`: verifying (cap starts) → verified (pass event = both
- *     cap done + game-pass arrived) → error.
- *   - `mode="game-only"`: idle (no cap) → verified (game-pass) → error.
+ * State driven by the game widget's `runGame` orchestrator: cap+game flips
+ * to `verified` on cap.solve + game-pass; game-only flips on game-pass alone.
  */
 export interface GamePresentation extends Presentation {
   /** Where the iframe element should be appended by IframeHost. */
@@ -28,7 +26,6 @@ export interface GamePresentation extends Presentation {
 
 export interface GamePresentationInput extends PresentationFactoryInput {
   layout: 'inline' | 'modal' | 'fullscreen';
-  mode: WidgetMode;
 }
 
 export function createGamePresentation(input: GamePresentationInput): GamePresentation {

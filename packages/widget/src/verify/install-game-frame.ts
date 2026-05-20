@@ -1,4 +1,4 @@
-import type { ParsedConfig } from '../config.js';
+import type { GameConfig } from '../config/game.js';
 import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
 import type { GamePresentation } from '../modes/game.js';
@@ -16,7 +16,7 @@ const DEFAULT_H = 300;
 export async function installGameFrame(
   el: HTMLElement,
   gp: GamePresentation | null,
-  config: ParsedConfig,
+  config: GameConfig,
   host: IframeHost,
   onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
   onGameStarted: () => void,
@@ -56,7 +56,7 @@ export async function installGameFrame(
  */
 export function applyIframeSize(
   host: IframeHost,
-  config: ParsedConfig,
+  config: GameConfig,
   manifest: { preferredWidth: number | null; preferredHeight: number | null } | null,
 ): void {
   let widthCss: number | '100%';
