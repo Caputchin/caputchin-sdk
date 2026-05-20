@@ -258,7 +258,9 @@ function createCheckboxIndicator(
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const SHIELD_PATH = 'M12 2 L20 5 V11 C20 16 16.5 19.5 12 22 C7.5 19.5 4 16 4 11 V5 Z';
+// Shield path tuned to fill the viewBox (1–23 vertical, 2–22 horizontal)
+// so the rendered shield reads as a glyph, not a small mark on a big canvas.
+const SHIELD_PATH = 'M12 1 L22 4 V12 C22 18 17.5 22.5 12 23.5 C6.5 22.5 2 18 2 12 V4 Z';
 
 function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -274,11 +276,12 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
   svg.appendChild(shield);
 
   // Glyph overlay (✓ for verified, ! for error). Hidden in idle / verifying.
+  // Font 16 of 24 viewBox = ~67% of shield height; sits centered.
   const glyph = document.createElementNS(SVG_NS, 'text');
   glyph.setAttribute('x', '12');
-  glyph.setAttribute('y', '16');
+  glyph.setAttribute('y', '17');
   glyph.setAttribute('text-anchor', 'middle');
-  glyph.setAttribute('font-size', '12');
+  glyph.setAttribute('font-size', '16');
   glyph.setAttribute('font-weight', '700');
   glyph.setAttribute('font-family', 'system-ui, sans-serif');
   glyph.setAttribute('fill', '#fff');
@@ -328,8 +331,8 @@ function ensureStyles(root: ShadowRoot): void {
 
     // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
     '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
-    // --- shield SVG: same footprint as checkbox so swapping doesn't reflow ---
-    '[part="simple-shield-box"]{width:1.5rem;height:1.5rem;flex:0 0 auto;display:block}',
+    // --- shield SVG: deliberately larger than the checkbox so the glyph reads at a glance ---
+    '[part="simple-shield-box"]{width:2rem;height:2rem;flex:0 0 auto;display:block}',
     // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
     '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:left}',
 
@@ -347,7 +350,7 @@ function ensureStyles(root: ShadowRoot): void {
     // --- size="compact": single-row inline strip, dialed down ---
     '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
     '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
-    '[data-size="compact"] [part="simple-shield-box"]{width:0.95rem;height:0.95rem}',
+    '[data-size="compact"] [part="simple-shield-box"]{width:1.25rem;height:1.25rem}',
     '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap;min-width:3.6rem}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
