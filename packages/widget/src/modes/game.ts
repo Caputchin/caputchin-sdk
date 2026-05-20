@@ -400,8 +400,15 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-dialog"][data-layout="modal"]::backdrop{background:rgba(0,0,0,0.45)}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:#fff}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:rgba(0,0,0,0.8)}',
-    '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex}',
-    '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{flex:1 1 auto;border:0}',
+    // Overlay (modal + fullscreen): iframe stays at its manifest preferred
+    // size (set by applyIframeSize); slot fills the dialog interior and
+    // centers the iframe both axes. Matters most for fullscreen — the
+    // dialog is 100vw/100vh, the game might be 280×160, and we want it
+    // centered with backdrop space rather than stretched and pixelated.
+    // For modal the dialog shrink-wraps to the iframe so centering is a
+    // no-op there but stays consistent.
+    '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex;align-items:center;justify-content:center}',
+    '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{border:0}',
     '[part="game-overlay-close"]{position:absolute;top:0.5rem;right:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:rgba(255,255,255,0.9);color:#1a1917;font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
 
     // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---
