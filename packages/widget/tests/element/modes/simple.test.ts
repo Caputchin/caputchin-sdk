@@ -15,7 +15,9 @@ describe('mode="simple" presentation', () => {
     const checkbox = shadow!.querySelector('[role="checkbox"]');
     expect(checkbox).not.toBeNull();
     expect(shadow!.textContent).toContain('Caputchin');
-    expect(shadow!.textContent).toContain("I'm not a robot");
+    expect(shadow!.textContent).toContain('see no data');
+    // State text replaces the old "I'm not a robot" label. Idle = "Verify".
+    expect(shadow!.textContent).toContain('Verify');
     // Light-DOM children stay empty — internals are isolated.
     expect(el.querySelector('[role="checkbox"]')).toBeNull();
     el.remove();
