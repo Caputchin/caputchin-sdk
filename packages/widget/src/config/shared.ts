@@ -2,7 +2,7 @@
  * number is an explicit pixel value that overrides both (and any game
  * preferredWidth). */
 export type WidgetWidth = 'auto' | 'full' | number;
-/** Explicit pixel height. `null` means "auto" — defer to the game's
+/** Explicit pixel height. `null` means "auto"; defer to the game's
  * preferredHeight (if any) or the widget default. */
 export type WidgetHeight = number | null;
 export type WidgetSize = 'normal' | 'compact';

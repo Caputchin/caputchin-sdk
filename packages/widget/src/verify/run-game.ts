@@ -66,7 +66,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   const dispatchStart = (): void => emitStart(el, gameId);
 
   if (gameId === null && gameUrl === null) {
-    console.warn('[caputchin] game widget mounted without game configured — verification will run but no iframe will mount');
+    console.warn('[caputchin] game widget mounted without game configured; verification will run but no iframe will mount');
     client.releaseGate({ score: null, durationMs: null });
     dispatchStart();
   } else {
@@ -118,7 +118,7 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
 
   const { url: gameUrl, integrity, gameId } = resolved;
   if (gameId === null && gameUrl === null) {
-    console.warn('[caputchin] game widget mounted without sitekey + without game configured — widget is inert');
+    console.warn('[caputchin] game widget mounted without sitekey + without game configured; widget is inert');
     return;
   }
 

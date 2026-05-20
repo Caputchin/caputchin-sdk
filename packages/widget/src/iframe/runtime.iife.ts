@@ -1,5 +1,5 @@
-// Self-contained iframe bootstrap. Only types imported — they erase at compile time.
-// Runs inside srcdoc iframe — opaque origin. communicates with host page via postMessage.
+// Self-contained iframe bootstrap. Only types imported; they erase at compile time.
+// Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
 import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/game-sdk';
 
@@ -147,7 +147,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       function postDimensions(w: number, h: number, source: 'auto' | 'explicit'): void {
         let wInt = Math.max(1, Math.round(w));
         let hInt = Math.max(1, Math.round(h));
-        // Auto-measure is grow-only — pin each axis to the max of measured
+        // Auto-measure is grow-only; pin each axis to the max of measured
         // and last-posted. Explicit (bridge.setSize) bypasses this guard
         // so games can deliberately resize down too.
         if (source === 'auto' && lastPostedW > 0 && lastPostedH > 0) {
@@ -189,7 +189,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       }
 
       // Auto-measure the game's natural content size. Probes the document
-      // root's scrollWidth / scrollHeight — those exceed the iframe size
+      // root's scrollWidth / scrollHeight; those exceed the iframe size
       // whenever content overflows in either axis, which is the universal
       // signal the SDK can read regardless of how the game lays its DOM
       // out (canvas with intrinsic dimensions, CSS-percentage flex/grid,
@@ -202,7 +202,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       // animations that don't change layout dimensions. Cleaned up in the
       // 'dispose' handler below alongside the rest of the game lifecycle.
       // Auto-measure the game's natural content size. Probes documentElement
-      // scrollWidth/Height — those exceed the iframe size whenever content
+      // scrollWidth/Height; those exceed the iframe size whenever content
       // overflows in either axis. ResizeObserver catches the iframe being
       // resized externally; MutationObserver catches game DOM additions
       // that grow content past the current iframe (e.g., a post-game replay
@@ -210,7 +210,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       //
       // Grow-only: auto-measure can only EXPAND the iframe, never shrink
       // it. A game whose content shrinks mid-session (button removed,
-      // panel collapsed) is allowed — the iframe stays at the grown size.
+      // panel collapsed) is allowed; the iframe stays at the grown size.
       // Games that genuinely need to shrink can call `bridge.setSize(w, h)`
       // explicitly; that path bypasses the grow-only guard.
       function measureDocumentSize(): void {

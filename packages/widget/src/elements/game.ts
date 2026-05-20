@@ -11,7 +11,7 @@ import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
 
 /**
- * `<caputchin-game>` — game host with optional cap verification.
+ * `<caputchin-game>`; game host with optional cap verification.
  *   - sitekey present → cap.solve runs alongside the game.
  *   - sitekey absent → game-only (no verification, `pass` event carries
  *     `token: null`).
@@ -50,7 +50,7 @@ export class CaputchinGame extends HTMLElement {
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
 
     // Warn (but keep widget running) if non-manual mode receives slotted
-    // children — they'd never appear without a <slot>. Manual is the only
+    // children; they'd never appear without a <slot>. Manual is the only
     // mode where customer DOM gets projected into the chrome.
     if (!isManual && this.childElementCount > 0) {
       fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
@@ -93,7 +93,7 @@ export class CaputchinGame extends HTMLElement {
     // For inline (manual or iframe) verification auto-kicks on mount via the
     // auto trigger above. For modal/fullscreen the simple-click entry opens
     // the dialog AND fires the trigger on the first click. No start() exists
-    // on this widget — pass() / fail() drive completion in manual mode.
+    // on this widget; pass() / fail() drive completion in manual mode.
   }
 
   disconnectedCallback(): void {
@@ -121,7 +121,7 @@ export class CaputchinGame extends HTMLElement {
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
     if (this.state.connected && oldValue !== null) {
-      console.warn(`[caputchin] attribute "${name}" changed mid-flight — ignored`);
+      console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
     }
   }
 }

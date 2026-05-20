@@ -8,7 +8,7 @@ import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 
 /**
- * `<caputchin-widget>` — cap PoW + instrumentation only. Default renders
+ * `<caputchin-widget>`; cap PoW + instrumentation only. Default renders
  * the Caputchin checkbox + brand strip. Add the `invisible` boolean
  * attribute to mount no UI (verification still runs per trigger). For
  * games, use `<caputchin-game>` instead.
@@ -75,7 +75,7 @@ export class CaputchinWidget extends HTMLElement {
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
     if (this.state.connected && oldValue !== null) {
-      console.warn(`[caputchin] attribute "${name}" changed mid-flight — ignored`);
+      console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
     }
   }
 }

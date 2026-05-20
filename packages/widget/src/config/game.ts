@@ -5,13 +5,13 @@ import { isLayoutAttr } from '../layout.js';
 
 /** Only manual is a customer-settable trigger on the game widget. All other
  *  triggers are layout-derived (inline → auto, modal/fullscreen → click).
- *  Manual is the escape hatch — no iframe; the customer hosts the game in
+ *  Manual is the escape hatch; no iframe; the customer hosts the game in
  *  their own DOM and slots it into the layout chrome. */
 export type GameTrigger = 'manual' | null;
 
 /** Game widget config. `sitekey === null` means "no verification" (game-only).
  *  With a sitekey the cap verification runs alongside the game.
- *  When `trigger === 'manual'`, no iframe mounts — customer slots custom
+ *  When `trigger === 'manual'`, no iframe mounts; customer slots custom
  *  game DOM via the default `<slot>` inside the layout chrome and drives
  *  completion via `pass()` / `fail()`. */
 export interface GameConfig {
@@ -22,7 +22,7 @@ export interface GameConfig {
   game: string | null;
   games: string | null;
   gameSrc: string | null;
-  /** Default `auto` — defers to manifest/breakpoint. `inline | modal | fullscreen` are explicit. */
+  /** Default `auto`; defers to manifest/breakpoint. `inline | modal | fullscreen` are explicit. */
   layout: LayoutAttr;
 }
 
@@ -30,7 +30,7 @@ export interface GameConfig {
  * Graceful inspector for the game widget. Never throws. Game widget is never
  * `inert`: even with no game configured, the widget mounts but warns; even
  * with no sitekey, it runs game-only. A `trigger` attr if present is ignored
- * with a warning — trigger is implicit per layout on this widget.
+ * with a warning; trigger is implicit per layout on this widget.
  */
 export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig> {
   const issues: ConfigIssue[] = [];
@@ -52,18 +52,18 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
     if (rawTrigger === 'manual') {
       trigger = 'manual';
     } else {
-      issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game> — only "manual" is settable; auto/click are derived from layout (inline → auto, modal/fullscreen → click)` });
+      issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game>; only "manual" is settable; auto/click are derived from layout (inline → auto, modal/fullscreen → click)` });
     }
   }
   if (rawSize !== null && rawSize !== '') {
-    issues.push({ message: `size="${rawSize}" is ignored on <caputchin-game> — size is derived from layout (inline → compact, modal/fullscreen → normal)` });
+    issues.push({ message: `size="${rawSize}" is ignored on <caputchin-game>; size is derived from layout (inline → compact, modal/fullscreen → normal)` });
   }
 
   // Manual mode = customer slots custom game DOM; game/games/game-src can't
   // load (no iframe). Strip and warn.
   if (trigger === 'manual') {
     if (game !== null || games !== null || gameSrc !== null) {
-      issues.push({ message: 'game / games / game-src are ignored when trigger="manual" — customer slots custom game DOM via <caputchin-game> children' });
+      issues.push({ message: 'game / games / game-src are ignored when trigger="manual"; customer slots custom game DOM via <caputchin-game> children' });
       game = null;
       games = null;
       gameSrc = null;

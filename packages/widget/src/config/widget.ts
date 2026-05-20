@@ -5,7 +5,7 @@ import { parseCommonAttrs } from './shared.js';
  *  - default: checkbox + brand strip (visible).
  *  - `invisible` attribute set: no DOM at all; verification still runs per trigger.
  *
- *  There is no enum-style `mode` attribute — `invisible` is a boolean HTML
+ *  There is no enum-style `mode` attribute; `invisible` is a boolean HTML
  *  attribute (same shape as `<input disabled>` / `<details open>`). */
 export interface WidgetConfig {
   sitekey: string;
@@ -29,7 +29,7 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
   const common = parseCommonAttrs(el, issues);
   let trigger = common.trigger;
 
-  // Invisible has no UI — trigger="click" makes no sense.
+  // Invisible has no UI; trigger="click" makes no sense.
   if (invisible && trigger === 'click') {
     issues.push({ message: 'trigger="click" is incompatible with the invisible widget (no UI to click); falling back to "auto"' });
     trigger = 'auto';

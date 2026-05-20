@@ -6,7 +6,7 @@ import type { WidgetState } from './state.js';
 import type { GameConfig } from '../config/game.js';
 
 /**
- * Public methods on `<caputchin-game>`. There is no `start()` — verification
+ * Public methods on `<caputchin-game>`. There is no `start()`; verification
  * auto-kicks on mount for inline (manual or iframe) and on the first
  * checkbox click for modal/fullscreen. `pass()` and `fail()` are the
  * customer's release/abort handles, only valid when `trigger="manual"`.
@@ -29,7 +29,7 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
 
       if (state.config.sitekey === null) {
         // Game-only manual: no cap to release. Every pass fires a fresh
-        // event — multi-round works out of the box.
+        // event; multi-round works out of the box.
         emitPass(el, { token: null, score, durationMs });
         state.gamePresentation?.setState('verified');
         return;
@@ -37,9 +37,9 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
 
       // Cap + manual. Gate must already be armed (verification started). For
       // inline that happens on mount; for modal/fullscreen on first dialog
-      // open. Premature calls would silently drop — surface as invalid-call.
+      // open. Premature calls would silently drop; surface as invalid-call.
       if (!state.capClient) {
-        fireError(el, 'invalid-call', 'pass() called before verification started — open the dialog first');
+        fireError(el, 'invalid-call', 'pass() called before verification started; open the dialog first');
         return;
       }
 
@@ -73,7 +73,7 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
       // Same guard as pass(): fail before verification started is meaningless
       // for the cap path. Game-only manual has no cap gate so it's always OK.
       if (state.config.sitekey !== null && !state.capClient) {
-        fireError(el, 'invalid-call', 'fail() called before verification started — open the dialog first');
+        fireError(el, 'invalid-call', 'fail() called before verification started; open the dialog first');
         return;
       }
 
