@@ -299,6 +299,26 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex}',
     '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{flex:1 1 auto;border:0}',
     '[part="game-overlay-close"]{position:absolute;top:0.5rem;right:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:rgba(255,255,255,0.9);color:#1a1917;font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
+
+    // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---
+    // Modal: 180ms scale + fade. Fullscreen: 220ms slide-up + fade.
+    // Older browsers (lacking @starting-style + allow-discrete) pop in/out
+    // exactly like before — feature degrades cleanly.
+    '[part="game-overlay-dialog"]{opacity:0;transition:opacity 180ms ease,transform 180ms ease,overlay 180ms ease allow-discrete,display 180ms ease allow-discrete}',
+    '[part="game-overlay-dialog"][data-layout="modal"]{transform:scale(0.95)}',
+    '[part="game-overlay-dialog"][data-layout="fullscreen"]{transform:translateY(24px);transition-duration:220ms}',
+    '[part="game-overlay-dialog"][open]{opacity:1;transform:none}',
+    '@starting-style{',
+      '[part="game-overlay-dialog"][data-layout="modal"][open]{opacity:0;transform:scale(0.95)}',
+      '[part="game-overlay-dialog"][data-layout="fullscreen"][open]{opacity:0;transform:translateY(24px)}',
+    '}',
+    '[part="game-overlay-dialog"]::backdrop{opacity:0;transition:opacity 180ms ease,overlay 180ms ease allow-discrete,display 180ms ease allow-discrete}',
+    '[part="game-overlay-dialog"][open]::backdrop{opacity:1}',
+    '@starting-style{[part="game-overlay-dialog"][open]::backdrop{opacity:0}}',
+    // Respect reduced-motion: drop the transition window so it falls back to instant.
+    '@media (prefers-reduced-motion:reduce){',
+      '[part="game-overlay-dialog"],[part="game-overlay-dialog"]::backdrop{transition-duration:0ms}',
+    '}',
   ].join('');
   root.appendChild(style);
 }
