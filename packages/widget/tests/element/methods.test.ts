@@ -56,15 +56,9 @@ describe('CaputchinGame methods', () => {
     document.body.appendChild(el);
   }
 
-  it('start() callable on inline (implicit auto trigger)', () => {
+  it('does NOT expose start() — verification auto-kicks on mount/first-click', () => {
     mount({ sitekey: 'k', game: '@x/y', layout: 'inline' });
-    expect(() => el.start()).not.toThrow();
-    el.remove();
-  });
-
-  it('start() callable on modal (implicit click trigger)', () => {
-    mount({ sitekey: 'k', game: '@x/y', layout: 'modal' });
-    expect(() => el.start()).not.toThrow();
+    expect((el as unknown as Record<string, unknown>)['start']).toBeUndefined();
     el.remove();
   });
 

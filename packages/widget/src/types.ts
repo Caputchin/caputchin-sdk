@@ -76,9 +76,10 @@ export interface CaputchinWidgetShape extends HTMLElement {
   ): void;
 }
 
-/** Public shape of `<caputchin-game>` — game host with optional verification. */
+/** Public shape of `<caputchin-game>` — game host with optional verification.
+ *  No `start()` — verification auto-kicks on mount for inline, on first
+ *  dialog open for modal/fullscreen. */
 export interface CaputchinGameShape extends HTMLElement {
-  start(): void;
   /** Manual mode (`trigger="manual"`) only — release the cap gate with the
    *  game payload and fire the `pass` event. */
   pass(payload?: { score?: number | null; durationMs?: number | null }): void;
