@@ -542,19 +542,17 @@
         el.addEventListener(evt, (e) => log(evt, e.detail));
       });
 
-      // Manual-mode controls: explicit start (only meaningful for inline) +
-      // pass / fail buttons to drive the customer-hosted lifecycle.
+      // Manual-mode controls: pass / fail buttons to drive completion.
+      // Verification auto-kicks on mount (inline) or first dialog open
+      // (modal/fullscreen) — no start() needed on the game widget.
       if (isManual) {
         const controls = document.createElement('div');
         controls.className = 'manual-controls';
-        const needsStart = state.gLayout === 'inline' || state.gLayout === 'auto';
         controls.innerHTML = `
-          ${needsStart ? '<button id="g-mstart">widget.start()</button>' : ''}
           <button id="g-mpass">widget.pass({score:0.85,durationMs:1200})</button>
           <button id="g-mfail">widget.fail({code:"too-slow"})</button>
         `;
         mountEl.appendChild(controls);
-        document.getElementById('g-mstart')?.addEventListener('click', () => el.start());
         document.getElementById('g-mpass').addEventListener('click', () => el.pass({ score: 0.85, durationMs: 1200 }));
         document.getElementById('g-mfail').addEventListener('click', () => el.fail({ code: 'too-slow', message: 'demo failure' }));
       }
