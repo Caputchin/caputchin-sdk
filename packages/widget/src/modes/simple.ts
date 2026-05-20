@@ -275,6 +275,20 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
   shield.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(shield);
 
+  // Spinner arc shown only during verifying. Rotates inside the shield.
+  const spinner = document.createElementNS(SVG_NS, 'circle');
+  spinner.setAttribute('part', 'simple-shield-spinner');
+  spinner.setAttribute('cx', '12');
+  spinner.setAttribute('cy', '13');
+  spinner.setAttribute('r', '4.5');
+  spinner.setAttribute('fill', 'none');
+  spinner.setAttribute('stroke', '#2F6640');
+  spinner.setAttribute('stroke-width', '2');
+  spinner.setAttribute('stroke-linecap', 'round');
+  spinner.setAttribute('stroke-dasharray', '14 28');
+  spinner.setAttribute('opacity', '0');
+  svg.appendChild(spinner);
+
   // Glyph overlay (✓ for verified, ! for error). Hidden in idle / verifying.
   // Font 16 of 24 viewBox = ~67% of shield height; sits centered.
   const glyph = document.createElementNS(SVG_NS, 'text');
@@ -291,8 +305,8 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
     el: svg as unknown as HTMLElement,
     dispose() { /* no listeners */ },
     setState(state: PresentationState): void {
-      svg.style.animation = '';
       glyph.textContent = '';
+      spinner.setAttribute('opacity', '0');
       switch (state) {
         case 'idle':
           shield.setAttribute('stroke', '#6e7681');
@@ -301,7 +315,7 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
         case 'verifying':
           shield.setAttribute('stroke', '#2F6640');
           shield.setAttribute('fill', 'transparent');
-          svg.style.animation = 'caputchin-pulse 1.2s ease-in-out infinite';
+          spinner.setAttribute('opacity', '1');
           break;
         case 'verified':
           shield.setAttribute('stroke', '#2F6640');
@@ -327,7 +341,9 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
-    '@keyframes caputchin-pulse{0%,100%{opacity:1}50%{opacity:0.45}}',
+    // Spinner arc inside the shield: rotates around the shield's visual center.
+    // transform-origin set in viewBox user units (matches cx/cy of the circle).
+    '[part="simple-shield-spinner"]{transform-origin:12px 13px;animation:caputchin-spin 0.8s linear infinite}',
 
     // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
     '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
@@ -350,7 +366,9 @@ function ensureStyles(root: ShadowRoot): void {
     // --- size="compact": single-row inline strip, dialed down ---
     '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
     '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
-    '[data-size="compact"] [part="simple-shield-box"]{width:1.25rem;height:1.25rem}',
+    // Matched to compact checkbox height so the widget's overall height
+    // doesn't shift between trigger=click (checkbox) and other triggers (shield).
+    '[data-size="compact"] [part="simple-shield-box"]{width:1.1rem;height:1.1rem}',
     '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap;min-width:3.6rem}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
