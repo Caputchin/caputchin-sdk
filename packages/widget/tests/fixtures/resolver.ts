@@ -5,7 +5,7 @@ export interface ResolverFixture {
 
 export function installResolverStub(
   games: Record<string, ResolverFixture>,
-  apiHost = 'https://api.caputchin.com'
+  apiHost = 'https://caputchin.com'
 ): () => void {
   const original = globalThis.fetch;
 
