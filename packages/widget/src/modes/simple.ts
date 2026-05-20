@@ -245,7 +245,7 @@ function createShieldIndicator(input: {
   glyph.setAttribute('x', '12');
   glyph.setAttribute('y', '17');
   glyph.setAttribute('text-anchor', 'middle');
-  glyph.setAttribute('font-size', '16');
+  glyph.setAttribute('font-size', '13');
   glyph.setAttribute('font-weight', '700');
   glyph.setAttribute('font-family', 'system-ui, sans-serif');
   glyph.setAttribute('fill', '#fff');
