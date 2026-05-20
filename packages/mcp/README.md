@@ -1,13 +1,16 @@
 # @caputchin/mcp
 
-Model Context Protocol server for Caputchin — exposes the Management API and
-offline developer helpers over stdio. Works with Claude Desktop, Cursor, Claude
-Code, and any other MCP client that speaks stdio.
+Model Context Protocol server for Caputchin over stdio. Works with Claude
+Desktop, Cursor, Claude Code, and any other MCP client that speaks stdio.
 
-Transport: stdio. A future hosted HTTP transport at `/api/mcp` (JSON-RPC 2.0)
-is planned for clients that prefer streaming HTTP — this package is the
-stdio-only distribution and adds local-only snippet generators that need no
-Caputchin account.
+Per [ADR-0052](https://github.com/Caputchin/caputchin/blob/main/docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md),
+this package is a thin stdio adapter: it proxies the canonical management
+tool catalogue served by Caputchin's `/api/mcp` HTTP endpoint, and adds
+offline developer-onboarding tools (HTML and backend snippet generators)
+that need no Caputchin account. The full tool list is defined in
+[caputchin-platform/apps/web/src/lib/mcp-tools.ts](https://github.com/Caputchin/caputchin-platform/blob/main/apps/web/src/lib/mcp-tools.ts)
+and updates the moment a new platform version deploys — no SDK release
+needed to pick up new tools.
 
 ## Install + run
 
@@ -15,14 +18,14 @@ Caputchin account.
 npx @caputchin/mcp
 ```
 
-Set two env vars before launching:
+Set the management token before launching:
 
 | Env var | Required | Default | Notes |
 |---|---|---|---|
 | `CAPUTCHIN_TOKEN` | yes (default mode) | — | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
-| `CAPUTCHIN_API_HOST` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. |
+| `CAPUTCHIN_API_HOST` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`. |
 
-Run in local-only mode (no token, no bridge tools — just the snippet generators):
+Run in local-only mode (no token; only the offline snippet generators load):
 
 ```sh
 npx @caputchin/mcp --local-only
@@ -46,26 +49,20 @@ npx @caputchin/mcp --local-only
 
 ## Tool surface
 
-### Bridge tools (require `CAPUTCHIN_TOKEN`)
+### Remote tools (proxied from `/api/mcp`)
 
-Each maps 1:1 to the [Management API](../../docs/management-api.md). A future
-hosted HTTP mount at `/api/mcp` is planned — this package is the stdio path.
+Fetched live from the platform on first `tools/list`; cached for the
+session. Adding or removing a tool only requires a platform deploy —
+this package does not need a release. See the
+[Management API docs](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md)
+and the [canonical catalogue source](https://github.com/Caputchin/caputchin-platform/blob/main/apps/web/src/lib/mcp-tools.ts)
+for the complete list of tool names + input schemas.
 
-| Tool | Description |
-|---|---|
-| `caputchin_check_auth` | Verify the management token and API host; returns the site list on success. |
-| `caputchin_list_sites` | List all site keys owned by the account. |
-| `caputchin_create_site` | Create a new site key (secret returned ONCE). |
-| `caputchin_get_site` | Fetch one site by id. |
-| `caputchin_update_site` | Update name / tier / disabled. Origin allowlist (`cors_origins`) is managed via `caputchin_update_site_cap_config`. |
-| `caputchin_delete_site` | Delete a site permanently. |
-| `caputchin_rotate_site_secret` | Issue a fresh site secret; old one stops verifying. |
-| `caputchin_site_stats` | Aggregate counters per site. |
-| `caputchin_list_tokens` | List management tokens (metadata only). |
-| `caputchin_create_token` | Mint a management token (value returned ONCE). |
-| `caputchin_revoke_token` | Revoke a management token by id. |
-| `caputchin_get_hosted_verification` | Fetch hosted-verification config for a site. |
-| `caputchin_set_hosted_verification` | Set hosted-verification config (paid tier). |
+If the platform endpoint is unreachable at startup, the SDK still serves
+the local tools and exposes a sentinel `caputchin_remote_unavailable`
+tool whose description carries the failure reason — your agent learns
+why the management surface is empty without you having to debug
+network state.
 
 ### Local tools (no network)
 
@@ -74,8 +71,21 @@ hosted HTTP mount at `/api/mcp` is planned — this package is the stdio path.
 | `caputchin_widget_snippet` | Generate an HTML snippet that mounts the widget. |
 | `caputchin_siteverify_example` | Copy-paste backend `/siteverify` snippet (node, javascript, typescript, python, go, php, curl). |
 
+## Migrating from `@caputchin/mcp@1.x`
+
+The 1.x line shipped its own bundled tool catalogue. 2.0.0 deletes that
+catalogue and switches to live proxy of `/api/mcp`. Customer-visible
+implications:
+
+- Tool names + input shapes are identical (they always were — the
+  bundled catalogue mirrored the platform).
+- New tools added to the platform after `@1.0.0` are now reachable
+  without an SDK upgrade.
+- Customers pinned on `@1.x` continue to work; that branch is no longer
+  updated. Upgrade to `@2.x` to get catalogue freshness.
+
 ## Full reference
 
-- [docs/management-api.md](../../docs/management-api.md) — Management API surface
-- [docs/api.md](../../docs/api.md) — Runtime endpoints (browser-side + customer backend)
-- [docs/architecture.md](../../docs/architecture.md) — How this fits into Caputchin
+- [docs/management-api.md](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md) — Management API surface
+- [docs/api.md](https://github.com/Caputchin/caputchin/blob/main/docs/api.md) — Runtime endpoints (browser-side + customer backend)
+- [docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md](https://github.com/Caputchin/caputchin/blob/main/docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md) — architectural decision behind this 2.x shape
