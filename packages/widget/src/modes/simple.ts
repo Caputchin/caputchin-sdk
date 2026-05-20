@@ -2,18 +2,21 @@ import type { Presentation, PresentationState, PresentationFactoryInput } from '
 import { LOGO_PRIMARY } from '../brand/logo.js';
 
 /**
- * Caputchin UI for `mode="simple"`. Two layouts:
+ * Caputchin UI for `mode="simple"`. One layout across all triggers:
+ * checkbox on the left, state text ("Verify" / "Verifying…" / "Verified" /
+ * "Failed") right next to it, then the brand block (logo + Caputchin +
+ * "see no data" link) on the right. The brand block is stable — the "see
+ * no data" tag never gets overridden by the verification state.
  *
- * - **checkbox** (trigger=`click` or `auto`): reCAPTCHA-style clickable
- *   checkbox + "I'm not a robot" label + brand block on the right.
- * - **pill** (trigger=`form-submit` or `manual`): Turnstile-style compact
- *   branded pill — the brand block IS the status indicator. The tagline
- *   slot ("see no data" link in idle) swaps to status text during the
- *   verification window. No left-side checkbox / phantom control.
+ * The checkbox is interactive only for `trigger="click"`. For `auto`,
+ * `form-submit`, and `manual` it stays as a passive visual indicator.
+ *
+ * Compact size keeps the same three-part structure on a single row with
+ * smaller glyphs and tighter padding.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
   const { host, root: renderRoot, trigger, width, height, size } = input;
-  const isPill = trigger === 'form-submit' || trigger === 'manual';
+  const isInteractive = trigger === 'click';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
   const pxWidth = typeof width === 'number' ? width : null;
@@ -23,7 +26,6 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   let statusIcon: HTMLDivElement | null = null;
   let label: HTMLSpanElement | null = null;
   let brand: HTMLDivElement | null = null;
-  let tagLink: HTMLAnchorElement | null = null;
   const activateListeners: Array<() => void> = [];
 
   function onPointer(): void {
@@ -36,21 +38,16 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     }
   }
 
-  function buildBrand(): { container: HTMLDivElement; tag: HTMLAnchorElement } {
+  function buildBrand(): HTMLDivElement {
     const container = document.createElement('div');
     container.setAttribute('part', 'simple-brand');
-    // Layout (grid for normal / flex-row for compact) lives in the shadow
-    // stylesheet so size variants can override without inline-style fights.
 
     const homeLink = document.createElement('a');
     homeLink.setAttribute('part', 'simple-brand-home');
     homeLink.href = 'https://caputchin.com';
     homeLink.target = '_blank';
     homeLink.rel = 'noopener noreferrer';
-    homeLink.style.cssText = [
-      'display:contents',
-      'color:#2F6640',
-    ].join(';');
+    homeLink.style.cssText = 'display:contents;color:#2F6640';
 
     const logoSpan = document.createElement('span');
     logoSpan.setAttribute('part', 'simple-brand-logo');
@@ -60,7 +57,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     const svg = logoSpan.querySelector('svg');
     if (svg) {
       // Strip the source SVG's id + 100% width so CSS in the shadow stylesheet
-      // controls the rendered size per variant (normal 32px / compact 20px).
+      // controls the rendered size per variant (normal 32px / compact 14px).
       svg.removeAttribute('id');
       svg.removeAttribute('width');
       svg.removeAttribute('height');
@@ -85,7 +82,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     container.appendChild(homeLink);
     container.appendChild(tag);
-    return { container, tag };
+    return container;
   }
 
   return {
@@ -94,11 +91,8 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       ensureStyles(renderRoot);
 
       root = document.createElement('div');
-      root.setAttribute('part', isPill ? 'simple-pill' : 'simple-checkbox');
+      root.setAttribute('part', 'simple-checkbox');
       if (isCompact) root.setAttribute('data-size', 'compact');
-      // Responsive: never wider than parent (max-width:100%), capped at 22rem
-      // so the widget stays compact in wide containers but fills narrow ones.
-      // No min-width — flex children shrink naturally on narrow viewports.
       const rootStyles = [
         'display:flex',
         'align-items:center',
@@ -113,50 +107,50 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         isFullWidth ? 'width:100%' : 'width:fit-content',
         'max-width:100%',
         'flex-wrap:wrap',
+        'gap:0.75rem',
       ];
-      if (isPill) {
-        rootStyles.push('gap:0', 'justify-content:center');
-      } else {
-        rootStyles.push('gap:0.75rem');
-        if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
-      }
+      if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      if (!isPill) {
-        statusIcon = document.createElement('div');
-        statusIcon.setAttribute('part', 'simple-checkbox-box');
+      statusIcon = document.createElement('div');
+      statusIcon.setAttribute('part', 'simple-checkbox-box');
+      // Static layout/sizing lives in the shadow stylesheet so size variants
+      // (`data-size="compact"`) can override without inline-style specificity
+      // fights. Dynamic bits (background/border/animation) stay in setState.
+      statusIcon.style.cssText = [
+        'border:2px solid #6e7681',
+        'border-radius:0.25rem',
+        'background:#fff',
+        'color:#fff',
+      ].join(';');
+      if (isInteractive) {
         statusIcon.tabIndex = 0;
         statusIcon.setAttribute('role', 'checkbox');
         statusIcon.setAttribute('aria-checked', 'false');
         statusIcon.setAttribute('aria-label', 'Verify you are human');
-        // Static layout/sizing lives in the shadow stylesheet so size variants
-        // (`data-size="compact"`) can override without inline-style specificity
-        // fights. Dynamic bits (background/border/animation) stay in setState.
-        statusIcon.style.cssText = [
-          'border:2px solid #6e7681',
-          'border-radius:0.25rem',
-          'background:#fff',
-          'color:#fff',
-        ].join(';');
         statusIcon.addEventListener('click', onPointer);
         statusIcon.addEventListener('keydown', onKey);
-
-        label = document.createElement('span');
-        label.setAttribute('part', 'simple-checkbox-label');
-        // min-width:0 lets the label shrink below its intrinsic content width
-        // on narrow viewports without overflowing the flex container.
-        label.style.cssText = 'flex:1 1 auto;min-width:0';
-
-        root.appendChild(statusIcon);
-        root.appendChild(label);
+      } else {
+        // Passive indicator — not focusable, not clickable. Use aria-live so
+        // state changes announce.
+        statusIcon.setAttribute('role', 'img');
+        statusIcon.setAttribute('aria-label', 'Caputchin verification status');
+        statusIcon.style.cursor = 'default';
       }
 
-      const built = buildBrand();
-      brand = built.container;
-      tagLink = built.tag;
+      label = document.createElement('span');
+      label.setAttribute('part', 'simple-checkbox-label');
+      label.setAttribute('aria-live', 'polite');
+      // flex:1 absorbs the slack so brand block hugs the right edge.
+      // min-width:0 lets the label shrink below intrinsic content width.
+      label.style.cssText = 'flex:1 1 auto;min-width:0';
+
+      root.appendChild(statusIcon);
+      root.appendChild(label);
+
+      brand = buildBrand();
       root.appendChild(brand);
-      // Host element is inline by default — width:100% inside an inline host
-      // sizes to content. Expand the host when full-width is requested.
+
       if (isFullWidth) {
         host.style.display = 'block';
         host.style.width = '100%';
@@ -174,13 +168,12 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       }
       renderRoot.appendChild(root);
 
-      // Apply idle state once everything is wired so first paint is correct.
       this.setState('idle');
     },
 
     unmount(): void {
       if (!root) return;
-      if (statusIcon && !isPill) {
+      if (statusIcon && isInteractive) {
         statusIcon.removeEventListener('click', onPointer);
         statusIcon.removeEventListener('keydown', onKey);
       }
@@ -194,17 +187,11 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       statusIcon = null;
       label = null;
       brand = null;
-      tagLink = null;
       activateListeners.length = 0;
     },
 
     setState(state: PresentationState): void {
-      if (!root) return;
-      if (isPill) {
-        if (tagLink) applyPillTagState(tagLink, state);
-      } else {
-        if (statusIcon && label) applyCheckboxState(statusIcon, label, state);
-      }
+      if (statusIcon && label) applyState(statusIcon, label, state, isInteractive);
     },
 
     onActivate(handler: () => void): () => void {
@@ -217,7 +204,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   };
 }
 
-function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: PresentationState): void {
+function applyState(box: HTMLDivElement, label: HTMLSpanElement, state: PresentationState, interactive: boolean): void {
   switch (state) {
     case 'idle':
       box.textContent = '';
@@ -227,8 +214,8 @@ function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: 
       box.style.borderTopColor = '#6e7681';
       box.style.animation = '';
       box.style.color = '#fff';
-      label.textContent = "I'm not a robot";
-      box.setAttribute('aria-checked', 'false');
+      label.textContent = 'Verify';
+      if (interactive) box.setAttribute('aria-checked', 'false');
       break;
     case 'verifying':
       box.textContent = '';
@@ -238,7 +225,7 @@ function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: 
       box.style.borderRadius = '50%';
       box.style.animation = 'caputchin-spin 0.8s linear infinite';
       label.textContent = 'Verifying…';
-      box.setAttribute('aria-checked', 'mixed');
+      if (interactive) box.setAttribute('aria-checked', 'mixed');
       break;
     case 'verified':
       box.style.animation = '';
@@ -248,7 +235,7 @@ function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: 
       box.style.borderTopColor = '#2F6640';
       box.textContent = '✓';
       label.textContent = 'Verified';
-      box.setAttribute('aria-checked', 'true');
+      if (interactive) box.setAttribute('aria-checked', 'true');
       break;
     case 'error':
       box.style.animation = '';
@@ -258,45 +245,8 @@ function applyCheckboxState(box: HTMLDivElement, label: HTMLSpanElement, state: 
       box.style.borderTopColor = '#c2410c';
       box.style.color = '#c2410c';
       box.textContent = '!';
-      label.textContent = 'Verification failed';
-      box.setAttribute('aria-checked', 'false');
-      break;
-  }
-}
-
-/**
- * Pill layout = brand block IS the status indicator. Tagline slot swaps:
- * idle = "see no data" link to /legal; non-idle = status text (no link).
- */
-function applyPillTagState(tag: HTMLAnchorElement, state: PresentationState): void {
-  switch (state) {
-    case 'idle':
-      tag.textContent = 'see no data';
-      tag.style.color = '#6e7681';
-      tag.style.pointerEvents = 'auto';
-      tag.style.cursor = '';
-      tag.removeAttribute('aria-live');
-      break;
-    case 'verifying':
-      tag.textContent = 'verifying…';
-      tag.style.color = '#2F6640';
-      tag.style.pointerEvents = 'none';
-      tag.style.cursor = 'default';
-      tag.setAttribute('aria-live', 'polite');
-      break;
-    case 'verified':
-      tag.textContent = '✓ verified';
-      tag.style.color = '#2F6640';
-      tag.style.pointerEvents = 'none';
-      tag.style.cursor = 'default';
-      tag.setAttribute('aria-live', 'polite');
-      break;
-    case 'error':
-      tag.textContent = '! verification failed';
-      tag.style.color = '#c2410c';
-      tag.style.pointerEvents = 'none';
-      tag.style.cursor = 'default';
-      tag.setAttribute('aria-live', 'polite');
+      label.textContent = 'Failed';
+      if (interactive) box.setAttribute('aria-checked', 'false');
       break;
   }
 }
@@ -311,6 +261,7 @@ function ensureStyles(root: ShadowRoot): void {
 
     // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
     '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
+    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem}',
 
     // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
     '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
@@ -319,15 +270,15 @@ function ensureStyles(root: ShadowRoot): void {
     '[part="simple-brand-name"]{grid-column:2;grid-row:1;place-self:center;text-align:center;font-size:0.85rem}',
     '[part="simple-brand-tag"]{grid-column:2;grid-row:2;place-self:center;text-align:center;font-size:0.65rem}',
 
-    // --- link styling (both sizes) ---
+    // --- link styling ---
     '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
     '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
     '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
 
-    // --- size="compact": single-row inline strip, dialed down small ---
-    '[data-size="compact"][part="simple-checkbox"],[data-size="compact"][part="simple-pill"]{padding:0.15rem 0.35rem;gap:0.25rem;font-size:0.65rem;border-radius:0.35rem;flex-wrap:nowrap}',
+    // --- size="compact": single-row inline strip, dialed down ---
+    '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
     '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
-    '[data-size="compact"] [part="simple-checkbox-label"]{display:none}',
+    '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
     '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
@@ -335,11 +286,10 @@ function ensureStyles(root: ShadowRoot): void {
     '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:#c0c0c0;margin-left:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
+    // Don't hide the label anymore — state text is the primary signal.
     '@media (max-width:28rem){',
       '[part="simple-checkbox"]:not([data-size="compact"]){padding:0.625rem 0.75rem;gap:0.5rem}',
-      '[part="simple-pill"]:not([data-size="compact"]){padding:0.625rem 0.75rem}',
       '[part="simple-checkbox-box"]:not([data-size="compact"] *){width:1.75rem;height:1.75rem}',
-      '[part="simple-checkbox"]:not([data-size="compact"]) [part="simple-checkbox-label"]{display:none}',
     '}',
   ].join('');
   root.appendChild(style);

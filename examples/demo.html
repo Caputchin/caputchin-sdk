@@ -180,6 +180,7 @@
         </div>
       </div>
       <div class="actions">
+        <button class="secondary" id="w-reload">Reload widget</button>
         <button class="secondary" id="w-reset">Reset</button>
       </div>
     </section>
@@ -257,6 +258,7 @@
         </div>
       </div>
       <div class="actions">
+        <button class="secondary" id="g-reload">Reload widget</button>
         <button class="secondary" id="g-reset">Reset</button>
       </div>
     </section>
@@ -468,7 +470,7 @@
 
       const markup = widgetMarkup();
       const wrap = (state.wTrigger === 'form-submit')
-        ? `<form id="w-form"><input type="text" placeholder="some field" required />${markup}<button type="submit">Submit</button></form>`
+        ? `<form id="w-form"><input type="text" placeholder="some field (optional)" />${markup}<button type="submit">Submit</button></form>`
         : markup;
       mountEl.insertAdjacentHTML('beforeend', wrap);
 
@@ -576,6 +578,8 @@
       });
     });
 
+    document.getElementById('w-reload').onclick = () => { mountWidget(); };
+    document.getElementById('g-reload').onclick = () => { mountGame(); };
     document.getElementById('w-reset').onclick = () => {
       Object.assign(state, {
         wMode: 'simple', wTrigger: 'auto', wSize: 'normal', wWidthMode: 'auto', wWidthPx: '', wHeightPx: '',
