@@ -1,11 +1,7 @@
-import { createCapClient } from '../cap/client.js';
-import { fireError } from '../errors.js';
-import { emitStart, emitPass } from './events.js';
-import { injectTokenIntoEnclosingForm } from './form.js';
-import { makeWidgetId } from './id.js';
+import { setupCapSession, awaitCapAndEmitPass } from './cap-session.js';
+import { emitStart } from './events.js';
 import type { WidgetState } from './state.js';
 import type { WidgetConfig } from '../config/widget.js';
-import type { WrappedToken } from '../token.js';
 
 /**
  * Cap-only verification path for `<caputchin-widget>` (modes invisible | simple).
@@ -14,46 +10,11 @@ import type { WrappedToken } from '../token.js';
  */
 export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, apiHost: string): Promise<void> {
   if (!state.config) return;
-  const cfg = state.config;
-
   state.presentation?.setState('verifying');
-
-  let wrappedToken: WrappedToken | null = null;
-  const sessionCtx = {
-    platform: { sitekey: cfg.sitekey, score: null, durationMs: null } as Record<string, unknown>,
-    onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
-  };
-
-  // Per-widget id encoded into the Cap library's apiEndpoint path so the
-  // custom-fetch router can attach session context without any shared
-  // mutable state. 50 widgets solve in parallel; no queue, no race.
-  if (!state.widgetId) state.widgetId = makeWidgetId();
-  const client = createCapClient(state.widgetId, apiHost, sessionCtx);
-  state.capClient = client;
-  if (state.triggerCtx) state.triggerCtx.capClient = client;
-
+  const { client, getWrappedToken } = setupCapSession(state, apiHost, state.config.sitekey);
   // No game payload to wait for — release the gate immediately so Cap's
   // redeem can proceed end-to-end.
   client.releaseGate({ score: null, durationMs: null });
   emitStart(el, null);
-
-  try {
-    await client.solve();
-  } catch (err) {
-    fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
-    state.presentation?.setState('error');
-    return;
-  }
-
-  if (!wrappedToken) {
-    fireError(el, 'verification-failed', 'No wrapped token received from platform', 'cap-redeem-failed');
-    state.presentation?.setState('error');
-    return;
-  }
-
-  const { token, score, durationMs } = wrappedToken;
-  injectTokenIntoEnclosingForm(el, token);
-  state.presentation?.setState('verified');
-  state.lockedToken = token;
-  emitPass(el, { token, score, durationMs });
+  await awaitCapAndEmitPass(el, state, client, getWrappedToken, state.presentation);
 }
