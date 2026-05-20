@@ -17,7 +17,13 @@ export interface LayoutContextMessage {
   layout: Layout;
 }
 
-export type WidgetToIframe = KickoffMessage | DisposeMessage | LayoutContextMessage;
+export interface VisibilityMessage {
+  kind: 'visibility';
+  seq: number;
+  visible: boolean;
+}
+
+export type WidgetToIframe = KickoffMessage | DisposeMessage | LayoutContextMessage | VisibilityMessage;
 
 export interface GameStartedMessage {
   kind: 'game-started';

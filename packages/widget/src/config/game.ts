@@ -1,13 +1,14 @@
-import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
+import type { WidgetWidth, WidgetHeight, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
 import { parseCommonAttrs, validateGameUrl } from './shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { isLayoutAttr } from '../layout.js';
 
 /** Game widget config. `sitekey === null` means "no verification" (game-only).
- *  With a sitekey the cap verification runs alongside the game iframe. */
+ *  With a sitekey the cap verification runs alongside the game iframe.
+ *  Trigger is NOT an attribute on this widget — it is derived from layout
+ *  by the element (`inline` → auto, `modal`/`fullscreen` → click). */
 export interface GameConfig {
   sitekey: string | null;
-  trigger: WidgetTrigger;
   width: WidgetWidth;
   height: WidgetHeight;
   size: WidgetSize;
@@ -21,7 +22,8 @@ export interface GameConfig {
 /**
  * Graceful inspector for the game widget. Never throws. Game widget is never
  * `inert`: even with no game configured, the widget mounts but warns; even
- * with no sitekey, it runs game-only.
+ * with no sitekey, it runs game-only. A `trigger` attr if present is ignored
+ * with a warning — trigger is implicit per layout on this widget.
  */
 export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig> {
   const issues: ConfigIssue[] = [];
@@ -31,8 +33,15 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   const games = el.getAttribute('games');
   let gameSrc = el.getAttribute('game-src');
   const rawLayout = el.getAttribute('layout');
+  const rawTrigger = el.getAttribute('trigger');
 
+  // parseCommonAttrs would re-parse trigger; on the game widget trigger is
+  // implicit, so we only consume width/height/size and warn if a customer
+  // tried to set trigger explicitly.
   const common = parseCommonAttrs(el, issues);
+  if (rawTrigger !== null && rawTrigger !== '') {
+    issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game> — trigger is derived from layout (inline → auto, modal/fullscreen → click)` });
+  }
 
   if (gameSrc !== null) {
     const urlErr = validateGameUrl(gameSrc);
@@ -54,7 +63,6 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   return {
     config: {
       sitekey,
-      trigger: common.trigger,
       width: common.width,
       height: common.height,
       size: common.size,

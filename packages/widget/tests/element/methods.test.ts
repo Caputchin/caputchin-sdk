@@ -56,29 +56,27 @@ describe('CaputchinGame methods', () => {
     document.body.appendChild(el);
   }
 
-  it('start() callable on play+verify (sitekey + click trigger)', () => {
-    mount({ sitekey: 'k', game: '@x/y', trigger: 'click' });
+  it('start() callable on inline (implicit auto trigger)', () => {
+    mount({ sitekey: 'k', game: '@x/y', layout: 'inline' });
     expect(() => el.start()).not.toThrow();
     el.remove();
   });
 
-  it('pass() callable on sitekey + manual trigger (customer-hosted game)', () => {
+  it('start() callable on modal (implicit click trigger)', () => {
+    mount({ sitekey: 'k', game: '@x/y', layout: 'modal' });
+    expect(() => el.start()).not.toThrow();
+    el.remove();
+  });
+
+  it('does NOT expose pass() — game always runs inside the iframe', () => {
+    mount({ sitekey: 'k', game: '@x/y' });
+    expect((el as unknown as Record<string, unknown>)['pass']).toBeUndefined();
+    el.remove();
+  });
+
+  it('warns on explicit trigger attr (ignored — trigger is implicit per layout)', () => {
     mount({ sitekey: 'k', game: '@x/y', trigger: 'manual' });
-    expect(() => el.pass({ score: 0.5, durationMs: 100 })).not.toThrow();
-    el.remove();
-  });
-
-  it('pass() fires invalid-call on sitekey + non-manual trigger', () => {
-    mount({ sitekey: 'k', game: '@x/y', trigger: 'auto' });
-    el.pass({ score: 0.5 });
-    expect(errors.some((e) => e.code === 'invalid-call' && e.message.includes('pass'))).toBe(true);
-    el.remove();
-  });
-
-  it('pass() fires invalid-call on game-only (no sitekey)', () => {
-    mount({ game: '@x/y' });
-    el.pass({ score: 0.5 });
-    expect(errors.some((e) => e.code === 'invalid-call')).toBe(true);
+    expect(errors.some((e) => e.code === 'invalid-config' && e.message.includes('trigger='))).toBe(true);
     el.remove();
   });
 

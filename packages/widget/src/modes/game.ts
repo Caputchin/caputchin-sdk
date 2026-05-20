@@ -107,6 +107,17 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
 
 let dialogIdCounter = 0;
 
+/** Send a `visibility` message to the mounted iframe so its runtime can
+ *  suspend / resume any AudioContexts. Game logic itself keeps running. */
+function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
+  if (!slot) return;
+  const iframe = slot.querySelector('iframe');
+  if (!iframe || !iframe.contentWindow) return;
+  try {
+    iframe.contentWindow.postMessage({ kind: 'visibility', seq: 0, visible }, '*');
+  } catch { /* iframe gone or detached */ }
+}
+
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
   const { host, root: renderRoot, layout } = input;
   let container: HTMLDivElement | null = null;
@@ -223,10 +234,15 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         });
         backdropWired = true;
       }
+      signalVisibility(iframeSlot, true);
     },
 
     close(): void {
+      // Hide only — iframe stays mounted inside the dialog so game state
+      // is preserved across close/reopen. Audio is muted via postMessage
+      // so the still-running game can't leak sound behind the closed dialog.
       if (!dialog) return;
+      signalVisibility(iframeSlot, false);
       const d = dialog as HTMLDialogElement & { close?: () => void };
       let fired = false;
       if (typeof d.close === 'function') {

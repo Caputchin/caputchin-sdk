@@ -1,4 +1,4 @@
-import type { WidgetTrigger, WidgetWidth, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
+import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
 import { parseCommonAttrs } from './shared.js';
 
 /** The cap widget runs PoW + instrumentation. Two presentation modes:
@@ -11,6 +11,7 @@ export interface WidgetConfig {
   mode: WidgetMode;
   trigger: WidgetTrigger;
   width: WidgetWidth;
+  height: WidgetHeight;
   size: WidgetSize;
 }
 
@@ -54,7 +55,7 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
   }
 
   return {
-    config: { sitekey, mode, trigger, width: common.width, size: common.size },
+    config: { sitekey, mode, trigger, width: common.width, height: common.height, size: common.size },
     issues,
     inert,
   };

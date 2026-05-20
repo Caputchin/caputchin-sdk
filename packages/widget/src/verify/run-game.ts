@@ -15,13 +15,14 @@ import { recordAdditionalRound } from './record-round.js';
  *     wrapped token + game score.
  *   - sitekey absent → game-only; no cap; `pass` event carries `token: null`.
  *
- * Trigger has already decided "now" — this builds the iframe, wires the
- * callbacks, and (when sitekey is set) kicks off Cap.
+ * The game iframe always mounts on this widget — there is no manual /
+ * customer-hosted-game path here. Customers who want to host the game
+ * themselves should use `<caputchin-widget>` (cap only) and drive the
+ * game lifecycle independently.
  */
 export async function runGame(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
   if (!state.config) return;
-  const cfg = state.config;
-  if (cfg.sitekey) {
+  if (state.config.sitekey) {
     await runGameWithVerify(el, state, apiHost);
   } else {
     await runGameOnly(el, state, apiHost);
@@ -37,7 +38,7 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
   let gameUrl: string | null = cfg.gameSrc;
   let integrity: string | null = null;
 
-  if (cfg.trigger !== 'manual' && gameId && !gameUrl) {
+  if (gameId && !gameUrl) {
     const resolution = await fetchMarketplaceResolution(gameId, apiHost);
     if (!resolution.ok) {
       fireError(el, 'game-load-failed', resolution.message, resolution.code);
@@ -67,9 +68,11 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
     }));
   };
 
-  const wantsIframe = cfg.trigger !== 'manual';
-
-  if (wantsIframe && (gameId !== null || gameUrl !== null)) {
+  if (gameId === null && gameUrl === null) {
+    console.warn('[caputchin] game widget mounted without game configured — verification will run but no iframe will mount');
+    client.releaseGate({ score: null, durationMs: null });
+    dispatchStart();
+  } else {
     let firstClickHappened = false;
     const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
       if (msg.kind === 'game-pass') {
@@ -108,10 +111,6 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
         dispatchStart();
       },
     );
-  } else {
-    // Manual trigger: no iframe here. Customer hosts the game and drives
-    // widget.pass() — gate stays armed until that fires.
-    dispatchStart();
   }
 
   try {

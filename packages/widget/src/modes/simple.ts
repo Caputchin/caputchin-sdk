@@ -12,10 +12,12 @@ import { LOGO_PRIMARY } from '../brand/logo.js';
  *   verification window. No left-side checkbox / phantom control.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, size } = input;
+  const { host, root: renderRoot, trigger, width, height, size } = input;
   const isPill = trigger === 'form-submit' || trigger === 'manual';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
+  const pxWidth = typeof width === 'number' ? width : null;
+  const pxHeight = typeof height === 'number' ? height : null;
 
   let root: HTMLDivElement | null = null;
   let statusIcon: HTMLDivElement | null = null;
@@ -158,6 +160,17 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (isFullWidth) {
         host.style.display = 'block';
         host.style.width = '100%';
+      } else if (pxWidth !== null) {
+        host.style.display = 'block';
+        host.style.width = `${pxWidth}px`;
+        root.style.boxSizing = 'border-box';
+        root.style.width = '100%';
+      }
+      if (pxHeight !== null) {
+        host.style.display ||= 'block';
+        host.style.height = `${pxHeight}px`;
+        root.style.boxSizing = 'border-box';
+        root.style.height = '100%';
       }
       renderRoot.appendChild(root);
 
@@ -171,9 +184,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         statusIcon.removeEventListener('click', onPointer);
         statusIcon.removeEventListener('keydown', onKey);
       }
-      if (isFullWidth) {
+      if (isFullWidth || pxWidth !== null || pxHeight !== null) {
         host.style.display = '';
         host.style.width = '';
+        host.style.height = '';
       }
       root.remove();
       root = null;

@@ -12,7 +12,7 @@ import { runCap } from '../verify/run-cap.js';
  * `<caputchin-game>` instead.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'size'];
+  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'height', 'size'];
 
   private state: WidgetState = createInitialWidgetState();
 
@@ -37,6 +37,7 @@ export class CaputchinWidget extends HTMLElement {
       root: shadow,
       trigger: state.config.trigger,
       width: state.config.width,
+      height: state.config.height,
       size: state.config.size,
     });
     state.presentation.mount();
