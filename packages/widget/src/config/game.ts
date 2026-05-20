@@ -3,14 +3,20 @@ import { parseCommonAttrs, validateGameUrl } from './shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { isLayoutAttr } from '../layout.js';
 
+/** Only manual is a customer-settable trigger on the game widget. All other
+ *  triggers are layout-derived (inline → auto, modal/fullscreen → click).
+ *  Manual is the escape hatch — no iframe; the customer hosts the game in
+ *  their own DOM and slots it into the layout chrome. */
+export type GameTrigger = 'manual' | null;
+
 /** Game widget config. `sitekey === null` means "no verification" (game-only).
- *  With a sitekey the cap verification runs alongside the game iframe.
- *  Trigger is NOT an attribute on this widget — it is derived from layout
- *  by the element (`inline` → auto, `modal`/`fullscreen` → click).
- *  Size is implicit too: inline renders the compact brand strip, modal /
- *  fullscreen render the normal checkbox. */
+ *  With a sitekey the cap verification runs alongside the game.
+ *  When `trigger === 'manual'`, no iframe mounts — customer slots custom
+ *  game DOM via the default `<slot>` inside the layout chrome and drives
+ *  completion via `pass()` / `fail()`. */
 export interface GameConfig {
   sitekey: string | null;
+  trigger: GameTrigger;
   width: WidgetWidth;
   height: WidgetHeight;
   game: string | null;
@@ -30,22 +36,38 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   const issues: ConfigIssue[] = [];
   const rawSitekey = el.getAttribute('sitekey');
   const sitekey = rawSitekey && rawSitekey.length > 0 ? rawSitekey : null;
-  const game = el.getAttribute('game');
-  const games = el.getAttribute('games');
+  let game = el.getAttribute('game');
+  let games = el.getAttribute('games');
   let gameSrc = el.getAttribute('game-src');
   const rawLayout = el.getAttribute('layout');
   const rawTrigger = el.getAttribute('trigger');
   const rawSize = el.getAttribute('size');
 
-  // parseCommonAttrs returns trigger/width/height/size. On this widget we
-  // only consume width/height — trigger and size are implicit per layout.
-  // Warn if customers set either explicitly.
+  // parseCommonAttrs returns trigger/width/height/size. On this widget the
+  // only customer-settable trigger value is "manual"; everything else is
+  // layout-derived. Size is always implicit per layout.
   const common = parseCommonAttrs(el, issues);
+  let trigger: GameTrigger = null;
   if (rawTrigger !== null && rawTrigger !== '') {
-    issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game> — trigger is derived from layout (inline → auto, modal/fullscreen → click)` });
+    if (rawTrigger === 'manual') {
+      trigger = 'manual';
+    } else {
+      issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game> — only "manual" is settable; auto/click are derived from layout (inline → auto, modal/fullscreen → click)` });
+    }
   }
   if (rawSize !== null && rawSize !== '') {
     issues.push({ message: `size="${rawSize}" is ignored on <caputchin-game> — size is derived from layout (inline → compact, modal/fullscreen → normal)` });
+  }
+
+  // Manual mode = customer slots custom game DOM; game/games/game-src can't
+  // load (no iframe). Strip and warn.
+  if (trigger === 'manual') {
+    if (game !== null || games !== null || gameSrc !== null) {
+      issues.push({ message: 'game / games / game-src are ignored when trigger="manual" — customer slots custom game DOM via <caputchin-game> children' });
+      game = null;
+      games = null;
+      gameSrc = null;
+    }
   }
 
   if (gameSrc !== null) {
@@ -68,6 +90,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   return {
     config: {
       sitekey,
+      trigger,
       width: common.width,
       height: common.height,
       game,

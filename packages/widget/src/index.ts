@@ -22,6 +22,7 @@ export type {
   PassEventDetail,
   NicknameEventDetail,
   ErrorEventDetail,
+  DialogVisibilityDetail,
   LayoutResolvedEventDetail,
   Layout,
   LayoutAttr,
@@ -32,6 +33,6 @@ export type {
   WidgetHeight,
   WidgetSize,
 } from './types.js';
-export type { ErrorCode } from './errors.js';
+export type { ErrorCode, ErrorSeverity } from './errors.js';
 export type { WidgetConfig } from './config/widget.js';
 export type { GameConfig } from './config/game.js';

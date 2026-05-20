@@ -7,21 +7,24 @@ import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialGameState, type GameState } from '../verify/state-game.js';
 import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
+import { runManual } from '../verify/run-manual.js';
 
 /**
  * `<caputchin-game>` — game host with optional cap verification.
- *   - sitekey present → cap.solve runs alongside the game iframe.
+ *   - sitekey present → cap.solve runs alongside the game.
  *   - sitekey absent → game-only (no verification, `pass` event carries
  *     `token: null`).
  *
- * Layout drives both rendering and triggering:
- *   - `inline` (default) → iframe up on mount (trigger=auto).
- *   - `modal` / `fullscreen` → checkbox entry; iframe opens on click (trigger=click).
- *
- * There is no `trigger` attribute on this widget — the layout decides.
+ * Layout drives rendering. Trigger is implicit per layout except for the
+ * `trigger="manual"` escape hatch:
+ *   - `inline` (default) → iframe up on mount, trigger=auto.
+ *   - `modal` / `fullscreen` → checkbox entry, iframe opens on click.
+ *   - `trigger="manual"` → no iframe; customer slots custom game DOM into
+ *     the layout chrome via the default `<slot>`. Methods `start` / `pass`
+ *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'width', 'height', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout'];
 
   private state: GameState = createInitialGameState();
 
@@ -42,7 +45,15 @@ export class CaputchinGame extends HTMLElement {
     const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
     const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
+    const isManual = state.config.trigger === 'manual';
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
+
+    // Warn (but keep widget running) if non-manual mode receives slotted
+    // children — they'd never appear without a <slot>. Manual is the only
+    // mode where customer DOM gets projected into the chrome.
+    if (!isManual && this.childElementCount > 0) {
+      fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
+    }
 
     const gp = createGamePresentation({
       host: this,
@@ -50,12 +61,13 @@ export class CaputchinGame extends HTMLElement {
       trigger: derivedTrigger,
       width: state.config.width,
       layout,
+      manual: isManual,
     });
     state.gamePresentation = gp;
     gp.mount();
 
     // Game-only path (no sitekey): mount + run, no trigger axis.
-    if (state.config.sitekey === null) {
+    if (state.config.sitekey === null && !isManual) {
       runGame(this, state, apiHost).catch(() => {});
       return;
     }
@@ -64,14 +76,27 @@ export class CaputchinGame extends HTMLElement {
     state.triggerCtx = {
       el: this,
       presentation: gp,
-      runVerification: () => runGame(this, state, apiHost),
-      releaseManualPass: () => {
-        // Game widget has no pass() method — no manual gate to release.
+      runVerification: () => {
+        if (isManual) {
+          runManual(this, state, apiHost);
+          return Promise.resolve();
+        }
+        return runGame(this, state, apiHost);
+      },
+      releaseManualPass: (payload) => {
+        // In iframe mode this releases the cap gate with the game payload
+        // from postMessage. In manual mode the public pass() method routes
+        // through the same path, so cap solve completes with score/duration.
+        state.capClient?.releaseGate({ score: payload.score, durationMs: payload.durationMs });
       },
       capClient: null,
     };
 
     state.trigger.activate(state.triggerCtx);
+
+    // For inline + manual there's no entry click — customer must call start()
+    // to kick verification. For modal/fullscreen + manual the simple-click
+    // entry on the dialog opens it AND fires the trigger, same as iframe mode.
   }
 
   disconnectedCallback(): void {

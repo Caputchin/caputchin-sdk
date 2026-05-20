@@ -29,10 +29,17 @@ export interface GamePresentationInput {
   host: HTMLElement;
   /** Shadow root where DOM is appended. */
   root: ShadowRoot;
-  /** Derived implicit trigger (inline → auto, modal/fullscreen → click). */
+  /** Derived implicit trigger (inline → auto, modal/fullscreen → click).
+   *  For manual mode the trigger value here is what the simple-presentation
+   *  should render (still click for modal/fullscreen so the user gets the
+   *  entry checkbox; auto for inline since there's no entry surface). */
   trigger: WidgetTrigger;
   width: WidgetWidth;
   layout: 'inline' | 'modal' | 'fullscreen';
+  /** When true: render a `<slot></slot>` in place of the iframe slot so
+   *  customer light-DOM children project into the layout chrome. The
+   *  element skips iframe construction entirely. */
+  manual?: boolean;
 }
 
 export function createGamePresentation(input: GamePresentationInput): GamePresentation {
@@ -43,7 +50,7 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, width } = input;
+  const { host, root: renderRoot, width, manual } = input;
   const isFullWidth = width === 'full';
   let frame: HTMLDivElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
@@ -62,6 +69,14 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
 
       iframeSlot = document.createElement('div');
       iframeSlot.setAttribute('part', 'game-iframe-slot');
+      if (manual) {
+        // Customer-hosted game: project light-DOM children of <caputchin-game>
+        // into the iframe slot's position. Tagged with part="game-slot" so
+        // customers can ::part() target the projection container.
+        const slot = document.createElement('slot');
+        slot.setAttribute('part', 'game-slot');
+        iframeSlot.appendChild(slot);
+      }
 
       badgeSlot = document.createElement('div');
       badgeSlot.setAttribute('part', 'game-badge-slot');
@@ -132,7 +147,7 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout } = input;
+  const { host, root: renderRoot, layout, manual } = input;
   let container: HTMLDivElement | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
@@ -187,18 +202,30 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
 
       iframeSlot = document.createElement('div');
       iframeSlot.setAttribute('part', 'game-iframe-slot');
+      if (manual) {
+        // Customer-hosted game: project light-DOM children into the dialog.
+        const slot = document.createElement('slot');
+        slot.setAttribute('part', 'game-slot');
+        iframeSlot.appendChild(slot);
+      }
       dialog.appendChild(iframeSlot);
 
       // Native `close` event fires for every dismissal path (Escape key,
       // backdrop click, button close, programmatic close). Centralize the
       // post-close work here so all paths revert the shield + mute audio
-      // consistently.
+      // consistently. Also surface a `dialog-hidden` event for customers
+      // (especially manual mode where their slotted game needs to know).
       dialog.addEventListener('close', () => {
         signalVisibility(iframeSlot, false);
         if (logicalState === 'verifying') {
           logicalState = 'idle';
           subSimple?.setState('idle');
         }
+        host.dispatchEvent(new CustomEvent('dialog-hidden', {
+          detail: { layout },
+          bubbles: true,
+          composed: true,
+        }));
       });
 
       container.appendChild(dialog);
@@ -274,6 +301,11 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         backdropWired = true;
       }
       signalVisibility(iframeSlot, true);
+      host.dispatchEvent(new CustomEvent('dialog-shown', {
+        detail: { layout },
+        bubbles: true,
+        composed: true,
+      }));
     },
 
     close(): void {
