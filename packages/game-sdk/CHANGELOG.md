@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0 (2026-05-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **game-sdk:** `register()` now takes a `GameManifest` object as its first argument instead of `(id, factory, opts?)`. Authors must import `caputchin.json` and pass it to `register`: `register(manifest, factory)`. `RegisterOptions` is removed; `preferredLayout` / `preferredWidth` / `preferredHeight` now live on the manifest top-level.
+* **game-sdk:** `GameFactory` gains an optional third argument `ctx: GameContext`, currently `{ lang: ResolvedLanguage | null }`. Two-arg factories continue to work.
+* **game-sdk:** The `Caputchin` global shape changes from `{ games, gameOpts }` to `{ games, manifests }`.
+
+
+### Features
+
+* **game-sdk:** add `GameManifest`, `LanguagePreset`, `ResolvedLanguage`, `GameContext` types backing the manifest-driven registration and the languages presets pipeline.
+
 ## 1.0.0 (2026-05-13)
 
 

@@ -1,0 +1,36 @@
+{
+  "id": "@caputchin/widget",
+  "version": "2.0.0",
+  "displayName": "Caputchin Widget",
+  "description": "Customer-facing CAPTCHA + game widgets for the Caputchin platform",
+  "languages": {
+    "presets": {
+      "en": {
+        "_iso": "en",
+        "_default": true,
+        "simpleVerify": "Verify",
+        "simpleVerifying": "Verifying…",
+        "simpleVerified": "Verified",
+        "simpleFailed": "Failed",
+        "brandName": "Caputchin",
+        "brandTag": "see no data",
+        "simpleAriaCheckbox": "Verify you are human",
+        "simpleAriaStatus": "Caputchin verification status",
+        "overlayClose": "Close"
+      },
+      "ar": {
+        "_iso": "ar",
+        "_default": true,
+        "simpleVerify": "تحقق",
+        "simpleVerifying": "جاري التحقق…",
+        "simpleVerified": "تم التحقق",
+        "simpleFailed": "فشل",
+        "brandName": "كابوتشين",
+        "brandTag": "لا نرى بياناتك",
+        "simpleAriaCheckbox": "تأكد أنك إنسان",
+        "simpleAriaStatus": "حالة التحقق من كابوتشين",
+        "overlayClose": "إغلاق"
+      }
+    }
+  }
+}

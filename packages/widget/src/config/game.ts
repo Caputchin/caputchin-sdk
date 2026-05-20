@@ -24,6 +24,10 @@ export interface GameConfig {
   gameSrc: string | null;
   /** Default `auto`; defers to manifest/breakpoint. `inline | modal | fullscreen` are explicit. */
   layout: LayoutAttr;
+  /** Raw `lang` attribute value (un-resolved). The widget resolves it after
+   *  the manifest postMessage arrives (presets live in the game's manifest).
+   *  Null when omitted or empty. */
+  lang: string | null;
 }
 
 /**
@@ -87,6 +91,9 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
     }
   }
 
+  const rawLang = el.getAttribute('lang');
+  const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
+
   return {
     config: {
       sitekey,
@@ -97,6 +104,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       games,
       gameSrc,
       layout,
+      lang,
     },
     issues,
     inert: false,

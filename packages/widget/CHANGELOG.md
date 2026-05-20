@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0 (2026-05-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **widget:** depends on `@caputchin/game-sdk` 2.x. Iframe runtime now reads `Caputchin.manifests[id]` instead of `Caputchin.gameOpts[id]`, and `kickoff` postMessages carry a `lang` field.
+* **widget:** `ManifestMessage` (iframe → widget postMessage) gains a `languages: { presets } | null` field; existing `preferredLayout` / `preferredWidth` / `preferredHeight` now sourced from the game's manifest top-level instead of `RegisterOptions`.
+
+
+### Features
+
+* **widget:** add `lang` attribute on `<caputchin-game>` accepting preset name, ISO 639 code, `auto`, or inline JSON; resolution runs after manifest postMessage and fires `invalid-config` for unknowns.
+* **widget:** ship internal `caputchin.json` with en + ar chrome presets; widget chrome resolves browser-auto and applies `dir="rtl"` for RTL languages.
+
 ## 1.0.0 (2026-05-13)
 
 

@@ -3,10 +3,11 @@
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "outDir": "dist",
+    "resolveJsonModule": true,
     "types": ["node"],
     "paths": {
       "@caputchin/game-sdk": ["../game-sdk/src/index.ts"]
     }
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts", "caputchin.json"]
 }

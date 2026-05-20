@@ -2,6 +2,7 @@ import type { Presentation, PresentationState } from './index.js';
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import { createSimplePresentation } from './simple.js';
 import { emitDialogShown, emitDialogHidden } from '../verify/events.js';
+import { resolveWidgetChrome } from '../lang/widget-chrome.js';
 
 /**
  * Game presentation for `<caputchin-game>`. Three layouts:
@@ -100,8 +101,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         root: badgeSlot as unknown as ShadowRoot,
         trigger: 'auto' as WidgetTrigger,
         // Full-width so the strip spans the game-frame edge to edge, flush
-        // with the iframe panel above. Brand still hugs the right via the
-        // margin-left:auto rule in simple.ts.
+        // with the iframe panel above. Brand still hugs the trailing edge
+        // via the margin-inline-start:auto rule in simple.ts (flips under
+        // dir="rtl" automatically).
         width: 'full',
         size: 'compact' as WidgetSize,
       });
@@ -212,18 +214,21 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       checkboxSlot.setAttribute('part', 'game-overlay-checkbox');
       container.appendChild(checkboxSlot);
 
+      const chrome = resolveWidgetChrome();
+
       // Dialog with iframe slot. Built once, never re-parented; moving the
       // iframe between DOM nodes reloads its srcdoc.
       dialog = document.createElement('dialog');
       dialog.setAttribute('part', 'game-overlay-dialog');
       dialog.dataset.layout = layout;
       dialog.id = `cpt-overlay-${++dialogIdCounter}`;
+      if (chrome.direction === 'rtl') dialog.setAttribute('dir', 'rtl');
 
       if (layout === 'fullscreen') {
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.setAttribute('part', 'game-overlay-close');
-        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.setAttribute('aria-label', chrome.strings.overlayClose);
         closeBtn.textContent = '×';
         closeBtn.addEventListener('click', () => this.close());
         dialog.appendChild(closeBtn);
@@ -369,6 +374,14 @@ function ensureGameStyles(root: ShadowRoot): void {
   gameStylesInjected.add(root);
   const style = document.createElement('style');
   style.textContent = [
+    // Host defaults to inline-block so width="auto" shrinks to the inner
+    // game-frame (which is width:fit-content). Without this, a parent that
+    // stretches block children (flex column with align-items:stretch, grid
+    // cell) would balloon the host while the inner frame stayed compact,
+    // leaving a gap between the iframe and the host edges. Customer
+    // overrides (width="full" or pixel width) still set display:block at
+    // mount time.
+    ':host{display:inline-block}',
     // --- inline frame ---
     // One unified bordered card containing the iframe + a brand strip below.
     // The simple widget inside the badge slot has its own border/radius/bg
@@ -409,7 +422,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     // no-op there but stays consistent.
     '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex;align-items:center;justify-content:center}',
     '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{border:0}',
-    '[part="game-overlay-close"]{position:absolute;top:0.5rem;right:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:rgba(255,255,255,0.9);color:#1a1917;font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
+    '[part="game-overlay-close"]{position:absolute;top:0.5rem;inset-inline-end:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:rgba(255,255,255,0.9);color:#1a1917;font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
 
     // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---
     // Modal: 180ms scale + fade. Fullscreen: 220ms slide-up + fade.
