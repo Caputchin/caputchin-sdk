@@ -81,7 +81,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         host,
         root: badgeSlot as unknown as ShadowRoot,
         trigger: 'auto' as WidgetTrigger,
-        width: 'auto',
+        // Full-width so the strip spans the game-frame edge to edge, flush
+        // with the iframe panel above. Brand still hugs the right via the
+        // margin-left:auto rule in simple.ts.
+        width: 'full',
         size: 'compact' as WidgetSize,
       });
       subSimple.mount();
