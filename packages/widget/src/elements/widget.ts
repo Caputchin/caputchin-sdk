@@ -8,12 +8,13 @@ import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 
 /**
- * `<caputchin-widget>` — cap PoW + instrumentation only. Two modes:
- * `invisible` (no UI) and `simple` (checkbox + brand). For games, use
- * `<caputchin-game>` instead.
+ * `<caputchin-widget>` — cap PoW + instrumentation only. Default renders
+ * the Caputchin checkbox + brand strip. Add the `invisible` boolean
+ * attribute to mount no UI (verification still runs per trigger). For
+ * games, use `<caputchin-game>` instead.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'height', 'size'];
+  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size'];
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
@@ -33,7 +34,7 @@ export class CaputchinWidget extends HTMLElement {
     const apiHost = __CAPUTCHIN_API_HOST__;
     const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
-    state.presentation = createPresentation(state.config.mode, {
+    state.presentation = createPresentation(state.config.invisible, {
       host: this,
       root: shadow,
       trigger: state.config.trigger,

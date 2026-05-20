@@ -146,10 +146,10 @@
       <h2>Settings</h2>
       <div class="controls">
         <div class="field">
-          <label for="w-mode">mode</label>
-          <select id="w-mode">
-            <option value="invisible">invisible</option>
-            <option value="simple" selected>simple</option>
+          <label for="w-invisible">invisible</label>
+          <select id="w-invisible">
+            <option value="" selected>no (default: checkbox + brand)</option>
+            <option value="true">yes (no UI)</option>
           </select>
         </div>
         <div class="field">
@@ -305,7 +305,7 @@
       return {
         tab: p.get('tab') || 'widget',
         // widget state
-        wMode: p.get('w.mode') || 'simple',
+        wInvisible: p.get('w.invisible') === 'true',
         wTrigger: p.get('w.trigger') || 'auto',
         wSize: p.get('w.size') || 'normal',
         wWidthMode: p.get('w.widthMode') || 'auto',
@@ -327,7 +327,7 @@
       const p = new URLSearchParams();
       p.set('tab', s.tab);
       Object.entries({
-        'w.mode': s.wMode, 'w.trigger': s.wTrigger, 'w.size': s.wSize,
+        'w.invisible': s.wInvisible ? 'true' : '', 'w.trigger': s.wTrigger, 'w.size': s.wSize,
         'w.widthMode': s.wWidthMode, 'w.widthPx': s.wWidthPx, 'w.heightPx': s.wHeightPx,
         'g.sitekey': s.gSitekeyMode,
         'g.trigger': s.gTrigger,
@@ -340,17 +340,17 @@
 
     // ---------- presets ----------
     const WIDGET_PRESETS = [
-      ['Simple · auto', { wMode: 'simple', wTrigger: 'auto' }],
-      ['Simple · click', { wMode: 'simple', wTrigger: 'click' }],
-      ['Simple · form-submit', { wMode: 'simple', wTrigger: 'form-submit' }],
-      ['Simple · manual', { wMode: 'simple', wTrigger: 'manual' }],
-      ['Invisible · auto', { wMode: 'invisible', wTrigger: 'auto' }],
-      ['Invisible · form-submit', { wMode: 'invisible', wTrigger: 'form-submit' }],
-      ['Invisible · manual', { wMode: 'invisible', wTrigger: 'manual' }],
-      ['Compact', { wMode: 'simple', wTrigger: 'auto', wSize: 'compact' }],
-      ['Full width', { wMode: 'simple', wTrigger: 'auto', wWidthMode: 'full' }],
-      ['Custom width 500', { wMode: 'simple', wTrigger: 'auto', wWidthMode: 'pixels', wWidthPx: '500' }],
-      ['Custom dims 400×80', { wMode: 'simple', wTrigger: 'auto', wWidthMode: 'pixels', wWidthPx: '400', wHeightPx: '80' }],
+      ['Visible · auto', { wInvisible: false, wTrigger: 'auto' }],
+      ['Visible · click', { wInvisible: false, wTrigger: 'click' }],
+      ['Visible · form-submit', { wInvisible: false, wTrigger: 'form-submit' }],
+      ['Visible · manual', { wInvisible: false, wTrigger: 'manual' }],
+      ['Invisible · auto', { wInvisible: true, wTrigger: 'auto' }],
+      ['Invisible · form-submit', { wInvisible: true, wTrigger: 'form-submit' }],
+      ['Invisible · manual', { wInvisible: true, wTrigger: 'manual' }],
+      ['Compact', { wInvisible: false, wTrigger: 'auto', wSize: 'compact' }],
+      ['Full width', { wInvisible: false, wTrigger: 'auto', wWidthMode: 'full' }],
+      ['Custom width 500', { wInvisible: false, wTrigger: 'auto', wWidthMode: 'pixels', wWidthPx: '500' }],
+      ['Custom dims 400×80', { wInvisible: false, wTrigger: 'auto', wWidthMode: 'pixels', wWidthPx: '400', wHeightPx: '80' }],
     ];
 
     const GAME_PRESETS = [
@@ -375,7 +375,7 @@
     const state = readUrl();
 
     function applyStateToControls() {
-      document.getElementById('w-mode').value = state.wMode;
+      document.getElementById('w-invisible').value = state.wInvisible ? 'true' : '';
       document.getElementById('w-trigger').value = state.wTrigger;
       document.getElementById('w-size').value = state.wSize;
       document.getElementById('w-width-mode').value = state.wWidthMode;
@@ -395,7 +395,7 @@
     }
 
     function readWidgetControls() {
-      state.wMode = document.getElementById('w-mode').value;
+      state.wInvisible = document.getElementById('w-invisible').value === 'true';
       state.wTrigger = document.getElementById('w-trigger').value;
       state.wSize = document.getElementById('w-size').value;
       state.wWidthMode = document.getElementById('w-width-mode').value;
@@ -424,7 +424,8 @@
     }
 
     function widgetMarkup() {
-      let attrs = ` sitekey="${SITEKEY}" mode="${state.wMode}"`;
+      let attrs = ` sitekey="${SITEKEY}"`;
+      if (state.wInvisible) attrs += ' invisible';
       if (state.wTrigger !== 'auto') attrs += ` trigger="${state.wTrigger}"`;
       if (state.wSize !== 'normal') attrs += ` size="${state.wSize}"`;
       attrs += widthAttr(state.wWidthMode, state.wWidthPx);
@@ -613,7 +614,7 @@
     const remountWidgetDebounced = debounce(() => mountWidget(), 300);
     const remountGameDebounced = debounce(() => mountGame(), 300);
 
-    ['w-mode','w-trigger','w-size','w-width-mode','w-width-px','w-height-px'].forEach((id) => {
+    ['w-invisible','w-trigger','w-size','w-width-mode','w-width-px','w-height-px'].forEach((id) => {
       document.getElementById(id).addEventListener('input', () => {
         readWidgetControls(); refreshCodePreviews(); writeUrl(state); remountWidgetDebounced();
       });
@@ -628,7 +629,7 @@
     document.getElementById('g-reload').onclick = () => { mountGame(); };
     document.getElementById('w-reset').onclick = () => {
       Object.assign(state, {
-        wMode: 'simple', wTrigger: 'auto', wSize: 'normal', wWidthMode: 'auto', wWidthPx: '', wHeightPx: '',
+        wInvisible: false, wTrigger: 'auto', wSize: 'normal', wWidthMode: 'auto', wWidthPx: '', wHeightPx: '',
       });
       applyStateToControls(); refreshCodePreviews(); writeUrl(state); mountWidget();
     };

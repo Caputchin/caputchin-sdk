@@ -27,7 +27,6 @@ export type {
   Layout,
   LayoutAttr,
   LayoutSource,
-  WidgetMode,
   WidgetTrigger,
   WidgetWidth,
   WidgetHeight,
