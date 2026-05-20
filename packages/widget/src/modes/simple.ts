@@ -219,7 +219,8 @@ function createShieldIndicator(input: {
 
   const shield = document.createElementNS(SVG_NS, 'path');
   shield.setAttribute('d', SHIELD_PATH);
-  shield.setAttribute('stroke-width', '2');
+  // Always 1px stroke — keeps the shield a clean glyph regardless of size or state.
+  shield.setAttribute('stroke-width', '1');
   shield.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(shield);
 
@@ -265,10 +266,11 @@ function createShieldIndicator(input: {
       svg.setAttribute('data-state', state);
       switch (state) {
         case 'idle':
-          // Idle: gray-stroke shield (same for interactive + passive).
-          // Affordance for interactive comes from cursor:pointer + hover-scale
-          // (driven by CSS, only active while data-state="idle").
-          shield.setAttribute('stroke', '#6e7681');
+          // Idle gray-stroke shield. Passive (auto/manual/form-submit) gets
+          // a lighter gray to read as "disabled / waiting"; interactive uses
+          // the regular gray, with hover-scale + cursor:pointer signalling
+          // the action.
+          shield.setAttribute('stroke', interactive ? '#6e7681' : '#b8bec5');
           shield.setAttribute('fill', 'transparent');
           if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
