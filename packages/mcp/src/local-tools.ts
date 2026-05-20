@@ -29,7 +29,7 @@ export const WidgetSnippetInput = z.object({
   games: z
     .array(z.string().min(1))
     .optional()
-    .describe('Pool of game ids — the widget picks one at random per challenge.'),
+    .describe('Pool of game ids; the widget picks one at random per challenge.'),
   mode: z
     .enum(['auto', 'form-submit', 'manual'])
     .optional()
