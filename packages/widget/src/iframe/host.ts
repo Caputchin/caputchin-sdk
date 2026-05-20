@@ -85,6 +85,14 @@ export class IframeHost {
         this.handleManifest(msg);
         return;
       }
+      if (msg.kind === 'dimensions-measured') {
+        // Apply directly to the iframe — outer chrome (inline frame /
+        // overlay dialog) re-flows automatically. Iframe-slot `data-fill`
+        // path (customer-pinned inline) intentionally overrides via CSS
+        // so customer attrs still win over auto-measure.
+        this.setSize(msg.width, msg.height);
+        return;
+      }
       if (msg.kind === 'game-started') {
         this.clearKickoffAckTimer();
         onGameStarted?.();

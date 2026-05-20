@@ -3,6 +3,15 @@ export type Layout = 'inline' | 'modal' | 'fullscreen';
 export interface Bridge {
   pass(result: { score: number; durationMs?: number }): void;
   error(err: { code: string; message?: string }): void;
+  /** Tell the widget to resize the iframe to fit the game's content. Use
+   *  this when your game can compute its viewport but doesn't use an
+   *  intrinsic-sized root element (e.g. CSS-percentage layouts that auto-
+   *  measure can't infer). The widget also auto-measures the game's first
+   *  child after factory runs; this is the explicit escape hatch.
+   *
+   *  Call AFTER your first paint. Calling repeatedly mid-session works but
+   *  is discouraged — viewport changes during play are an antipattern. */
+  setSize(width: number, height: number): void;
   readonly layout: Layout | null;
 }
 

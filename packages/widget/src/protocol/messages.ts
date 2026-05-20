@@ -53,13 +53,29 @@ export interface ManifestMessage {
   preferredHeight: number | null;
 }
 
+/** Initial-render size measurement / explicit `bridge.setSize()` from the
+ *  game. Widget re-applies via IframeHost.setSize so the iframe fits the
+ *  actual content. Fires at most a few times during initial render; not
+ *  intended as a mid-game live-resize channel (per design — games that
+ *  resize their viewport mid-session are an antipattern). */
+export interface DimensionsMeasuredMessage {
+  kind: 'dimensions-measured';
+  seq: number;
+  width: number;
+  height: number;
+  /** 'auto' = ResizeObserver picked up an intrinsic size; 'explicit' = game
+   *  called bridge.setSize(). Lets the host log/debug which source won. */
+  source: 'auto' | 'explicit';
+}
+
 export type IframeToWidget =
   | GameStartedMessage
   | GamePassMessage
   | GameErrorMessage
-  | ManifestMessage;
+  | ManifestMessage
+  | DimensionsMeasuredMessage;
 
-const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest']);
+const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest', 'dimensions-measured']);
 
 export function isIframeToWidget(msg: unknown): msg is IframeToWidget {
   if (typeof msg !== 'object' || msg === null) return false;
