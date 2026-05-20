@@ -61,6 +61,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
   let cleanup: (() => void) | void = undefined;
   let kickoffGameId: string | null = null;
   let currentLayout: Layout | null = null;
+  let sizeObserver: ResizeObserver | null = null;
 
   function postToParent(msg: Record<string, unknown>): void {
     window.parent.postMessage(msg, '*');
@@ -186,11 +187,11 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
       // absolute-positioned). When scroll measurements match the iframe
       // size, content fits inside and no resize is needed.
       //
-      // Single-shot per design — viewport changes mid-session are an
-      // antipattern. The observer fires on every layout shift during the
-      // initial paint window then disconnects after 2 RAFs (long enough
-      // for a typical first paint + a styles-loaded reflow, short enough
-      // to not catch in-game animations).
+      // Observer stays connected for the lifetime of the round so legitimate
+      // post-game UI shifts (replay buttons, score panels) re-flow the
+      // iframe too. The `postDimensions` dedupe guard suppresses spam from
+      // animations that don't change layout dimensions. Cleaned up in the
+      // 'dispose' handler below alongside the rest of the game lifecycle.
       function measureDocumentSize(): void {
         const docEl = document.documentElement;
         const w = Math.max(docEl.scrollWidth, document.body?.scrollWidth ?? 0);
@@ -198,15 +199,10 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         if (w > 0 && h > 0) postDimensions(w, h, 'auto');
       }
       if (typeof ResizeObserver === 'function') {
-        const ro = new ResizeObserver(() => measureDocumentSize());
-        ro.observe(document.documentElement);
-        if (document.body) ro.observe(document.body);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            measureDocumentSize();
-            ro.disconnect();
-          });
-        });
+        sizeObserver = new ResizeObserver(() => measureDocumentSize());
+        sizeObserver.observe(document.documentElement);
+        if (document.body) sizeObserver.observe(document.body);
+        requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
       } else {
         requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
       }
@@ -216,6 +212,10 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
     }
 
     if (data['kind'] === 'dispose') {
+      if (sizeObserver) {
+        sizeObserver.disconnect();
+        sizeObserver = null;
+      }
       if (typeof cleanup === 'function') {
         try {
           cleanup();
