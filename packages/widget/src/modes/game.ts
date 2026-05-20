@@ -74,11 +74,14 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         host.style.width = '100%';
       }
 
+      // Per spec: inline game frame embeds a standalone simple × compact × auto
+      // widget below the iframe. No style overrides — it looks like a regular
+      // cap widget the customer might place on the page elsewhere.
       subSimple = createSimplePresentation({
         host,
         root: badgeSlot as unknown as ShadowRoot,
-        trigger: 'manual' as WidgetTrigger,
-        width: 'full',
+        trigger: 'auto' as WidgetTrigger,
+        width: 'auto',
         size: 'compact' as WidgetSize,
       });
       subSimple.mount();
@@ -271,18 +274,15 @@ function ensureGameStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     // --- inline frame ---
-    // Default: fit-content so the frame snaps to the iframe's auto-reported size.
-    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
-    // width="full": frame spans parent; iframe sized by JS to 100% via setAutoWidth(false).
+    // Container is just a flex column — the iframe panel and the standalone
+    // simple-compact widget below it each carry their own border + radius.
+    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;gap:0.5rem;width:fit-content;max-width:100%;box-sizing:border-box}',
     '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
-    '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
+    // Iframe panel: its own bordered card.
+    '[part="game-iframe-slot"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden}',
     '[part="game-iframe-slot"] iframe{display:block;border:0;background:#fff}',
-    // Thin separator between iframe and brand strip — matches the outer frame border.
-    '[part="game-badge-slot"]{display:flex;justify-content:flex-end;background:transparent;padding:0;border-top:1px solid #d0d7de}',
-    // Strip the embedded simple panel of its own border + radius + background.
-    // The outer game-frame border is the only border; the pill is purely text + logo.
-    '[part="game-badge-slot"] [part="simple-checkbox"],',
-    '[part="game-badge-slot"] [part="simple-pill"]{border:none !important;border-radius:0 !important;background:transparent !important;padding:0.25rem 0.5rem}',
+    // Badge slot: holds a standalone simple widget — no style override.
+    '[part="game-badge-slot"]{display:flex}',
 
     // --- overlay (modal / fullscreen) ---
     '[part="game-overlay-host"]{display:inline-block}',
