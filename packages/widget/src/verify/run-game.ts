@@ -4,7 +4,8 @@ import { injectHiddenInput } from '../form.js';
 import { IframeHost } from '../iframe/host.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
 import type { WrappedToken } from '../token.js';
-import type { GameState } from './state-game.js';
+import type { WidgetState } from './state.js';
+import type { GameConfig } from '../config/game.js';
 import { makeWidgetId, resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
 import { recordAdditionalRound } from './record-round.js';
@@ -20,7 +21,7 @@ import { recordAdditionalRound } from './record-round.js';
  * themselves should use `<caputchin-widget>` (cap only) and drive the
  * game lifecycle independently.
  */
-export async function runGame(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
+export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   if (!state.config) return;
   if (state.config.sitekey) {
     await runGameWithVerify(el, state, apiHost);
@@ -29,7 +30,7 @@ export async function runGame(el: HTMLElement, state: GameState, apiHost: string
   }
 }
 
-async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
+async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   const cfg = state.config!;
   const gameId = resolveGameId(cfg);
 
@@ -82,7 +83,7 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
           firstClickHappened = true;
           client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
         } else {
-          void recordAdditionalRound(el, state.widgetId, state.lockedToken, apiHost, msg.score, msg.durationMs);
+          void recordAdditionalRound(el, state, apiHost, { score: msg.score, durationMs: msg.durationMs });
         }
       } else if (msg.kind === 'game-error') {
         const { code, originalCode } = mapIframeErrorCode(msg.code);
@@ -95,7 +96,7 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
 
     await installGameFrame(
       el,
-      state.gamePresentation,
+      state.gamePresentation ?? null,
       cfg,
       host,
       (code, message) => {
@@ -150,7 +151,7 @@ async function runGameWithVerify(el: HTMLElement, state: GameState, apiHost: str
   }));
 }
 
-async function runGameOnly(el: HTMLElement, state: GameState, apiHost: string): Promise<void> {
+async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   const cfg = state.config!;
   const gameId = resolveGameId(cfg);
 
@@ -200,7 +201,7 @@ async function runGameOnly(el: HTMLElement, state: GameState, apiHost: string): 
 
   await installGameFrame(
     el,
-    state.gamePresentation,
+    state.gamePresentation ?? null,
     cfg,
     host,
     (code, message) => {

@@ -2,7 +2,8 @@ import { inspectWidgetConfig } from '../config/widget.js';
 import { fireError } from '../errors.js';
 import { createPresentation } from '../modes/index.js';
 import { createTriggerStrategy } from '../triggers/index.js';
-import { createInitialWidgetState, type WidgetState } from '../verify/state-widget.js';
+import { createInitialState, type WidgetState } from '../verify/state.js';
+import type { WidgetConfig } from '../config/widget.js';
 import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 
@@ -14,7 +15,7 @@ import { runCap } from '../verify/run-cap.js';
 export class CaputchinWidget extends HTMLElement {
   static observedAttributes = ['sitekey', 'mode', 'trigger', 'width', 'height', 'size'];
 
-  private state: WidgetState = createInitialWidgetState();
+  private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
   connectedCallback(): void {
     const state = this.state;
@@ -47,9 +48,6 @@ export class CaputchinWidget extends HTMLElement {
       el: this,
       presentation: state.presentation,
       runVerification: () => runCap(this, state, apiHost),
-      releaseManualPass: () => {
-        // Cap widget has no `pass()` method — no manual gate to release.
-      },
       capClient: null,
     };
 
@@ -71,7 +69,7 @@ export class CaputchinWidget extends HTMLElement {
     s.widgetId = null;
     s.lockedToken = null;
     s.connected = false;
-    this.state = createInitialWidgetState();
+    this.state = createInitialState<WidgetConfig>();
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {

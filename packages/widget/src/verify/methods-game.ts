@@ -1,6 +1,7 @@
 import { fireError } from '../errors.js';
 import { recordAdditionalRound } from './record-round.js';
-import type { GameState } from './state-game.js';
+import type { WidgetState } from './state.js';
+import type { GameConfig } from '../config/game.js';
 
 /**
  * Public methods on `<caputchin-game>`. There is no `start()` — verification
@@ -13,7 +14,7 @@ import type { GameState } from './state-game.js';
  * calls fire `/verify/pass` directly with the locked token via
  * `recordAdditionalRound`, mirroring the iframe game multi-round flow.
  */
-export function installGameMethods(el: HTMLElement, state: GameState, apiHost: string): void {
+export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): void {
   Object.defineProperty(el, 'pass', {
     value: (payload?: { score?: number | null; durationMs?: number | null }): void => {
       if (!state.config) return;
@@ -48,7 +49,7 @@ export function installGameMethods(el: HTMLElement, state: GameState, apiHost: s
         // First pass: release the cap gate. runManual's cap.solve().then will
         // emit the pass event once the wrapped token comes back from redeem.
         state.firstPassFired = true;
-        state.triggerCtx?.releaseManualPass({ score, durationMs });
+        state.capClient.releaseGate({ score, durationMs });
       } else {
         // Subsequent pass: record an additional round directly against
         // /verify/pass, then emit the pass event with the locked token.
@@ -56,7 +57,7 @@ export function installGameMethods(el: HTMLElement, state: GameState, apiHost: s
         // set yet (race: customer called pass() faster than cap.solve
         // completed); customers normally wait for the `pass` event before
         // scoring again.
-        void recordAdditionalRound(el, state.widgetId, state.lockedToken, apiHost, score, durationMs);
+        void recordAdditionalRound(el, state, apiHost, { score, durationMs });
       }
     },
     configurable: true,
