@@ -47,23 +47,24 @@ export async function installGameFrame(
 }
 
 /**
- * Size the iframe by priority:
- *   1. Customer `width="<px>"` / `height="<px>"` attribute (numeric)
- *   2. Game's manifest `preferredWidth` / `preferredHeight`
- *   3. Widget default (400 × 300)
- * Width also supports `"full"` (spans parent → iframe = 100%) and
- * `"auto"` (defer to game preferred or default).
+ * Size the iframe by the game's manifest (or defaults). The customer's
+ * `width` / `height` attributes apply to the OUTER chrome instead:
+ *   - inline: customer dims set the bordered frame total size; iframe gets
+ *     manifest-preferred dimensions and the brand strip fills the leftover.
+ *   - modal/fullscreen: customer dims set the entry-checkbox size; iframe
+ *     gets manifest-preferred dimensions and the dialog shrink-wraps to it.
+ *
+ * The only special case here is `width="full"` on inline — the iframe
+ * stretches to 100% of the (full-width) frame.
  */
 export function applyIframeSize(
   host: IframeHost,
   config: GameConfig,
   manifest: { preferredWidth: number | null; preferredHeight: number | null } | null,
 ): void {
-  let widthCss: number | '100%';
-  if (typeof config.width === 'number') widthCss = config.width;
-  else if (config.width === 'full') widthCss = '100%';
-  else widthCss = manifest?.preferredWidth ?? DEFAULT_W;
-
-  const heightCss = config.height ?? manifest?.preferredHeight ?? DEFAULT_H;
+  const widthCss: number | '100%' = config.width === 'full'
+    ? '100%'
+    : (manifest?.preferredWidth ?? DEFAULT_W);
+  const heightCss = manifest?.preferredHeight ?? DEFAULT_H;
   host.setSize(widthCss, heightCss);
 }
