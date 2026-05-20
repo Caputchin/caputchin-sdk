@@ -21,15 +21,15 @@ beforeEach(() => {
   posted.length = 0;
 });
 
-function dispatchKickoff(gameId: string | null, seq = 1): void {
+function dispatchKickoff(gameId: string | null, seq = 1, lang: unknown = null): void {
   const event = new MessageEvent('message', {
-    data: { kind: 'kickoff', seq, gameId },
+    data: { kind: 'kickoff', seq, gameId, lang },
     source: window,
   });
   window.dispatchEvent(event);
 }
 
-function registerGame(id: string, factory: (root: HTMLElement, bridge: unknown) => void): void {
+function registerGame(id: string, factory: (root: HTMLElement, bridge: unknown, ctx?: unknown) => void): void {
   const cap = (window as unknown as { Caputchin: { games: Record<string, unknown> } }).Caputchin;
   cap.games[id] = factory;
 }
@@ -39,6 +39,11 @@ describe('iframe runtime — Caputchin global initialised on import', () => {
     const cap = (window as unknown as { Caputchin: { games: Record<string, unknown> } }).Caputchin;
     expect(cap).toBeDefined();
     expect(typeof cap.games).toBe('object');
+  });
+
+  it('window.Caputchin.manifests is an object', () => {
+    const cap = (window as unknown as { Caputchin: { manifests: Record<string, unknown> } }).Caputchin;
+    expect(typeof cap.manifests).toBe('object');
   });
 });
 
@@ -123,8 +128,33 @@ describe('iframe runtime — manifest posted on boot', () => {
     expect(manifestOnBoot!['gameId']).toBeNull();
   });
 
-  it('manifest has preferredLayout=null when no opts registered for gameId', () => {
+  it('manifest has preferredLayout=null when no manifest registered for gameId', () => {
     expect(manifestOnBoot!['preferredLayout']).toBeNull();
+  });
+
+  it('manifest carries null languages when no manifest registered', () => {
+    expect(manifestOnBoot!['languages']).toBeNull();
+  });
+});
+
+describe('iframe runtime — kickoff ctx delivery', () => {
+  it('kickoff with lang payload forwards ctx.lang to the factory', () => {
+    let capturedCtx: unknown = null;
+    registerGame('ctx-1', (_root, _bridge, ctx) => {
+      capturedCtx = ctx;
+    });
+    const lang = { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' };
+    dispatchKickoff('ctx-1', 200, lang);
+    expect(capturedCtx).toEqual({ lang });
+  });
+
+  it('kickoff with no lang forwards ctx.lang=null', () => {
+    let capturedCtx: unknown = null;
+    registerGame('ctx-2', (_root, _bridge, ctx) => {
+      capturedCtx = ctx;
+    });
+    dispatchKickoff('ctx-2', 201);
+    expect(capturedCtx).toEqual({ lang: null });
   });
 });
 

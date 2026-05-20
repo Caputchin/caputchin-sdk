@@ -1,17 +1,17 @@
 // Self-contained iframe bootstrap. Only types imported; they erase at compile time.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/game-sdk';
+import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLanguage } from '@caputchin/game-sdk';
 
 (function () {
   interface CaputchinGlobal {
     games: Record<string, GameFactory>;
-    gameOpts: Record<string, RegisterOptions>;
+    manifests: Record<string, GameManifest>;
   }
 
   (window as unknown as Record<string, unknown>)['Caputchin'] = {
     games: {},
-    gameOpts: {},
+    manifests: {},
   } satisfies CaputchinGlobal;
 
   const W = window as unknown as Record<string, unknown>;
@@ -73,21 +73,22 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
   }
 
   function postManifest(): void {
-    const opts =
+    const manifest =
       embeddedGameId !== null
-        ? (W['Caputchin'] as CaputchinGlobal).gameOpts[embeddedGameId]
+        ? (W['Caputchin'] as CaputchinGlobal).manifests[embeddedGameId]
         : undefined;
     postToParent({
       kind: 'manifest',
       seq: 0,
       gameId: embeddedGameId,
-      preferredLayout: opts?.preferredLayout ?? null,
-      preferredWidth: typeof opts?.preferredWidth === 'number' ? opts.preferredWidth : null,
-      preferredHeight: typeof opts?.preferredHeight === 'number' ? opts.preferredHeight : null,
+      preferredLayout: manifest?.preferredLayout ?? null,
+      preferredWidth: typeof manifest?.preferredWidth === 'number' ? manifest.preferredWidth : null,
+      preferredHeight: typeof manifest?.preferredHeight === 'number' ? manifest.preferredHeight : null,
+      languages: manifest?.languages ?? null,
     });
   }
 
-  // Defer manifest until all body scripts have run so register() has populated gameOpts.
+  // Defer manifest until all body scripts have run so register() has populated manifests.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', postManifest, { once: true });
   } else {
@@ -119,6 +120,7 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
     if (data['kind'] === 'kickoff') {
       seq = data['seq'] as number;
       kickoffGameId = (data['gameId'] as string | null) ?? null;
+      const kickoffLang = (data['lang'] as ResolvedLanguage | null) ?? null;
 
       const root = document.getElementById('cpt-root');
       if (!root) {
@@ -181,8 +183,10 @@ import type { Bridge, GameFactory, Layout, RegisterOptions } from '@caputchin/ga
         },
       };
 
+      const ctx: GameContext = { lang: kickoffLang };
+
       try {
-        cleanup = factory(root, bridge);
+        cleanup = factory(root, bridge, ctx);
       } catch (err) {
         postError('game-error-relayed', String(err));
         return;

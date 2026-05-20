@@ -1,9 +1,10 @@
-import type { Layout } from '@caputchin/game-sdk';
+import type { LanguagePreset, Layout, ResolvedLanguage } from '@caputchin/game-sdk';
 
 export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
   gameId: string | null;
+  lang: ResolvedLanguage | null;
 }
 
 export interface DisposeMessage {
@@ -51,6 +52,7 @@ export interface ManifestMessage {
   preferredLayout: Layout | null;
   preferredWidth: number | null;
   preferredHeight: number | null;
+  languages: { presets: Record<string, LanguagePreset> } | null;
 }
 
 /** Initial-render size measurement / explicit `bridge.setSize()` from the

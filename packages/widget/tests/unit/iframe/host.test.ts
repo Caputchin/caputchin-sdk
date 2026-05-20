@@ -142,7 +142,7 @@ describe('IframeHost', () => {
     const host = new IframeHost(null, null, 'g1', document.createElement('div'), onMessage);
     mountHost(host);
 
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal' });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, languages: null });
     expect(onMessage).not.toHaveBeenCalled();
 
     host.dispose();
@@ -153,7 +153,7 @@ describe('IframeHost', () => {
     mountHost(host);
 
     const promise = host.waitManifest(5_000);
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal' });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, languages: null });
     await vi.runAllTimersAsync();
 
     const result = await promise;
@@ -167,7 +167,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     mountHost(host);
 
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'fullscreen' });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'fullscreen', preferredWidth: null, preferredHeight: null, languages: null });
     const result = await host.waitManifest(5_000);
     expect(result?.preferredLayout).toBe('fullscreen');
 
@@ -182,6 +182,33 @@ describe('IframeHost', () => {
     vi.advanceTimersByTime(2_001);
     const result = await promise;
     expect(result).toBeNull();
+
+    host.dispose();
+  });
+
+  it('kickoff(seq) defaults lang to null in the outbound message', () => {
+    const host = makeHost();
+    mountHost(host);
+
+    host.kickoff(1);
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null }),
+    );
+
+    host.dispose();
+  });
+
+  it('kickoff(seq, lang) forwards the resolved language payload', () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const lang = { _direction: 'rtl' as const, _iso: 'ar', hello: 'مرحبا' };
+    host.kickoff(1, lang);
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang }),
+    );
 
     host.dispose();
   });

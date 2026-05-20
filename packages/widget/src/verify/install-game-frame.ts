@@ -1,7 +1,9 @@
 import type { GameConfig } from '../config/game.js';
 import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
+import { resolveLanguage } from '../lang/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
+import type { ManifestMessage } from '../protocol/messages.js';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DEFAULT_W = 400;
@@ -43,7 +45,29 @@ export async function installGameFrame(
   const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
   applyIframeSize(host, config, manifest);
   host.setLayoutContext(layout);
-  host.kickoff(1);
+  const lang = resolveLangForGame(el, config, manifest);
+  host.kickoff(1, lang);
+}
+
+/** Resolve the customer's `lang` attribute against the game's manifest
+ *  presets. Issues fire as `invalid-config` events so the host page can
+ *  log misconfigurations. Returns null when the game ships no presets,
+ *  which the iframe runtime forwards as `ctx.lang = null`. */
+function resolveLangForGame(
+  el: HTMLElement,
+  config: GameConfig,
+  manifest: ManifestMessage | null,
+): ReturnType<typeof resolveLanguage>['resolved'] {
+  const presets = manifest?.languages?.presets;
+  if (!presets) return null;
+  const navLangs = (typeof navigator !== 'undefined' && navigator.languages)
+    ? navigator.languages
+    : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
+  const { resolved, issues } = resolveLanguage(presets, config.lang, navLangs);
+  for (const message of issues) {
+    fireError(el, 'invalid-config', message);
+  }
+  return resolved;
 }
 
 /**

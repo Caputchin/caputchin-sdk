@@ -137,3 +137,24 @@ describe('inspectGameConfig — height attr', () => {
     expect(r.issues.some((i) => i.message.includes('height="bogus"'))).toBe(true);
   });
 });
+
+describe('inspectGameConfig — lang attr', () => {
+  it('defaults to null when omitted', () => {
+    const r = inspectGameConfig(el({ game: '@x/y' }));
+    expect(r.config.lang).toBeNull();
+  });
+
+  it('reads a preset name', () => {
+    expect(inspectGameConfig(el({ game: '@x/y', lang: 'ar' })).config.lang).toBe('ar');
+  });
+
+  it('reads inline JSON unchanged', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', lang: '{"_iso":"ar"}' }));
+    expect(r.config.lang).toBe('{"_iso":"ar"}');
+  });
+
+  it('treats whitespace-only value as null', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', lang: '   ' }));
+    expect(r.config.lang).toBeNull();
+  });
+});

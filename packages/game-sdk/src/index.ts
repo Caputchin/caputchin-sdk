@@ -15,44 +15,94 @@ export interface Bridge {
   readonly layout: Layout | null;
 }
 
+/** One language preset declared in `caputchin.json` under `languages.presets`.
+ *  Underscore-prefixed keys are metadata; every other key is a translatable
+ *  text token. Direction can be omitted and is auto-derived from `_iso` when
+ *  the language is in the RTL set (ar, he, fa, ur, yi, ps, sd). */
+export interface LanguagePreset {
+  _iso?: string;
+  _direction?: 'ltr' | 'rtl';
+  _default?: boolean;
+  _extends?: string;
+  [key: string]: string | boolean | undefined;
+}
+
+/** Final language object the widget hands the game. `_extends` and
+ *  `_default` are stripped during resolution; only metadata (`_iso`,
+ *  `_direction`) and text tokens survive. */
+export interface ResolvedLanguage {
+  _direction: 'ltr' | 'rtl';
+  _iso: string;
+  [key: string]: string;
+}
+
+/** Per-session context the widget passes to the game factory as a third arg.
+ *  Open extension point: future axes (themes, configurations) land here as
+ *  additional fields without changing the factory signature. */
+export interface GameContext {
+  lang: ResolvedLanguage | null;
+}
+
+/** The full package manifest the game ships in `caputchin.json`. Authors
+ *  import this file and pass the parsed object to `register`. The widget
+ *  reads runtime hints (preferred layout / size, language presets) directly
+ *  off the manifest. */
+export interface GameManifest {
+  id: string;
+  version: string;
+  displayName?: string;
+  description?: string;
+  npm?: string;
+  script?: string;
+  support?: {
+    responsive?: boolean;
+    touch?: boolean;
+    accessible?: boolean;
+    audio?: string;
+    [k: string]: unknown;
+  };
+  preferredLayout?: Layout;
+  preferredWidth?: number;
+  preferredHeight?: number;
+  languages?: {
+    presets: Record<string, LanguagePreset>;
+  };
+}
+
 export type GameFactory = (
   container: HTMLElement,
   bridge: Bridge,
+  ctx?: GameContext,
 ) => (() => void) | void;
-
-export interface RegisterOptions {
-  preferredLayout?: Layout;
-  /** Preferred iframe width in CSS pixels. The widget honors it unless the
-   * customer overrides via the `width` attribute or CSS. */
-  preferredWidth?: number;
-  /** Preferred iframe height in CSS pixels. Same precedence as preferredWidth. */
-  preferredHeight?: number;
-}
 
 type Caputchin = {
   games: Record<string, GameFactory>;
-  gameOpts: Record<string, RegisterOptions>;
+  manifests: Record<string, GameManifest>;
 };
 
-export function register(id: string, factory: GameFactory, opts?: RegisterOptions): void {
+export function register(manifest: GameManifest, factory: GameFactory): void {
+  if (!manifest || typeof manifest.id !== 'string' || manifest.id.length === 0) {
+    console.warn('[caputchin/game-sdk] register() called with a manifest missing `id`; skipping');
+    return;
+  }
+
   const g = globalThis as Record<string, unknown>;
 
   if (!g['Caputchin']) {
     console.warn(
       '[caputchin/game-sdk] Caputchin global not found; was the SDK loaded outside a Caputchin iframe?',
     );
-    g['Caputchin'] = { games: {}, gameOpts: {} } satisfies Caputchin;
+    g['Caputchin'] = { games: {}, manifests: {} } satisfies Caputchin;
   }
 
   const caputchin = g['Caputchin'] as Caputchin;
-  if (!caputchin.gameOpts) caputchin.gameOpts = {};
+  if (!caputchin.manifests) caputchin.manifests = {};
+  if (!caputchin.games) caputchin.games = {};
 
-  if (Object.prototype.hasOwnProperty.call(caputchin.games, id)) {
-    console.warn(`[caputchin/game-sdk] duplicate game id "${id}"; last-write-wins`);
+  if (Object.prototype.hasOwnProperty.call(caputchin.games, manifest.id)) {
+    console.warn(`[caputchin/game-sdk] duplicate game id "${manifest.id}"; last-write-wins`);
   }
 
-  caputchin.games[id] = factory;
-  if (opts) {
-    caputchin.gameOpts[id] = opts;
-  }
+  caputchin.games[manifest.id] = factory;
+  caputchin.manifests[manifest.id] = manifest;
 }

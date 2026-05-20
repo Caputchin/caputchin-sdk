@@ -25,7 +25,7 @@ import { runManual } from '../verify/run-manual.js';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 

@@ -1,5 +1,6 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
 import { LOGO_PRIMARY } from '../brand/logo.js';
+import { resolveWidgetChrome, type ChromeStrings } from '../lang/widget-chrome.js';
 
 /**
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
@@ -23,6 +24,13 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   const isCompact = size === 'compact';
   const pxWidth = typeof width === 'number' ? width : null;
   const pxHeight = typeof height === 'number' ? height : null;
+  const chrome = resolveWidgetChrome();
+  const STATE_LABEL_LOCAL: Record<PresentationState, string> = {
+    idle: chrome.strings.simpleVerify,
+    verifying: chrome.strings.simpleVerifying,
+    verified: chrome.strings.simpleVerified,
+    error: chrome.strings.simpleFailed,
+  };
 
   let root: HTMLDivElement | null = null;
   let indicator: { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } | null = null;
@@ -66,7 +74,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     const wordmark = document.createElement('span');
     wordmark.setAttribute('part', 'simple-brand-name');
-    wordmark.textContent = 'Caputchin';
+    wordmark.textContent = chrome.strings.brandName;
     wordmark.style.cssText = 'font-weight:600;color:inherit';
 
     homeLink.appendChild(logoSpan);
@@ -77,7 +85,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tag.href = 'https://caputchin.com/legal';
     tag.target = '_blank';
     tag.rel = 'noopener noreferrer';
-    tag.textContent = 'see no data';
+    tag.textContent = chrome.strings.brandTag;
     tag.style.cssText = 'color:#6e7681';
 
     container.appendChild(homeLink);
@@ -93,6 +101,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       root = document.createElement('div');
       root.setAttribute('part', 'simple-checkbox');
       if (isCompact) root.setAttribute('data-size', 'compact');
+      if (chrome.direction === 'rtl') root.setAttribute('dir', 'rtl');
       const rootStyles = [
         'display:flex',
         'align-items:center',
@@ -112,21 +121,22 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey });
+      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: chrome.strings });
 
       label = document.createElement('span');
       label.setAttribute('part', 'simple-checkbox-label');
       label.setAttribute('aria-live', 'polite');
       // Width-locked: longest text fits, transitions don't reflow.
-      label.style.cssText = 'flex:0 0 auto;text-align:left';
+      label.style.cssText = 'flex:0 0 auto;text-align:start';
 
       root.appendChild(indicator.el);
       root.appendChild(label);
 
       brand = buildBrand();
-      // Spacer pushes brand to the right edge without depending on label
-      // width changes.
-      brand.style.marginLeft = 'auto';
+      // Spacer pushes brand to the trailing edge without depending on label
+      // width changes. `margin-inline-start` flips automatically under
+      // `dir="rtl"` so the brand stays on the line-end side in RTL too.
+      brand.style.marginInlineStart = 'auto';
       root.appendChild(brand);
 
       if (isFullWidth) {
@@ -168,7 +178,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     setState(state: PresentationState): void {
       if (!indicator || !label) return;
       indicator.setState(state);
-      label.textContent = STATE_LABEL[state];
+      label.textContent = STATE_LABEL_LOCAL[state];
     },
 
     onActivate(handler: () => void): () => void {
@@ -181,13 +191,6 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   };
 }
 
-const STATE_LABEL: Record<PresentationState, string> = {
-  idle: 'Verify',
-  verifying: 'Verifying…',
-  verified: 'Verified',
-  error: 'Failed',
-};
-
 // ---------------- shield indicator ----------------
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -199,8 +202,9 @@ function createShieldIndicator(input: {
   interactive: boolean;
   onPointer: () => void;
   onKey: (e: KeyboardEvent) => void;
+  strings: ChromeStrings;
 }): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
-  const { interactive, onPointer, onKey } = input;
+  const { interactive, onPointer, onKey, strings } = input;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('part', 'simple-shield-box');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -208,13 +212,13 @@ function createShieldIndicator(input: {
     svg.setAttribute('data-interactive', '');
     svg.setAttribute('role', 'checkbox');
     svg.setAttribute('aria-checked', 'false');
-    svg.setAttribute('aria-label', 'Verify you are human');
+    svg.setAttribute('aria-label', strings.simpleAriaCheckbox);
     (svg as unknown as SVGSVGElement).tabIndex = 0;
     svg.addEventListener('click', onPointer);
     svg.addEventListener('keydown', onKey);
   } else {
     svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', 'Caputchin verification status');
+    svg.setAttribute('aria-label', strings.simpleAriaStatus);
   }
 
   const shield = document.createElementNS(SVG_NS, 'path');
@@ -327,7 +331,7 @@ function ensureStyles(root: ShadowRoot): void {
       '[part="simple-shield-box"][data-interactive][data-state="idle"]:hover,[part="simple-shield-box"][data-interactive][data-state="idle"]:focus-visible{transform:none}',
     '}',
     // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
-    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:left}',
+    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:start}',
 
     // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
     '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
@@ -348,7 +352,7 @@ function ensureStyles(root: ShadowRoot): void {
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
     '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
     '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.5rem}',
-    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:#c0c0c0;margin-left:0.1rem}',
+    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:#c0c0c0;margin-inline-start:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',
