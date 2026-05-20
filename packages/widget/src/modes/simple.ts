@@ -265,17 +265,11 @@ function createShieldIndicator(input: {
       svg.setAttribute('data-state', state);
       switch (state) {
         case 'idle':
-          // Interactive idle: gray-stroke shield with chevron + breathing pulse
-          // (driven by CSS via [data-state="idle"][data-interactive]).
-          // Passive idle: same shield, no chevron, no pulse.
-          shield.setAttribute('stroke', interactive ? '#2F6640' : '#6e7681');
+          // Idle: gray-stroke shield (same for interactive + passive).
+          // Affordance for interactive comes from cursor:pointer + hover-scale
+          // (driven by CSS, only active while data-state="idle").
+          shield.setAttribute('stroke', '#6e7681');
           shield.setAttribute('fill', 'transparent');
-          if (interactive) {
-            // Chevron hint inside the shield — universal "click me" cue.
-            glyph.textContent = '›';
-            // Chevron fill matches the stroke since shield is unfilled.
-            glyph.setAttribute('fill', '#2F6640');
-          }
           if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
         case 'verifying':
@@ -312,25 +306,23 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
-    // Subtle breathing pulse for the interactive idle shield — signals "tap me"
-    // alongside the chevron hint without being noisy.
-    '@keyframes caputchin-shield-pulse{0%,100%{opacity:1}50%{opacity:0.6}}',
     // Spinner arc inside the shield: rotates around the shield's visual center.
     // transform-origin set in viewBox user units (matches cx/cy of the circle).
     '[part="simple-shield-spinner"]{transform-origin:12px 13px;animation:caputchin-spin 0.8s linear infinite}',
 
     // --- shield SVG: only indicator on this widget; sized to read at a glance ---
-    '[part="simple-shield-box"]{width:2rem;height:2rem;flex:0 0 auto;display:block;outline:none}',
-    '[part="simple-shield-box"][data-interactive]{cursor:pointer;transition:transform 120ms ease,opacity 120ms ease}',
-    '[part="simple-shield-box"][data-interactive][data-state="idle"]{animation:caputchin-shield-pulse 1.6s ease-in-out infinite}',
-    // Hover/focus lifts the shield slightly and pauses the pulse so the
-    // affordance reads as "your move now".
-    '[part="simple-shield-box"][data-interactive]:hover,[part="simple-shield-box"][data-interactive]:focus-visible{transform:scale(1.06);animation-play-state:paused}',
+    '[part="simple-shield-box"]{width:2rem;height:2rem;flex:0 0 auto;display:block;outline:none;transition:transform 120ms ease,stroke 180ms ease,fill 180ms ease}',
+    // Interactive idle: pointer cursor + hover/focus scale-up.
+    // Once the click fires, data-state flips away from "idle" → no more
+    // hover scale (selector stops matching) + color transitions to verifying
+    // green via the SVG attribute swap.
+    '[part="simple-shield-box"][data-interactive][data-state="idle"]{cursor:pointer}',
+    '[part="simple-shield-box"][data-interactive][data-state="idle"]:hover,[part="simple-shield-box"][data-interactive][data-state="idle"]:focus-visible{transform:scale(1.12)}',
     '[part="simple-shield-box"][data-interactive]:focus-visible{outline:2px solid #2F6640;outline-offset:2px;border-radius:0.25rem}',
-    // Reduced motion: kill the pulse + scale lift; keep cursor + focus ring.
+    // Reduced motion: drop the scale lift; keep cursor + focus ring + color transitions.
     '@media (prefers-reduced-motion:reduce){',
-      '[part="simple-shield-box"][data-interactive]{animation:none !important;transition:none !important}',
-      '[part="simple-shield-box"][data-interactive]:hover,[part="simple-shield-box"][data-interactive]:focus-visible{transform:none}',
+      '[part="simple-shield-box"]{transition:none !important}',
+      '[part="simple-shield-box"][data-interactive][data-state="idle"]:hover,[part="simple-shield-box"][data-interactive][data-state="idle"]:focus-visible{transform:none}',
     '}',
     // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
     '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:left}',
