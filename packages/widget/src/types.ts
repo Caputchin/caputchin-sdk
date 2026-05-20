@@ -42,7 +42,6 @@ export interface CaputchinEventMap {
 /** Public shape of `<caputchin-widget>` — cap verification only. */
 export interface CaputchinWidgetShape extends HTMLElement {
   start(): void;
-  setNickname(letters: string): void;
   addEventListener<K extends keyof CaputchinEventMap>(
     type: K,
     listener: (this: CaputchinWidgetShape, ev: CaputchinEventMap[K]) => void,

@@ -1,4 +1,4 @@
-import type { WidgetWidth, WidgetHeight, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
+import type { WidgetWidth, WidgetHeight, ConfigIssue, ConfigInspection } from './shared.js';
 import { parseCommonAttrs, validateGameUrl } from './shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { isLayoutAttr } from '../layout.js';
@@ -6,12 +6,13 @@ import { isLayoutAttr } from '../layout.js';
 /** Game widget config. `sitekey === null` means "no verification" (game-only).
  *  With a sitekey the cap verification runs alongside the game iframe.
  *  Trigger is NOT an attribute on this widget — it is derived from layout
- *  by the element (`inline` → auto, `modal`/`fullscreen` → click). */
+ *  by the element (`inline` → auto, `modal`/`fullscreen` → click).
+ *  Size is implicit too: inline renders the compact brand strip, modal /
+ *  fullscreen render the normal checkbox. */
 export interface GameConfig {
   sitekey: string | null;
   width: WidgetWidth;
   height: WidgetHeight;
-  size: WidgetSize;
   game: string | null;
   games: string | null;
   gameSrc: string | null;
@@ -34,13 +35,17 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   let gameSrc = el.getAttribute('game-src');
   const rawLayout = el.getAttribute('layout');
   const rawTrigger = el.getAttribute('trigger');
+  const rawSize = el.getAttribute('size');
 
-  // parseCommonAttrs would re-parse trigger; on the game widget trigger is
-  // implicit, so we only consume width/height/size and warn if a customer
-  // tried to set trigger explicitly.
+  // parseCommonAttrs returns trigger/width/height/size. On this widget we
+  // only consume width/height — trigger and size are implicit per layout.
+  // Warn if customers set either explicitly.
   const common = parseCommonAttrs(el, issues);
   if (rawTrigger !== null && rawTrigger !== '') {
     issues.push({ message: `trigger="${rawTrigger}" is ignored on <caputchin-game> — trigger is derived from layout (inline → auto, modal/fullscreen → click)` });
+  }
+  if (rawSize !== null && rawSize !== '') {
+    issues.push({ message: `size="${rawSize}" is ignored on <caputchin-game> — size is derived from layout (inline → compact, modal/fullscreen → normal)` });
   }
 
   if (gameSrc !== null) {
@@ -65,7 +70,6 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       sitekey,
       width: common.width,
       height: common.height,
-      size: common.size,
       game,
       games,
       gameSrc,

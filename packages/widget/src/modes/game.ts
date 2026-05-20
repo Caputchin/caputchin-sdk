@@ -1,5 +1,5 @@
-import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
-import type { WidgetSize, WidgetTrigger } from '../config/shared.js';
+import type { Presentation, PresentationState } from './index.js';
+import type { WidgetTrigger, WidgetWidth, WidgetSize } from '../config/shared.js';
 import { createSimplePresentation } from './simple.js';
 
 /**
@@ -24,7 +24,14 @@ export interface GamePresentation extends Presentation {
   close(): void;
 }
 
-export interface GamePresentationInput extends PresentationFactoryInput {
+export interface GamePresentationInput {
+  /** The custom-element host (used for host-level styling like full-width). */
+  host: HTMLElement;
+  /** Shadow root where DOM is appended. */
+  root: ShadowRoot;
+  /** Derived implicit trigger (inline → auto, modal/fullscreen → click). */
+  trigger: WidgetTrigger;
+  width: WidgetWidth;
   layout: 'inline' | 'modal' | 'fullscreen';
 }
 
@@ -176,7 +183,9 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         root: checkboxSlot as unknown as ShadowRoot,
         trigger: 'click' as WidgetTrigger,
         width: input.width,
-        size: input.size,
+        // Overlay (modal / fullscreen) always uses the normal checkbox.
+        // Inline uses compact (hardcoded in createInlineGame).
+        size: 'normal' as WidgetSize,
       });
       subSimple.mount();
       subSimple.onActivate(() => {

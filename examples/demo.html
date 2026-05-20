@@ -180,7 +180,6 @@
         </div>
       </div>
       <div class="actions">
-        <button class="primary" id="w-apply">Apply &amp; remount</button>
         <button class="secondary" id="w-reset">Reset</button>
       </div>
     </section>
@@ -230,13 +229,6 @@
           </select>
         </div>
         <div class="field">
-          <label for="g-size">size</label>
-          <select id="g-size">
-            <option value="normal" selected>normal</option>
-            <option value="compact">compact</option>
-          </select>
-        </div>
-        <div class="field">
           <label for="g-width-mode">width</label>
           <div class="row">
             <select id="g-width-mode">
@@ -265,7 +257,6 @@
         </div>
       </div>
       <div class="actions">
-        <button class="primary" id="g-apply">Apply &amp; remount</button>
         <button class="secondary" id="g-reset">Reset</button>
       </div>
     </section>
@@ -306,10 +297,9 @@
         wWidthMode: p.get('w.widthMode') || 'auto',
         wWidthPx: p.get('w.widthPx') || '',
         wHeightPx: p.get('w.heightPx') || '',
-        // game state (no trigger — derived from layout)
+        // game state (no trigger / no size — derived from layout)
         gSitekeyMode: p.get('g.sitekey') || 'present',
         gLayout: p.get('g.layout') || 'auto',
-        gSize: p.get('g.size') || 'normal',
         gWidthMode: p.get('g.widthMode') || 'auto',
         gWidthPx: p.get('g.widthPx') || '',
         gHeightPx: p.get('g.heightPx') || '',
@@ -324,7 +314,7 @@
         'w.mode': s.wMode, 'w.trigger': s.wTrigger, 'w.size': s.wSize,
         'w.widthMode': s.wWidthMode, 'w.widthPx': s.wWidthPx, 'w.heightPx': s.wHeightPx,
         'g.sitekey': s.gSitekeyMode,
-        'g.layout': s.gLayout, 'g.size': s.gSize,
+        'g.layout': s.gLayout,
         'g.widthMode': s.gWidthMode, 'g.widthPx': s.gWidthPx,
         'g.heightPx': s.gHeightPx, 'g.game': s.gGame, 'g.games': s.gGames,
       }).forEach(([k, v]) => { if (v) p.set(k, v); });
@@ -355,7 +345,7 @@
       ['Game-only modal (no sitekey)', { gSitekeyMode: 'absent', gLayout: 'modal', gGame: '@demo/simple' }],
       ['Multi-round inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/multi-round' }],
       ['Failing game inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/failing' }],
-      ['Compact inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple', gSize: 'compact' }],
+      ['Compact inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple' }],
       ['Full width inline', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'full' }],
       ['Custom dims 500×400', { gSitekeyMode: 'present', gLayout: 'inline', gGame: '@demo/simple', gWidthMode: 'pixels', gWidthPx: '500', gHeightPx: '400' }],
     ];
@@ -374,7 +364,6 @@
 
       document.getElementById('g-sitekey-mode').value = state.gSitekeyMode;
       document.getElementById('g-layout').value = state.gLayout;
-      document.getElementById('g-size').value = state.gSize;
       document.getElementById('g-width-mode').value = state.gWidthMode;
       document.getElementById('g-width-px').value = state.gWidthPx;
       document.getElementById('g-width-px').disabled = state.gWidthMode !== 'pixels';
@@ -395,7 +384,6 @@
     function readGameControls() {
       state.gSitekeyMode = document.getElementById('g-sitekey-mode').value;
       state.gLayout = document.getElementById('g-layout').value;
-      state.gSize = document.getElementById('g-size').value;
       state.gWidthMode = document.getElementById('g-width-mode').value;
       state.gWidthPx = document.getElementById('g-width-px').value;
       document.getElementById('g-width-px').disabled = state.gWidthMode !== 'pixels';
@@ -425,7 +413,6 @@
       let attrs = '';
       if (state.gSitekeyMode === 'present') attrs += ` sitekey="${SITEKEY}"`;
       if (state.gLayout !== 'auto') attrs += ` layout="${state.gLayout}"`;
-      if (state.gSize !== 'normal') attrs += ` size="${state.gSize}"`;
       attrs += widthAttr(state.gWidthMode, state.gWidthPx);
       if (state.gHeightPx) attrs += ` height="${state.gHeightPx}"`;
       if (state.gGames) {
@@ -565,19 +552,30 @@
       if (e.target.matches('.tab')) setTab(e.target.dataset.tab);
     });
 
+    // Debounced auto-remount. Settings tweak → preview updates instantly,
+    // widget remounts ~300ms after the last input so rapid typing in
+    // pixel inputs doesn't churn the iframe.
+    function debounce(fn, ms) {
+      let t = null;
+      return (...args) => {
+        if (t !== null) clearTimeout(t);
+        t = setTimeout(() => { t = null; fn(...args); }, ms);
+      };
+    }
+    const remountWidgetDebounced = debounce(() => mountWidget(), 300);
+    const remountGameDebounced = debounce(() => mountGame(), 300);
+
     ['w-mode','w-trigger','w-size','w-width-mode','w-width-px','w-height-px'].forEach((id) => {
-      document.getElementById(id).addEventListener('input', () => { readWidgetControls(); refreshCodePreviews(); });
+      document.getElementById(id).addEventListener('input', () => {
+        readWidgetControls(); refreshCodePreviews(); writeUrl(state); remountWidgetDebounced();
+      });
     });
-    ['g-sitekey-mode','g-layout','g-size','g-width-mode','g-width-px','g-height-px','g-game','g-games'].forEach((id) => {
-      document.getElementById(id).addEventListener('input', () => { readGameControls(); refreshCodePreviews(); });
+    ['g-sitekey-mode','g-layout','g-width-mode','g-width-px','g-height-px','g-game','g-games'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', () => {
+        readGameControls(); refreshCodePreviews(); writeUrl(state); remountGameDebounced();
+      });
     });
 
-    document.getElementById('w-apply').onclick = () => {
-      readWidgetControls(); refreshCodePreviews(); writeUrl(state); mountWidget();
-    };
-    document.getElementById('g-apply').onclick = () => {
-      readGameControls(); refreshCodePreviews(); writeUrl(state); mountGame();
-    };
     document.getElementById('w-reset').onclick = () => {
       Object.assign(state, {
         wMode: 'simple', wTrigger: 'auto', wSize: 'normal', wWidthMode: 'auto', wWidthPx: '', wHeightPx: '',
@@ -586,7 +584,7 @@
     };
     document.getElementById('g-reset').onclick = () => {
       Object.assign(state, {
-        gSitekeyMode: 'present', gLayout: 'auto', gSize: 'normal',
+        gSitekeyMode: 'present', gLayout: 'auto',
         gWidthMode: 'auto', gWidthPx: '', gHeightPx: '', gGame: '@demo/simple', gGames: '',
       });
       applyStateToControls(); refreshCodePreviews(); writeUrl(state); mountGame();

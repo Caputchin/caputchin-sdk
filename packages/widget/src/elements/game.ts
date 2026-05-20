@@ -21,7 +21,7 @@ import { runGame } from '../verify/run-game.js';
  * There is no `trigger` attribute on this widget — the layout decides.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'width', 'height', 'size', 'game', 'games', 'game-src', 'layout'];
+  static observedAttributes = ['sitekey', 'width', 'height', 'game', 'games', 'game-src', 'layout'];
 
   private state: GameState = createInitialGameState();
 
@@ -49,7 +49,6 @@ export class CaputchinGame extends HTMLElement {
       root: shadow,
       trigger: derivedTrigger,
       width: state.config.width,
-      size: state.config.size,
       layout,
     });
     state.gamePresentation = gp;
