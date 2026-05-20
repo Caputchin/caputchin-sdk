@@ -9,47 +9,33 @@ function el(attrs: Record<string, string>): HTMLElement {
 }
 
 describe('inspectWidgetConfig — defaults', () => {
-  it('defaults mode to "simple"', () => {
+  it('defaults to visible (invisible=false)', () => {
     const r = inspectWidgetConfig(el({ sitekey: 'k' }));
-    expect(r.config.mode).toBe('simple');
+    expect(r.config.invisible).toBe(false);
     expect(r.config.trigger).toBe('auto');
     expect(r.issues).toEqual([]);
     expect(r.inert).toBe(false);
   });
 
-  it('reads explicit mode + trigger', () => {
-    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'form-submit' }));
-    expect(r.config.mode).toBe('invisible');
+  it('reads invisible boolean + trigger', () => {
+    const r = inspectWidgetConfig(el({ sitekey: 'k', invisible: '', trigger: 'form-submit' }));
+    expect(r.config.invisible).toBe(true);
     expect(r.config.trigger).toBe('form-submit');
     expect(r.issues).toEqual([]);
   });
 });
 
-describe('inspectWidgetConfig — mode validation', () => {
-  it('falls back to simple on unknown mode + emits issue', () => {
-    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'bogus' }));
-    expect(r.config.mode).toBe('simple');
-    expect(r.issues[0]!.message).toContain('mode="bogus"');
-  });
-
-  it('rejects mode="game" (game widget territory) + emits issue', () => {
-    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'game' }));
-    expect(r.config.mode).toBe('simple');
-    expect(r.issues[0]!.message).toContain('mode="game"');
-  });
-});
-
-describe('inspectWidgetConfig — trigger × mode coercion', () => {
+describe('inspectWidgetConfig — trigger × invisible coercion', () => {
   it('coerces invisible+click → invisible+auto + emits issue', () => {
-    const r = inspectWidgetConfig(el({ sitekey: 'k', mode: 'invisible', trigger: 'click' }));
+    const r = inspectWidgetConfig(el({ sitekey: 'k', invisible: '', trigger: 'click' }));
     expect(r.config.trigger).toBe('auto');
-    expect(r.issues.some((i) => i.message.includes('trigger="click"') && i.message.includes('mode="invisible"'))).toBe(true);
+    expect(r.issues.some((i) => i.message.includes('trigger="click"') && i.message.includes('invisible'))).toBe(true);
   });
 });
 
 describe('inspectWidgetConfig — sitekey rules', () => {
   it('marks inert + emits issue when sitekey missing', () => {
-    const r = inspectWidgetConfig(el({ mode: 'simple' }));
+    const r = inspectWidgetConfig(el({}));
     expect(r.inert).toBe(true);
     expect(r.issues.some((i) => i.message.includes('sitekey'))).toBe(true);
   });

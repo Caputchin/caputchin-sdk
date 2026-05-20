@@ -1,7 +1,6 @@
 import type { ErrorCode, ErrorSeverity } from './errors.js';
 import type { Layout, LayoutAttr, LayoutSource } from './layout.js';
 import type { WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight } from './config/shared.js';
-import type { WidgetMode } from './config/widget.js';
 
 export interface StartEventDetail {
   gameId: string | null;
@@ -37,7 +36,7 @@ export interface LayoutResolvedEventDetail {
   source: LayoutSource;
 }
 
-export type { Layout, LayoutAttr, LayoutSource, WidgetMode, WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight };
+export type { Layout, LayoutAttr, LayoutSource, WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight };
 
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;

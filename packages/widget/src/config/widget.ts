@@ -1,24 +1,19 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize, ConfigIssue, ConfigInspection } from './shared.js';
 import { parseCommonAttrs } from './shared.js';
 
-/** The cap widget runs PoW + instrumentation. Two presentation modes:
- *  - `invisible`: no UI, verification fires per trigger.
- *  - `simple`: classic captcha checkbox + brand. */
-export type WidgetMode = 'invisible' | 'simple';
-
+/** Cap widget config. The widget has two visual forms:
+ *  - default: checkbox + brand strip (visible).
+ *  - `invisible` attribute set: no DOM at all; verification still runs per trigger.
+ *
+ *  There is no enum-style `mode` attribute — `invisible` is a boolean HTML
+ *  attribute (same shape as `<input disabled>` / `<details open>`). */
 export interface WidgetConfig {
   sitekey: string;
-  mode: WidgetMode;
+  invisible: boolean;
   trigger: WidgetTrigger;
   width: WidgetWidth;
   height: WidgetHeight;
   size: WidgetSize;
-}
-
-const MODES: ReadonlyArray<WidgetMode> = ['invisible', 'simple'];
-
-function isWidgetMode(v: string | null): v is WidgetMode {
-  return v !== null && (MODES as ReadonlyArray<string>).includes(v);
 }
 
 /**
@@ -28,23 +23,15 @@ function isWidgetMode(v: string | null): v is WidgetMode {
  */
 export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetConfig> {
   const issues: ConfigIssue[] = [];
-  const rawMode = el.getAttribute('mode');
   const sitekey = el.getAttribute('sitekey') ?? '';
-
-  let mode: WidgetMode;
-  if (rawMode === null || rawMode === '') mode = 'simple';
-  else if (isWidgetMode(rawMode)) mode = rawMode;
-  else {
-    issues.push({ message: `mode="${rawMode}" is invalid; expected invisible|simple; falling back to "simple"` });
-    mode = 'simple';
-  }
+  const invisible = el.hasAttribute('invisible');
 
   const common = parseCommonAttrs(el, issues);
   let trigger = common.trigger;
 
-  // mode=invisible has no UI — trigger=click makes no sense.
-  if (mode === 'invisible' && trigger === 'click') {
-    issues.push({ message: `trigger="click" is incompatible with mode="invisible" (no UI to click); falling back to "auto"` });
+  // Invisible has no UI — trigger="click" makes no sense.
+  if (invisible && trigger === 'click') {
+    issues.push({ message: 'trigger="click" is incompatible with the invisible widget (no UI to click); falling back to "auto"' });
     trigger = 'auto';
   }
 
@@ -55,7 +42,7 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
   }
 
   return {
-    config: { sitekey, mode, trigger, width: common.width, height: common.height, size: common.size },
+    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size },
     issues,
     inert,
   };

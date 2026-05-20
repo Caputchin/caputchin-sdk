@@ -6,9 +6,9 @@ declare global {
 }
 (globalThis as unknown as { __CAPUTCHIN_API_HOST__: string }).__CAPUTCHIN_API_HOST__ = 'https://api.test.com';
 
-describe('mode="simple" presentation', () => {
+describe('visible (default) widget presentation', () => {
   it('renders a checkbox with Caputchin branding on mount (inside shadow root)', () => {
-    const el = getWidget({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
     document.body.appendChild(el);
     const shadow = el.shadowRoot;
     expect(shadow).not.toBeNull();
@@ -24,7 +24,7 @@ describe('mode="simple" presentation', () => {
   });
 
   it('removes the checkbox on disconnect', () => {
-    const el = getWidget({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
     document.body.appendChild(el);
     expect(el.shadowRoot!.querySelector('[role="checkbox"]')).not.toBeNull();
     el.remove();
@@ -32,9 +32,9 @@ describe('mode="simple" presentation', () => {
   });
 });
 
-describe('mode="invisible" presentation', () => {
+describe('invisible widget presentation', () => {
   it('renders no DOM', () => {
-    const el = getWidget({ sitekey: 'k', mode: 'invisible' });
+    const el = getWidget({ sitekey: 'k', invisible: '' });
     document.body.appendChild(el);
     expect(el.children.length).toBe(0);
     expect(el.textContent?.trim()).toBe('');

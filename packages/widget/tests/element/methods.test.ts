@@ -15,26 +15,26 @@ describe('CaputchinWidget methods', () => {
     document.body.appendChild(el);
   }
 
-  it('start() is callable on simple mode', () => {
-    mount({ sitekey: 'k', mode: 'simple', trigger: 'click' });
+  it('start() is callable on the visible (default) widget', () => {
+    mount({ sitekey: 'k', trigger: 'click' });
     expect(() => el.start()).not.toThrow();
     el.remove();
   });
 
-  it('start() is callable on invisible mode', () => {
-    mount({ sitekey: 'k', mode: 'invisible', trigger: 'manual' });
+  it('start() is callable on the invisible widget', () => {
+    mount({ sitekey: 'k', invisible: '', trigger: 'manual' });
     expect(() => el.start()).not.toThrow();
     el.remove();
   });
 
   it('does NOT expose pass() (cap widget has no game payload)', () => {
-    mount({ sitekey: 'k', mode: 'simple' });
+    mount({ sitekey: 'k' });
     expect((el as unknown as Record<string, unknown>)['pass']).toBeUndefined();
     el.remove();
   });
 
   it('does NOT expose setNickname() (scoreboards are game-only)', () => {
-    mount({ sitekey: 'k', mode: 'simple' });
+    mount({ sitekey: 'k' });
     expect((el as unknown as Record<string, unknown>)['setNickname']).toBeUndefined();
     el.remove();
   });

@@ -1,5 +1,4 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
-import type { WidgetMode } from '../config/widget.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -35,14 +34,10 @@ export interface PresentationFactoryInput {
 }
 
 /**
- * Lightweight presentations for the cap widget (invisible, simple). Game
- * presentation lives in `./game.ts` (consumed by `<caputchin-game>`).
+ * Lightweight presentations for the cap widget. `invisible=true` mounts no
+ * DOM; default mounts the checkbox + brand strip. Game presentation lives
+ * in `./game.ts` (consumed by `<caputchin-game>`).
  */
-export function createPresentation(mode: WidgetMode, input: PresentationFactoryInput): Presentation {
-  switch (mode) {
-    case 'invisible':
-      return createInvisiblePresentation();
-    case 'simple':
-      return createSimplePresentation(input);
-  }
+export function createPresentation(invisible: boolean, input: PresentationFactoryInput): Presentation {
+  return invisible ? createInvisiblePresentation() : createSimplePresentation(input);
 }
