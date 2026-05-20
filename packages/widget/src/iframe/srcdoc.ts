@@ -48,5 +48,10 @@ export function buildSrcdoc(opts: SrcdocOptions): string {
 
   const safeGameId = gameId !== null ? escapeAttr(gameId) : '';
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${scriptSrc}; connect-src 'none'; img-src data:; media-src data:; font-src data:; style-src 'unsafe-inline'"></head><body><div id="cpt-root"></div><script data-game-id="${safeGameId}">${runtimeJs}</script>${gameScriptTag}</body></html>`;
+  // Reset html/body margin+padding so the game's root sits flush with the
+  // iframe edges. Default user-agent body margin (8px on most browsers)
+  // would otherwise be visible as whitespace and inflate the auto-measured
+  // scrollWidth/Height by 16px, defeating the game's preferredWidth/Height
+  // sizing contract.
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${scriptSrc}; connect-src 'none'; img-src data:; media-src data:; font-src data:; style-src 'unsafe-inline'"><style>html,body{margin:0;padding:0}</style></head><body><div id="cpt-root"></div><script data-game-id="${safeGameId}">${runtimeJs}</script>${gameScriptTag}</body></html>`;
 }

@@ -123,6 +123,16 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         host.style.width = `${pxWidth}px`;
         frame.style.width = '100%';
         iframeSlot.dataset.fill = 'true';
+      } else {
+        // width="auto": subSimple's width:'full' branch above set
+        // host.style.width='100%' to make its brand strip span. Clear
+        // that so the :host{display:inline-block} shadow rule takes
+        // effect and the outer host shrinks to the inline game-frame
+        // content (which is width:fit-content). Otherwise the host
+        // stretches to fill any block/flex parent while the iframe
+        // sits at the manifest preferred size, leaving a visible gap.
+        host.style.display = '';
+        host.style.width = '';
       }
       if (pxHeight !== null) {
         host.style.display ||= 'block';
@@ -374,14 +384,18 @@ function ensureGameStyles(root: ShadowRoot): void {
   gameStylesInjected.add(root);
   const style = document.createElement('style');
   style.textContent = [
-    // Host defaults to inline-block so width="auto" shrinks to the inner
-    // game-frame (which is width:fit-content). Without this, a parent that
-    // stretches block children (flex column with align-items:stretch, grid
-    // cell) would balloon the host while the inner frame stayed compact,
-    // leaving a gap between the iframe and the host edges. Customer
-    // overrides (width="full" or pixel width) still set display:block at
-    // mount time.
-    ':host{display:inline-block}',
+    // Host defaults to shrink-to-content so width="auto" matches the
+    // inner game-frame's intrinsic width. Without this, a parent that
+    // stretches block children (flex column with align-items:stretch,
+    // grid cell, plain block layout) would balloon the host while the
+    // inner frame stayed compact, leaving a gap between the iframe and
+    // the host edges. width:fit-content opts out of cross-axis stretch
+    // in flex containers (inline-block alone doesn't — flex items get
+    // computed display:block-equivalent regardless of source). Customer
+    // overrides (width="full" or pixel width) still set display:block +
+    // an explicit width at mount time, which wins by inline-style
+    // specificity.
+    ':host{display:inline-block;width:fit-content}',
     // --- inline frame ---
     // One unified bordered card containing the iframe + a brand strip below.
     // The simple widget inside the badge slot has its own border/radius/bg
