@@ -112,9 +112,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      indicator = isInteractive
-        ? createCheckboxIndicator(onPointer, onKey)
-        : createShieldIndicator();
+      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey });
 
       label = document.createElement('span');
       label.setAttribute('part', 'simple-checkbox-label');
@@ -190,84 +188,34 @@ const STATE_LABEL: Record<PresentationState, string> = {
   error: 'Failed',
 };
 
-// ---------------- indicator builders ----------------
-
-function createCheckboxIndicator(
-  onPointer: () => void,
-  onKey: (e: KeyboardEvent) => void,
-): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
-  const box = document.createElement('div');
-  box.setAttribute('part', 'simple-checkbox-box');
-  box.style.cssText = 'border:2px solid #6e7681;border-radius:0.25rem;background:#fff;color:#fff';
-  box.tabIndex = 0;
-  box.setAttribute('role', 'checkbox');
-  box.setAttribute('aria-checked', 'false');
-  box.setAttribute('aria-label', 'Verify you are human');
-  box.addEventListener('click', onPointer);
-  box.addEventListener('keydown', onKey);
-
-  return {
-    el: box,
-    dispose() {
-      box.removeEventListener('click', onPointer);
-      box.removeEventListener('keydown', onKey);
-    },
-    setState(state: PresentationState): void {
-      switch (state) {
-        case 'idle':
-          box.textContent = '';
-          box.style.background = '#fff';
-          box.style.borderColor = '#6e7681';
-          box.style.borderRadius = '0.25rem';
-          box.style.borderTopColor = '#6e7681';
-          box.style.animation = '';
-          box.style.color = '#fff';
-          box.setAttribute('aria-checked', 'false');
-          break;
-        case 'verifying':
-          box.textContent = '';
-          box.style.background = '#fff';
-          box.style.borderColor = '#2F6640';
-          box.style.borderTopColor = 'transparent';
-          box.style.borderRadius = '50%';
-          box.style.animation = 'caputchin-spin 0.8s linear infinite';
-          box.setAttribute('aria-checked', 'mixed');
-          break;
-        case 'verified':
-          box.style.animation = '';
-          box.style.background = '#2F6640';
-          box.style.borderColor = '#2F6640';
-          box.style.borderRadius = '0.25rem';
-          box.style.borderTopColor = '#2F6640';
-          box.textContent = '✓';
-          box.setAttribute('aria-checked', 'true');
-          break;
-        case 'error':
-          box.style.animation = '';
-          box.style.background = '#fff';
-          box.style.borderColor = '#c2410c';
-          box.style.borderRadius = '0.25rem';
-          box.style.borderTopColor = '#c2410c';
-          box.style.color = '#c2410c';
-          box.textContent = '!';
-          box.setAttribute('aria-checked', 'false');
-          break;
-      }
-    },
-  };
-}
+// ---------------- shield indicator ----------------
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 // Shield path tuned to fill the viewBox (1–23 vertical, 2–22 horizontal)
 // so the rendered shield reads as a glyph, not a small mark on a big canvas.
 const SHIELD_PATH = 'M12 1 L22 4 V12 C22 18 17.5 22.5 12 23.5 C6.5 22.5 2 18 2 12 V4 Z';
 
-function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
+function createShieldIndicator(input: {
+  interactive: boolean;
+  onPointer: () => void;
+  onKey: (e: KeyboardEvent) => void;
+}): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
+  const { interactive, onPointer, onKey } = input;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('part', 'simple-shield-box');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Caputchin verification status');
+  if (interactive) {
+    svg.setAttribute('data-interactive', '');
+    svg.setAttribute('role', 'checkbox');
+    svg.setAttribute('aria-checked', 'false');
+    svg.setAttribute('aria-label', 'Verify you are human');
+    (svg as unknown as SVGSVGElement).tabIndex = 0;
+    svg.addEventListener('click', onPointer);
+    svg.addEventListener('keydown', onKey);
+  } else {
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Caputchin verification status');
+  }
 
   const shield = document.createElementNS(SVG_NS, 'path');
   shield.setAttribute('d', SHIELD_PATH);
@@ -289,8 +237,9 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
   spinner.setAttribute('opacity', '0');
   svg.appendChild(spinner);
 
-  // Glyph overlay (✓ for verified, ! for error). Hidden in idle / verifying.
-  // Font 16 of 24 viewBox = ~67% of shield height; sits centered.
+  // Glyph overlay. Idle (interactive) = chevron `›` hinting tap. Idle
+  // (passive) = empty. Verifying = empty (spinner takes over). Verified = ✓.
+  // Error = !. Font 16 of 24 viewBox = ~67% of shield height; sits centered.
   const glyph = document.createElementNS(SVG_NS, 'text');
   glyph.setAttribute('x', '12');
   glyph.setAttribute('y', '17');
@@ -303,29 +252,51 @@ function createShieldIndicator(): { el: HTMLElement; setState: (s: PresentationS
 
   return {
     el: svg as unknown as HTMLElement,
-    dispose() { /* no listeners */ },
+    dispose() {
+      if (interactive) {
+        svg.removeEventListener('click', onPointer);
+        svg.removeEventListener('keydown', onKey);
+      }
+    },
     setState(state: PresentationState): void {
       glyph.textContent = '';
       spinner.setAttribute('opacity', '0');
+      svg.removeAttribute('data-state');
+      svg.setAttribute('data-state', state);
       switch (state) {
         case 'idle':
-          shield.setAttribute('stroke', '#6e7681');
+          // Interactive idle: gray-stroke shield with chevron + breathing pulse
+          // (driven by CSS via [data-state="idle"][data-interactive]).
+          // Passive idle: same shield, no chevron, no pulse.
+          shield.setAttribute('stroke', interactive ? '#2F6640' : '#6e7681');
           shield.setAttribute('fill', 'transparent');
+          if (interactive) {
+            // Chevron hint inside the shield — universal "click me" cue.
+            glyph.textContent = '›';
+            // Chevron fill matches the stroke since shield is unfilled.
+            glyph.setAttribute('fill', '#2F6640');
+          }
+          if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
         case 'verifying':
           shield.setAttribute('stroke', '#2F6640');
           shield.setAttribute('fill', 'transparent');
           spinner.setAttribute('opacity', '1');
+          if (interactive) svg.setAttribute('aria-checked', 'mixed');
           break;
         case 'verified':
           shield.setAttribute('stroke', '#2F6640');
           shield.setAttribute('fill', '#2F6640');
           glyph.textContent = '✓';
+          glyph.setAttribute('fill', '#fff');
+          if (interactive) svg.setAttribute('aria-checked', 'true');
           break;
         case 'error':
           shield.setAttribute('stroke', '#c2410c');
           shield.setAttribute('fill', '#c2410c');
           glyph.textContent = '!';
+          glyph.setAttribute('fill', '#fff');
+          if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
       }
     },
@@ -341,14 +312,26 @@ function ensureStyles(root: ShadowRoot): void {
   const style = document.createElement('style');
   style.textContent = [
     '@keyframes caputchin-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}',
+    // Subtle breathing pulse for the interactive idle shield — signals "tap me"
+    // alongside the chevron hint without being noisy.
+    '@keyframes caputchin-shield-pulse{0%,100%{opacity:1}50%{opacity:0.6}}',
     // Spinner arc inside the shield: rotates around the shield's visual center.
     // transform-origin set in viewBox user units (matches cx/cy of the circle).
     '[part="simple-shield-spinner"]{transform-origin:12px 13px;animation:caputchin-spin 0.8s linear infinite}',
 
-    // --- checkbox glyph: static sizing/layout (state toggles live in JS) ---
-    '[part="simple-checkbox-box"]{width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto;cursor:pointer}',
-    // --- shield SVG: deliberately larger than the checkbox so the glyph reads at a glance ---
-    '[part="simple-shield-box"]{width:2rem;height:2rem;flex:0 0 auto;display:block}',
+    // --- shield SVG: only indicator on this widget; sized to read at a glance ---
+    '[part="simple-shield-box"]{width:2rem;height:2rem;flex:0 0 auto;display:block;outline:none}',
+    '[part="simple-shield-box"][data-interactive]{cursor:pointer;transition:transform 120ms ease,opacity 120ms ease}',
+    '[part="simple-shield-box"][data-interactive][data-state="idle"]{animation:caputchin-shield-pulse 1.6s ease-in-out infinite}',
+    // Hover/focus lifts the shield slightly and pauses the pulse so the
+    // affordance reads as "your move now".
+    '[part="simple-shield-box"][data-interactive]:hover,[part="simple-shield-box"][data-interactive]:focus-visible{transform:scale(1.06);animation-play-state:paused}',
+    '[part="simple-shield-box"][data-interactive]:focus-visible{outline:2px solid #2F6640;outline-offset:2px;border-radius:0.25rem}',
+    // Reduced motion: kill the pulse + scale lift; keep cursor + focus ring.
+    '@media (prefers-reduced-motion:reduce){',
+      '[part="simple-shield-box"][data-interactive]{animation:none !important;transition:none !important}',
+      '[part="simple-shield-box"][data-interactive]:hover,[part="simple-shield-box"][data-interactive]:focus-visible{transform:none}',
+    '}',
     // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
     '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:left}',
 
@@ -365,9 +348,6 @@ function ensureStyles(root: ShadowRoot): void {
 
     // --- size="compact": single-row inline strip, dialed down ---
     '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
-    '[data-size="compact"] [part="simple-checkbox-box"]{width:0.85rem;height:0.85rem;font-size:0.65rem;border-width:1px;border-radius:0.2rem}',
-    // Matched to compact checkbox height so the widget's overall height
-    // doesn't shift between trigger=click (checkbox) and other triggers (shield).
     '[data-size="compact"] [part="simple-shield-box"]{width:1.1rem;height:1.1rem}',
     '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap;min-width:3.6rem}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
@@ -379,7 +359,6 @@ function ensureStyles(root: ShadowRoot): void {
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',
       '[part="simple-checkbox"]:not([data-size="compact"]){padding:0.625rem 0.75rem;gap:0.5rem}',
-      '[part="simple-checkbox-box"]:not([data-size="compact"] *){width:1.75rem;height:1.75rem}',
     '}',
   ].join('');
   root.appendChild(style);
