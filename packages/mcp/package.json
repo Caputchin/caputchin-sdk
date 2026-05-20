@@ -1,7 +1,7 @@
 {
   "name": "@caputchin/mcp",
   "version": "1.0.0",
-  "description": "MCP server for managing Caputchin resources via AI agents",
+  "description": "stdio MCP adapter for Caputchin: proxies the canonical /api/mcp tool catalogue and ships offline dev-onboarding tools.",
   "keywords": [
     "caputchin",
     "mcp",
