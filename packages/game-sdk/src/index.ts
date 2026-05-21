@@ -55,7 +55,7 @@ export type SkinSchemaEntry =
  *  Underscore-prefixed keys are metadata; every other key is a typed value
  *  (color string or asset URL/path). `_mode` defaults to `light` when
  *  absent. `_extends` may target a preset name OR a mode shortcut (`light` /
- *  `dark`) — the mode form resolves to that mode's `_default:true` preset. */
+ *  `dark`) - the mode form resolves to that mode's `_default:true` preset. */
 export interface SkinPreset {
   _mode?: 'light' | 'dark';
   _default?: boolean;

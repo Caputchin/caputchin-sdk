@@ -26,13 +26,22 @@ export interface ShellPalette {
   modal_backdrop: string;
   fullscreen_backdrop: string;
   close_btn_bg: string;
+  /** Color of the compact-mode separator dot in the brand strip. Lighter
+   *  than `text_muted` so the dot reads as decorative punctuation, not as
+   *  active text. */
+  separator: string;
   brand_text: string;
   brand_text_hover: string;
-  /** Brand mark asset. Resolved as an `image`-typed skin value — typically a
+  /** Brand mark asset. Resolved as an `image`-typed skin value - typically a
    *  `data:image/svg+xml;base64,…` URI in the bundled presets so the widget
    *  bundle stays self-contained. Customer-curated paid skins can swap to
    *  any allowed image URL via the same key. */
   brand_logo: string;
+  // Index signature lets the palette flow straight into the
+  // `Record<string, string>` writer in `css-vars.ts` without an `as unknown`
+  // bounce, and accommodates customer-curated paid skins that add their own
+  // keys. Named keys above still drive autocomplete + miss detection.
+  [key: string]: string;
 }
 
 export interface WidgetShellSkin {
@@ -66,6 +75,7 @@ const HARDCODED_LIGHT: ShellPalette = {
   modal_backdrop: 'rgba(0,0,0,0.45)',
   fullscreen_backdrop: 'rgba(0,0,0,0.8)',
   close_btn_bg: 'rgba(255,255,255,0.9)',
+  separator: '#c0c0c0',
   brand_text: '#2F6640',
   brand_text_hover: '#1f4a2c',
   brand_logo: brandLogoLight,
@@ -106,13 +116,14 @@ export function resolveWidgetShellSkin(
     : (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
         : false);
-  const { resolved, issues } = resolveSkin(
-    PRESETS,
-    SCHEMA,
-    attrValue ?? 'auto',
-    dark,
-    { rejectInlineJson: true, baseUrl: null },
-  );
+  const { resolved, issues } = resolveSkin({
+    presets: PRESETS,
+    schema: SCHEMA,
+    attrValue: attrValue ?? 'auto',
+    prefersDark: dark,
+    rejectInlineJson: true,
+    baseUrl: null,
+  });
   const mode: 'light' | 'dark' = resolved?._mode ?? 'light';
   return {
     mode,
