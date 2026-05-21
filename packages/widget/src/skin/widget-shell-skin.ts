@@ -57,29 +57,16 @@ const PRESETS = (widgetManifest.skins?.presets ?? {}) as Record<string, SkinPres
 const SCHEMA = (widgetManifest.skins?.schema ?? null) as Record<string, SkinSchemaEntry> | null;
 
 /** Last-ditch palette if the bundled manifest goes missing somehow.
- *  Mirrors the `light` preset. Should never be hit in production; exists
- *  so the type system can express a non-null `palette` even on resolver
- *  failure. */
+ *  Derived from the JSON's `light` preset at module init so the two
+ *  sources can't drift: editing caputchin.json automatically refreshes
+ *  the fallback. Should never be hit in production; exists so the type
+ *  system can express a non-null `palette` even on resolver failure. */
 const HARDCODED_LIGHT: ShellPalette = {
-  primary: '#2F6640',
-  primary_hover: '#1f4a2c',
-  surface_bg: '#ffffff',
-  text_primary: '#1a1917',
-  text_label: '#3d2a5e',
-  text_muted: '#6e7681',
-  text_passive: '#b8bec5',
-  border: '#d0d7de',
-  glyph: '#ffffff',
-  error: '#c2410c',
-  shadow: 'rgba(0,0,0,0.25)',
-  modal_backdrop: 'rgba(0,0,0,0.45)',
-  fullscreen_backdrop: 'rgba(0,0,0,0.8)',
-  close_btn_bg: 'rgba(255,255,255,0.9)',
-  separator: '#c0c0c0',
-  brand_text: '#2F6640',
-  brand_text_hover: '#1f4a2c',
+  ...((PRESETS['light'] ?? {}) as Record<string, string>),
+  // brand_logo isn't authored in caputchin.json (the JSON would balloon
+  // ~30KB per logo if it were); it comes from the tsup-inlined SVG above.
   brand_logo: brandLogoLight,
-};
+} as ShellPalette;
 
 const BRAND_LOGO_BY_MODE: Readonly<Record<'light' | 'dark', string>> = {
   light: brandLogoLight,

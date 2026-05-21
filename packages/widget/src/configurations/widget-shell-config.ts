@@ -20,12 +20,15 @@ export interface WidgetShellConfig {
 const PRESETS = (widgetManifest.configurations?.presets ?? {}) as Record<string, ConfigPreset>;
 const SCHEMA = (widgetManifest.configurations?.schema ?? null) as Record<string, ConfigSchemaEntry> | null;
 
-/** Last-ditch values if the bundled manifest goes missing somehow. Mirrors
- *  the `default` preset. Should never be hit in production; exists so the
- *  type system can express a non-null `values` even on resolver failure. */
+/** Last-ditch values if the bundled manifest goes missing somehow. Derived
+ *  from the JSON's `default` preset at module init so the two sources
+ *  can't drift: editing caputchin.json automatically refreshes the
+ *  fallback. Should never be hit in production; exists so the type system
+ *  can express a non-null `values` even on resolver failure. */
+const DEFAULT_PRESET = (PRESETS['default'] ?? {}) as Record<string, unknown>;
 const HARDCODED_DEFAULT: ShellConfig = {
-  home_link: 'https://caputchin.com',
-  legal_link: 'https://caputchin.com/legal',
+  home_link: typeof DEFAULT_PRESET['home_link'] === 'string' ? DEFAULT_PRESET['home_link'] : 'https://caputchin.com',
+  legal_link: typeof DEFAULT_PRESET['legal_link'] === 'string' ? DEFAULT_PRESET['legal_link'] : 'https://caputchin.com/legal',
 };
 
 function toShellConfig(resolved: ResolvedConfig | null): ShellConfig {

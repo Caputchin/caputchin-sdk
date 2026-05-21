@@ -69,8 +69,22 @@ function buildSchema(entry: NormalizedSchemaEntry): AnySchema {
     case 'link':
       // `v.url()` parses via the browser URL constructor; the scheme regex
       // rejects javascript:, data:, file:, and anything else outside the
-      // http/https allow-list structurally.
-      return v.pipe(v.string(), v.url('expected an http or https URL'), v.regex(/^https?:/i, 'expected an http or https URL'));
+      // http/https allow-list structurally. The credentials check rejects
+      // `https://user:pass@host` style URLs - userinfo in customer-supplied
+      // links is almost always a leak (auth credentials embedded in a
+      // shared brand link), so reject by default and force authors to use
+      // the safe form.
+      return v.pipe(
+        v.string(),
+        v.url('expected an http or https URL'),
+        v.regex(/^https?:/i, 'expected an http or https URL'),
+        v.check((value) => {
+          try {
+            const u = new URL(value);
+            return u.username === '' && u.password === '';
+          } catch { return false; }
+        }, 'URL must not embed credentials (user:pass@)'),
+      );
     case 'boolean':
       return v.boolean();
     case 'number':

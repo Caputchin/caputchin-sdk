@@ -63,6 +63,14 @@ describe('validateConfigValue — link', () => {
   it('rejects malformed URL', () => {
     expect(validateConfigValue({ type: 'link' }, 'not a url').ok).toBe(false);
   });
+  it('rejects URL with embedded user credentials', () => {
+    const v = validateConfigValue({ type: 'link' }, 'https://user:pass@example.com/x');
+    expect(v.ok).toBe(false);
+    if (!v.ok) expect(v.reason).toContain('credentials');
+  });
+  it('rejects URL with just a username (no password)', () => {
+    expect(validateConfigValue({ type: 'link' }, 'https://user@example.com/x').ok).toBe(false);
+  });
 });
 
 describe('validateConfigValue — boolean', () => {
