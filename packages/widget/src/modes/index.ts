@@ -1,6 +1,7 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetShell } from '../lang/widget-shell.js';
 import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
+import type { WidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -43,6 +44,12 @@ export interface PresentationFactoryInput {
    *  to most surfaces; SVG presentation attributes (shield stroke / fill)
    *  consume the palette directly because CSS vars don't apply there. */
   skin: WidgetShellSkin;
+  /** Pre-resolved widget shell configuration (brand strip link targets).
+   *  Owner element resolves once from its `config` attribute (widget) or
+   *  uses the bundled default (game). The brand strip reads
+   *  `shellConfig.values.home_link` + `legal_link` to set `href` on the
+   *  anchor tags. */
+  shellConfig: WidgetShellConfig;
 }
 
 /**

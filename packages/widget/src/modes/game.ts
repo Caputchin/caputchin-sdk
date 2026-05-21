@@ -2,6 +2,7 @@ import type { Presentation, PresentationState } from './index.js';
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetShell } from '../lang/widget-shell.js';
 import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
+import type { WidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createSimplePresentation } from './simple.js';
 import { emitDialogShown, emitDialogHidden } from '../verify/events.js';
 
@@ -57,6 +58,12 @@ export interface GamePresentationInput {
    *  host; this struct exists so the simple presentation can read raw
    *  palette values for its SVG shield strokes/fills. */
   skin: WidgetShellSkin;
+  /** Pre-resolved widget shell configuration (brand link targets).
+   *  Threaded down so the embedded simple presentation in both the inline
+   *  badge slot and the modal/fullscreen entry checkbox shares the same
+   *  link hrefs. The game's `config` attribute does NOT propagate here;
+   *  this struct is widget-shell scoped only. */
+  shellConfig: WidgetShellConfig;
 }
 
 export function createGamePresentation(input: GamePresentationInput): GamePresentation {
@@ -67,7 +74,7 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, width, height, manual, shell, skin } = input;
+  const { host, root: renderRoot, width, height, manual, shell, skin, shellConfig } = input;
   const isFullWidth = width === 'full';
   const isFullHeight = height === 'full';
   const pxWidth = typeof width === 'number' ? width : null;
@@ -113,6 +120,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         root: badgeSlot as unknown as ShadowRoot,
         trigger: 'auto' as WidgetTrigger,
         skin,
+        shellConfig,
         // Full-width so the strip spans the game-frame edge to edge, flush
         // with the iframe panel above. Brand still hugs the trailing edge
         // via the margin-inline-start:auto rule in simple.ts (flips under
@@ -229,7 +237,7 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout, manual, width, height, shell, skin } = input;
+  const { host, root: renderRoot, layout, manual, width, height, shell, skin, shellConfig } = input;
   let container: HTMLDivElement | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
@@ -334,6 +342,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         size: 'normal' as WidgetSize,
         shell,
         skin,
+        shellConfig,
       });
       subSimple.mount();
       // Pin checkboxSlot to the customer dims so the simple presentation's

@@ -207,7 +207,7 @@ describe('IframeHost', () => {
     host.kickoff(1, lang);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang, skin: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang, skin: null, config: null }),
     );
 
     host.dispose();
@@ -221,7 +221,21 @@ describe('IframeHost', () => {
     host.kickoff(1, null, skin);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin, config: null }),
+    );
+
+    host.dispose();
+  });
+
+  it('kickoff(seq, lang, skin, config) forwards the resolved config payload', () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const config = { show_high_score: true, difficulty: 'hard' };
+    host.kickoff(1, null, null, config);
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin: null, config }),
     );
 
     host.dispose();

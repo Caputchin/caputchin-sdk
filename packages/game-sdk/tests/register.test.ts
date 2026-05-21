@@ -163,7 +163,7 @@ describe('register()', () => {
 
     const container = document.createElement('div');
     const bridge = makeBridge();
-    const ctx: GameContext = { lang: null, skin: null };
+    const ctx: GameContext = { lang: null, skin: null, config: null };
 
     expect(typeof capGlobal().games['with-cleanup']!(container, bridge, ctx)).toBe('function');
     expect(capGlobal().games['void-factory']!(container, bridge, ctx)).toBeUndefined();
@@ -176,10 +176,32 @@ describe('register()', () => {
     const ctx: GameContext = {
       lang: { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' },
       skin: { _mode: 'dark', main_color: '#0F1810' },
+      config: { show_high_score: true, max_level: 4, policy_link: 'https://example.com/policy' },
     };
     const container = document.createElement('div');
     const bridge = makeBridge();
     capGlobal().games['ctx-game']!(container, bridge, ctx);
     expect(factory).toHaveBeenCalledWith(container, bridge, ctx);
+  });
+
+  it('round-trips configurations.presets + configurations.schema intact on the stored manifest', () => {
+    setCapGlobal({ games: {}, manifests: {} });
+    const manifest = makeManifest({
+      id: 'cfg-game',
+      configurations: {
+        schema: {
+          show_high_score: 'boolean',
+          difficulty: ['easy', 'medium', 'hard'],
+          peek_seconds: { type: 'range', min: 0.5, max: 5, step: 0.5 },
+          policy_link: { type: 'link', name: 'Privacy policy', description: 'External link' },
+        },
+        presets: {
+          default: { _default: true, show_high_score: true, difficulty: 'medium' },
+          hard: { _extends: 'default', difficulty: 'hard' },
+        },
+      },
+    });
+    register(manifest, makeFactory());
+    expect(capGlobal().manifests['cfg-game'].configurations).toEqual(manifest.configurations);
   });
 });
