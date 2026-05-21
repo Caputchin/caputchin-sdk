@@ -108,6 +108,11 @@
         "name": "Passive text",
         "description": "Shield outline in passive (auto / form-submit) idle state."
       },
+      "separator": {
+        "type": "color",
+        "name": "Compact separator",
+        "description": "Color of the dot separator (·) injected between the brand wordmark and tag in compact-mode brand strips. Sits lighter than text_muted so the dot reads as decoration, not active text."
+      },
       "border": {
         "type": "color",
         "name": "Border",
@@ -178,7 +183,8 @@
         "fullscreen_backdrop": "rgba(0,0,0,0.8)",
         "close_btn_bg": "rgba(255,255,255,0.9)",
         "brand_text": "#2F6640",
-        "brand_text_hover": "#1f4a2c"
+        "brand_text_hover": "#1f4a2c",
+        "separator": "#c0c0c0"
       },
       "dark": {
         "_mode": "dark",
@@ -198,7 +204,8 @@
         "fullscreen_backdrop": "rgba(0,0,0,0.85)",
         "close_btn_bg": "rgba(36,53,38,0.92)",
         "brand_text": "#F7F5F2",
-        "brand_text_hover": "#9ACE9B"
+        "brand_text_hover": "#9ACE9B",
+        "separator": "#3A7D4F"
       }
     }
   }

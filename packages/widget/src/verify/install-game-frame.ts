@@ -88,13 +88,14 @@ function resolveSkinForGame(
   const prefersDark = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const { resolved, issues } = resolveSkin(
-    skinBlock.presets,
-    skinBlock.schema ?? null,
-    config.skin,
+  const { resolved, issues } = resolveSkin({
+    presets: skinBlock.presets,
+    schema: skinBlock.schema ?? null,
+    attrValue: config.skin,
     prefersDark,
-    { baseUrl, rejectInlineJson: false },
-  );
+    baseUrl,
+    rejectInlineJson: false,
+  });
   for (const message of issues) {
     fireError(el, 'invalid-config', message);
   }

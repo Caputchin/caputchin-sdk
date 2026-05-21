@@ -3,7 +3,7 @@
  *  so the modes' template literals can `var(--cpt-skin-primary)` etc.
  *
  *  Idempotent: re-calling overwrites existing values. Variables are set on
- *  the shadow host's :host equivalent — for ShadowRoot we set on the root's
+ *  the shadow host's :host equivalent - for ShadowRoot we set on the root's
  *  host element so descendant CSS rules in the shadow tree resolve against
  *  `:host`. SVG presentation attributes (stroke / fill) don't read CSS vars
  *  at all and must be set with the raw color string by the caller. */

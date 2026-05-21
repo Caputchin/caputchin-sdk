@@ -18,7 +18,7 @@ const DATA_MIME_ALLOW: Record<Exclude<SkinValueType, 'color'>, ReadonlySet<strin
 
 /** Color regex: matches hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) and the
  *  two functional CSS forms `rgb(...)` and `rgba(...)`. Deliberately narrow
- *  — no `hsl()`, no `oklch()`, no named colors. */
+ *  - no `hsl()`, no `oklch()`, no named colors. */
 const COLOR_REGEX = /^(#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|rgb\(\s*[^)]+\)|rgba\(\s*[^)]+\))$/;
 
 /** Asset URL scheme allow-list. Everything else (notably `javascript:`,

@@ -19,17 +19,33 @@ export interface ResolveSkinResult {
   issues: string[];
 }
 
-export interface ResolveSkinOptions {
+/** Single options object for `resolveSkin`. Fewer positional arguments
+ *  means callers can't accidentally swap `schema` and `attrValue` (both
+ *  string-keyed at the type system level) or `prefersDark` and a missing
+ *  boolean. */
+export interface ResolveSkinInput {
+  /** Manifest presets to resolve against. `null` / `undefined` / empty
+   *  short-circuits to `{ resolved: null, issues: [] }`. */
+  presets: PresetMap | null | undefined;
+  /** Optional schema block from the manifest. Drives per-value type
+   *  validation (color regex + per-type extension / MIME allow-list).
+   *  Absent ⇒ values pass through unvalidated. */
+  schema?: SchemaMap | null;
+  /** Raw `skin` attribute value from the element. `null` / empty / `'auto'`
+   *  cascade through the auto-resolver. */
+  attrValue?: string | null;
+  /** System `prefers-color-scheme: dark` reading. Element layer queries
+   *  `matchMedia` once and passes the bool so the resolver stays pure. */
+  prefersDark: boolean;
   /** Reject inline-JSON attribute values. The widget shell layer
    *  (`<caputchin-widget skin="…">`) sets this so authors are limited to
    *  mode shortcuts / preset names; inline JSON implies per-key overrides
    *  the bundled shell doesn't support. Detected inline JSON under this
    *  flag emits an issue and cascades to auto. */
   rejectInlineJson?: boolean;
-  /** Bundle base URL for resolving bundle-relative asset paths
-   *  (`/assets/leaf.png` → `<baseUrl>/assets/leaf.png`). `null` leaves
-   *  relative paths verbatim — the browser resolves them against the
-   *  document origin when consumed. */
+  /** Bundle base URL for resolving bundle-relative asset paths. `null`
+   *  leaves relative paths verbatim - the browser resolves them against
+   *  the document origin when consumed. */
   baseUrl?: string | null;
 }
 
@@ -136,7 +152,7 @@ function flattenChain(
         }
         merged[key] = declaredType === 'color' ? raw : resolveAssetUrl(raw, baseUrl);
       } else {
-        // No schema entry — pass through unvalidated. Authors who skip the
+        // No schema entry - pass through unvalidated. Authors who skip the
         // schema block opt out of type checking entirely.
         merged[key] = raw;
       }
@@ -201,17 +217,12 @@ function tryParseInlineJson(attrValue: string, issues: string[]): SkinPreset | n
  *  bundle-relative asset path resolution. Returns the resolved skin
  *  object plus a list of human-readable issues the element layer
  *  translates into `invalid-config` events. */
-export function resolveSkin(
-  presets: PresetMap | null | undefined,
-  schema: SchemaMap | null | undefined,
-  attrValue: string | null | undefined,
-  prefersDark: boolean,
-  options: ResolveSkinOptions = {},
-): ResolveSkinResult {
+export function resolveSkin(input: ResolveSkinInput): ResolveSkinResult {
+  const { presets, schema, attrValue, prefersDark, rejectInlineJson, baseUrl: baseUrlOption } = input;
   const issues: string[] = [];
   const presetsMap = presets ?? {};
   const schemaMap = schema ?? null;
-  const baseUrl = options.baseUrl ?? null;
+  const baseUrl = baseUrlOption ?? null;
   const presetNames = Object.keys(presetsMap);
   if (presetNames.length === 0) {
     return { resolved: null, issues };
@@ -221,7 +232,7 @@ export function resolveSkin(
 
   // Inline JSON path.
   if (trimmed.startsWith('{')) {
-    if (options.rejectInlineJson) {
+    if (rejectInlineJson) {
       issues.push('skin attribute on <caputchin-widget> does not accept inline JSON; pass a mode shortcut or preset name; falling through to auto');
       return { resolved: resolveAuto(presetsMap, schemaMap, baseUrl, prefersDark, issues), issues };
     }
@@ -239,7 +250,7 @@ export function resolveSkin(
       // surface an issue and leave the base value in place.
       //
       // When inline declares its own `_mode`, that mode drives the base
-      // selection too — otherwise an inline `{_mode:'dark', primary:'#abc'}`
+      // selection too - otherwise an inline `{_mode:'dark', primary:'#abc'}`
       // on a system in light mode would label the result `dark` while all
       // surrounding colors stayed light (mismatched payload). Inline
       // `_mode` is the customer's explicit pick; respect it through the

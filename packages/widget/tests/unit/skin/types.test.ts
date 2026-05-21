@@ -58,6 +58,11 @@ describe('validateSkinValue — image', () => {
   it('preserves query string and hash on URL during ext check', () => {
     expect(validateSkinValue('image', 'https://x.com/leaf.png?v=2#frag').ok).toBe(true);
   });
+  it('accepts uppercase extensions (case-insensitive)', () => {
+    for (const ext of ['PNG', 'JPG', 'JPEG', 'WebP', 'SVG', 'GIF']) {
+      expect(validateSkinValue('image', `https://example.com/x.${ext}`).ok).toBe(true);
+    }
+  });
   it('rejects .bmp', () => {
     const v = validateSkinValue('image', 'https://x.com/x.bmp');
     expect(v.ok).toBe(false);

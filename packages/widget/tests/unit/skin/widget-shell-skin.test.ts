@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { resolveWidgetShellSkin } from '../../../src/skin/widget-shell-skin.js';
+import widgetManifest from '../../../caputchin.json';
+
+const LIGHT_PRESET = widgetManifest.skins.presets.light as Record<string, string>;
 
 describe('resolveWidgetShellSkin', () => {
   it('attr=null + prefersDark=false → light palette', () => {
@@ -61,5 +64,18 @@ describe('resolveWidgetShellSkin', () => {
     expect(r.mode).toBe('light');
     // primary stays at the light preset's value, NOT the inline override
     expect(r.palette.primary).toBe('#2F6640');
+  });
+
+  // S1 drift guard: the in-code HARDCODED_LIGHT fallback in widget-shell-skin
+  // mirrors the bundled JSON light preset. Resolving with attr='light' returns
+  // the JSON-derived palette; this assertion catches drift between the two
+  // sources so future maintainers can't silently desync the safety net.
+  it('every color key in the bundled light JSON preset matches the resolved light palette', () => {
+    const r = resolveWidgetShellSkin('light', false);
+    for (const [key, jsonValue] of Object.entries(LIGHT_PRESET)) {
+      if (key.startsWith('_')) continue;
+      if (key === 'brand_logo') continue; // not in JSON; sourced from build-time SVG import
+      expect(r.palette[key], `light preset key "${key}"`).toBe(jsonValue);
+    }
   });
 });

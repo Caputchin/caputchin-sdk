@@ -354,7 +354,7 @@ function ensureStyles(root: ShadowRoot): void {
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
     '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
     '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.5rem}',
-    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:var(--cpt-skin-text_muted);margin-inline-start:0.1rem}',
+    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:var(--cpt-skin-separator);margin-inline-start:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',

@@ -48,7 +48,7 @@ export class CaputchinWidget extends HTMLElement {
       fireError(this, 'invalid-config', message);
     }
     this.setAttribute('data-skin-mode', skin.mode);
-    applySkinVars(this, skin.palette as unknown as Record<string, string>);
+    applySkinVars(this, skin.palette);
 
     state.presentation = createPresentation(state.config.invisible, {
       host: this,
