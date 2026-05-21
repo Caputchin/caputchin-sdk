@@ -1,5 +1,6 @@
 import type { ResolvedSkin, SkinPreset, SkinSchemaEntry } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
+import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import { resolveSkin } from './resolver.js';
 // Brand SVGs are inlined as data URIs by tsup's dataurl loader at build
 // time so the bundle stays self-contained. Sources live as editable .svg
@@ -93,18 +94,24 @@ function toPalette(resolved: ResolvedSkin | null, mode: 'light' | 'dark'): Shell
  *  value (omitted/`"auto"` ⇒ system `prefers-color-scheme`). Inline JSON is
  *  rejected on `<caputchin-widget>` (per shell-attribute parity with
  *  `lang`); the game element pre-derives a mode hint from inline JSON and
- *  passes it as a bare string before reaching this resolver. */
+ *  passes it as a bare string before reaching this resolver.
+ *
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
+ *  ADR-0059), the override bank is injected atop the bundled bank before
+ *  resolution; collisions implicitly extend their bundled twin. */
 export function resolveWidgetShellSkin(
   attrValue?: string | null,
   prefersDark?: boolean,
+  overridePresets?: Record<string, SkinPreset> | null,
 ): WidgetShellSkin {
   const dark = typeof prefersDark === 'boolean'
     ? prefersDark
     : (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
         : false);
+  const merged = injectOverrideLayer(PRESETS, overridePresets);
   const { resolved, issues } = resolveSkin({
-    presets: PRESETS,
+    presets: merged,
     schema: SCHEMA,
     attrValue: attrValue ?? 'auto',
     prefersDark: dark,

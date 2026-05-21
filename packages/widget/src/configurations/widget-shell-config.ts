@@ -1,5 +1,6 @@
 import type { ConfigPreset, ConfigSchemaEntry, ResolvedConfig } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
+import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import { resolveConfig } from './resolver.js';
 
 /** Keys present in the widget's bundled configurations preset. Adding a new
@@ -41,10 +42,18 @@ function toShellConfig(resolved: ResolvedConfig | null): ShellConfig {
 
 /** Resolve the widget shell configuration. Accepts the customer's `config`
  *  attribute value (omitted/`"auto"` → bundled `default` preset). Inline
- *  JSON is rejected on `<caputchin-widget>` (parity with lang + skin). */
-export function resolveWidgetShellConfig(attrValue?: string | null): WidgetShellConfig {
+ *  JSON is rejected on `<caputchin-widget>` (parity with lang + skin).
+ *
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
+ *  ADR-0059), the override bank is injected atop the bundled bank before
+ *  resolution; collisions implicitly extend their bundled twin. */
+export function resolveWidgetShellConfig(
+  attrValue?: string | null,
+  overridePresets?: Record<string, ConfigPreset> | null,
+): WidgetShellConfig {
+  const merged = injectOverrideLayer(PRESETS, overridePresets);
   const { resolved, issues } = resolveConfig({
-    presets: PRESETS,
+    presets: merged,
     schema: SCHEMA,
     attrValue: attrValue ?? 'auto',
     rejectInlineJson: true,

@@ -13,6 +13,9 @@ import type { GameConfig } from '../config/game.js';
 import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
+import { fetchBootstrap } from '../bootstrap/client.js';
+import type { OverridesPerAxis } from '../bootstrap/types.js';
+import type { LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
 
 /**
  * `<caputchin-game>`; game host with optional cap verification.
@@ -47,37 +50,63 @@ export class CaputchinGame extends HTMLElement {
 
     state.config = inspection.config;
     const apiHost = __CAPUTCHIN_API_HOST__;
-    const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
-
-    const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
-    const isManual = state.config.trigger === 'manual';
-    const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
+    // Shadow attaches synchronously so the host keeps its layout box during
+    // the bootstrap wait. Empty shadow until bootstrap completes per ADR-0059.
+    this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
     // Warn (but keep widget running) if non-manual mode receives slotted
     // children; they'd never appear without a <slot>. Manual is the only
     // mode where customer DOM gets projected into the shell.
+    const isManual = state.config.trigger === 'manual';
     if (!isManual && this.childElementCount > 0) {
       fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
     }
 
-    // Resolve shell from the same `lang` attribute so the widget's own UI
-    // strings (Verify label, brand, close button) match the customer's
-    // locale choice. Inline JSON is valid on the game side but not on the
-    // shell side — so we don't pass the JSON through verbatim. Instead we
-    // pull TWO signals out of inline payloads:
-    //   1. A locale hint (`_iso` first, then `_extends`) used as the
-    //      shell's preset selector. Declaring `_iso: "ar"` for the game
-    //      implies the surrounding shell should also resolve to ar.
-    //   2. An explicit direction override (`_direction`). Always wins
-    //      over the resolved shell's direction. Useful for the case
-    //      `{ _direction: "rtl", ... }` — customer wants the shell to
-    //      flip RTL without picking a specific Arabic locale.
-    // Neither signal present → shell falls back to browser auto.
-    // Malformed JSON also falls back silently (the game-side resolveLanguage
-    // already emits a parse issue).
+    // Bundled cascade once for hint extraction (sitekey + game both feed
+    // the bootstrap call). If sitekey is absent (game-only path), skip
+    // bootstrap entirely — overrides are gated by sitekey/plan-tier and
+    // there's nothing to fetch.
     const rawLang = state.config.lang;
     const inlineSignals = rawLang ? deriveShellSignals(rawLang) : { hint: null, direction: null };
-    const baseShell = resolveWidgetShell(inlineSignals.hint);
+    const skinModeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
+    const hintShell = resolveWidgetShell(inlineSignals.hint);
+    const hintSkin = resolveWidgetShellSkin(skinModeHint);
+
+    if (state.config.sitekey === null) {
+      this.completeMount(apiHost, null, inlineSignals, skinModeHint);
+      return;
+    }
+
+    void fetchBootstrap({
+      apiHost,
+      sitekey: state.config.sitekey,
+      game: state.config.game ?? null,
+      langIso: hintShell.iso,
+      skinMode: hintSkin.mode,
+    }).then((bootstrap) => {
+      if (!this.state.connected || !this.state.config) return;
+      this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinModeHint);
+    });
+  }
+
+  private completeMount(
+    apiHost: string,
+    overrides: OverridesPerAxis | null,
+    inlineSignals: ShellSignals,
+    skinModeHint: string | null,
+  ): void {
+    const state = this.state;
+    if (!state.config) return;
+    const shadow = this.shadowRoot;
+    if (!shadow) return;
+
+    const langOverride = (overrides?.language?.presets ?? null) as Record<string, LanguagePreset> | null;
+    const skinOverride = (overrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
+    const isManual = state.config.trigger === 'manual';
+    const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
+    const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
+
+    const baseShell = resolveWidgetShell(inlineSignals.hint, undefined, langOverride);
     const shell = inlineSignals.direction
       ? { ...baseShell, direction: inlineSignals.direction }
       : baseShell;
@@ -86,28 +115,25 @@ export class CaputchinGame extends HTMLElement {
     }
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    // The shell consumes only `_mode` from the customer's `skin` attribute
-    // (parallel to how lang consumes only `_iso` + `_direction`). Inline
-    // JSON on the game side passes through to the game's own skin
-    // resolution downstream; here we just pull the mode hint so the
-    // widget shell itself flips light/dark consistently. Bare values
-    // (`light`/`dark`/`auto`/`<preset-name>`) pass through to the shell
-    // skin resolver verbatim.
-    const skinModeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
-    const skin = resolveWidgetShellSkin(skinModeHint);
+    const skin = resolveWidgetShellSkin(skinModeHint, undefined, skinOverride);
     for (const message of skin.issues) {
       fireError(this, 'invalid-config', message);
     }
     this.setAttribute('data-skin-mode', skin.mode);
     applySkinVars(this, skin.palette);
 
-    // Widget shell config (brand link targets) stays at the bundled default
-    // on the game element. The customer's `config` attribute on
-    // <caputchin-game> drives the GAME's configurations only — see
-    // install-game-frame for that resolution. There's no shared dimension
-    // between game configurations and widget shell configurations
-    // (configurations have no analog to skin's `_mode` cross-cutting key).
-    const shellConfig = resolveWidgetShellConfig(null);
+    // Widget shell config (brand link targets) on the game element always
+    // uses the bundled default. The customer's `config` attribute on
+    // `<caputchin-game>` drives the GAME's configurations only (see
+    // install-game-frame). There's no cross-cutting dimension between
+    // game configurations and widget shell configurations. Widget shell
+    // configurations CAN still be overridden via the bootstrap response's
+    // widget.overrides.configuration block — same as on `<caputchin-widget>`.
+    const widgetConfigOverride = (overrides?.configuration?.presets ?? null) as Parameters<typeof resolveWidgetShellConfig>[1];
+    const shellConfig = resolveWidgetShellConfig(null, widgetConfigOverride);
+    for (const message of shellConfig.issues) {
+      fireError(this, 'invalid-config', message);
+    }
 
     const gp = createGamePresentation({
       host: this,
