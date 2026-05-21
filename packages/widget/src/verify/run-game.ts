@@ -40,7 +40,7 @@ async function resolveGameUrl(
   let url: string | null = cfg.gameSrc;
   let integrity: string | null = null;
   if (gameId && !url) {
-    const resolution = await fetchMarketplaceResolution(gameId, apiHost);
+    const resolution = await fetchMarketplaceResolution(gameId, apiHost, cfg.sitekey);
     if (!resolution.ok) {
       fireError(el, 'game-load-failed', resolution.message, resolution.code);
       onError();
