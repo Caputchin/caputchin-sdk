@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Bridge, GameContext, GameFactory, GameManifest } from '../src/index';
-import { register } from '../src/index';
+import { register, DEFAULT_REGISTRY_KEY } from '../src/index';
 
 type CapGlobal = {
   games: Record<string, GameFactory>;
@@ -24,35 +24,66 @@ function makeFactory(): GameFactory {
 }
 
 function makeManifest(overrides: Partial<GameManifest> = {}): GameManifest {
-  return {
-    id: 'my-game',
-    version: '0.1.0',
-    ...overrides,
-  };
+  return { ...overrides };
+}
+
+function installDataGameIdScript(id: string): HTMLScriptElement {
+  const tag = document.createElement('script');
+  tag.setAttribute('data-game-id', id);
+  document.body.appendChild(tag);
+  return tag;
 }
 
 beforeEach(() => {
   setCapGlobal(undefined);
 });
 
+afterEach(() => {
+  document.querySelectorAll('script[data-game-id]').forEach((el) => el.remove());
+});
+
 describe('register()', () => {
-  it('writes factory to globalThis.Caputchin.games[id] keyed by manifest.id', () => {
+  it('keys by manifest.id when present (legacy manifest)', () => {
     setCapGlobal({ games: {}, manifests: {} });
     const factory = makeFactory();
     register(makeManifest({ id: 'my-game' }), factory);
     expect(capGlobal().games['my-game']).toBe(factory);
   });
 
-  it('writes manifest to globalThis.Caputchin.manifests[id]', () => {
+  it('keys by data-game-id from script tag when manifest carries no id', () => {
     setCapGlobal({ games: {}, manifests: {} });
+    installDataGameIdScript('caputchin/games/leaf-memory');
+    const factory = makeFactory();
+    register(makeManifest(), factory);
+    expect(capGlobal().games['caputchin/games/leaf-memory']).toBe(factory);
+  });
+
+  it('falls back to DEFAULT_REGISTRY_KEY when no id and no data-game-id', () => {
+    setCapGlobal({ games: {}, manifests: {} });
+    const factory = makeFactory();
+    register(makeManifest(), factory);
+    expect(capGlobal().games[DEFAULT_REGISTRY_KEY]).toBe(factory);
+  });
+
+  it('manifest.id wins over data-game-id (legacy precedence)', () => {
+    setCapGlobal({ games: {}, manifests: {} });
+    installDataGameIdScript('caputchin/games/leaf-memory');
+    const factory = makeFactory();
+    register(makeManifest({ id: 'legacy-id' }), factory);
+    expect(capGlobal().games['legacy-id']).toBe(factory);
+    expect(capGlobal().games['caputchin/games/leaf-memory']).toBeUndefined();
+  });
+
+  it('writes manifest to globalThis.Caputchin.manifests keyed the same way as games', () => {
+    setCapGlobal({ games: {}, manifests: {} });
+    installDataGameIdScript('caputchin/games/leaf-memory');
     const manifest = makeManifest({
-      id: 'mod-game',
       preferredLayout: 'modal',
       preferredWidth: 600,
       preferredHeight: 400,
     });
     register(manifest, makeFactory());
-    expect(capGlobal().manifests['mod-game']).toBe(manifest);
+    expect(capGlobal().manifests['caputchin/games/leaf-memory']).toBe(manifest);
   });
 
   it('creates globalThis.Caputchin with warn when missing', () => {
@@ -65,27 +96,27 @@ describe('register()', () => {
     warnSpy.mockRestore();
   });
 
-  it('logs warn on duplicate id and last-write-wins for both maps', () => {
+  it('logs warn on duplicate registry key and last-write-wins for both maps', () => {
     setCapGlobal({ games: {}, manifests: {} });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = makeFactory();
     const second = makeFactory();
-    const firstManifest = makeManifest({ id: 'dup-game', version: '0.1.0' });
-    const secondManifest = makeManifest({ id: 'dup-game', version: '0.2.0' });
+    const firstManifest = makeManifest({ id: 'dup-game' });
+    const secondManifest = makeManifest({ id: 'dup-game' });
     register(firstManifest, first);
     register(secondManifest, second);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('duplicate game id'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('duplicate registry key'));
     expect(capGlobal().games['dup-game']).toBe(second);
     expect(capGlobal().manifests['dup-game']).toBe(secondManifest);
     warnSpy.mockRestore();
   });
 
-  it('warns and returns when manifest is missing id', () => {
+  it('warns and returns when manifest argument is not an object', () => {
     setCapGlobal({ games: {}, manifests: {} });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const factory = makeFactory();
-    register({ version: '0.1.0' } as GameManifest, factory);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('missing `id`'));
+    register(null as unknown as GameManifest, factory);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('without a manifest'));
     expect(Object.keys(capGlobal().games).length).toBe(0);
     expect(Object.keys(capGlobal().manifests).length).toBe(0);
     warnSpy.mockRestore();

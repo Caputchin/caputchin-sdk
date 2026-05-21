@@ -142,17 +142,17 @@ export interface LanguageKeySchema {
   tokens?: string[];
 }
 
-/** The full package manifest the game ships in `caputchin.json`. Authors
- *  import this file and pass the parsed object to `register`. The widget
- *  reads runtime hints (preferred layout / size, language presets) directly
- *  off the manifest. */
-export interface GameManifest {
-  id: string;
-  version: string;
-  displayName?: string;
+/** Marketplace-discovery metadata block in `caputchin.json`. Presence of
+ *  this block is the "yes, please index this" signal — a manifest with
+ *  runtime blocks but no `marketplace` object is a valid customer-hosted
+ *  game that the marketplace simply ignores. None of these fields are read
+ *  at runtime by the widget or the SDK; they drive the marketplace card
+ *  + browse filters and the indexer's bundle-URL resolution. See ADR-0058. */
+export interface MarketplaceMetadata {
+  name?: string;
   description?: string;
-  npm?: string;
-  script?: string;
+  version?: string;
+  preview?: string;
   support?: {
     responsive?: boolean;
     touch?: boolean;
@@ -160,6 +160,29 @@ export interface GameManifest {
     audio?: string;
     [k: string]: unknown;
   };
+}
+
+/** The full package manifest the game ships in `caputchin.json`. Authors
+ *  import this file and pass the parsed object to `register`. The widget
+ *  reads runtime hints (preferred layout / size, language presets) directly
+ *  off the manifest.
+ *
+ *  Manifest shape and the rationale for the nested `marketplace` block,
+ *  the `entry`/`npm` distribution fields at the root, and the dropped
+ *  author-declared `id` field are recorded in ADR-0058. */
+export interface GameManifest {
+  /** Marketplace UI metadata. Absent on customer-hosted-only manifests. */
+  marketplace?: MarketplaceMetadata;
+  /** npm package coordinate. Used by the marketplace indexer to resolve a
+   *  jsDelivr URL. Informational only at runtime. */
+  npm?: string;
+  /** Path inside the repo / npm package to the built bundle. Used by the
+   *  marketplace indexer alongside `npm` to resolve a jsDelivr URL. */
+  entry?: string;
+  /** Author-declared id. Optional and unused by the SDK; preserved here so
+   *  manifests carrying a legacy `id` field continue to type-check during
+   *  the transition recorded in ADR-0058. */
+  id?: string;
   preferredLayout?: Layout;
   preferredWidth?: number;
   preferredHeight?: number;
@@ -198,11 +221,39 @@ type Caputchin = {
   manifests: Record<string, GameManifest>;
 };
 
+/** Fallback registry key used when the manifest carries no `id` AND no
+ *  `data-game-id` is available on the iframe runtime script tag. Each
+ *  iframe only ever loads one game, so a single fixed slot is enough.
+ *  Exported so the widget's iframe runtime + tests can reference the
+ *  same constant. */
+export const DEFAULT_REGISTRY_KEY = '__caputchin_default__';
+
+/** Resolve the registry key the SDK uses to store the factory + manifest.
+ *  Resolution order (per ADR-0058):
+ *
+ *   1. `manifest.id` if present and non-empty (legacy manifests).
+ *   2. `<script data-game-id="…">` in the current document (the iframe
+ *      runtime sets this from the widget's `game` attribute).
+ *   3. {@link DEFAULT_REGISTRY_KEY} as a final fallback. */
+function resolveRegistryKey(manifest: GameManifest): string {
+  if (typeof manifest.id === 'string' && manifest.id.length > 0) {
+    return manifest.id;
+  }
+  if (typeof document !== 'undefined') {
+    const tag = document.querySelector('script[data-game-id]');
+    const attr = tag ? tag.getAttribute('data-game-id') : null;
+    if (attr && attr.length > 0) return attr;
+  }
+  return DEFAULT_REGISTRY_KEY;
+}
+
 export function register(manifest: GameManifest, factory: GameFactory): void {
-  if (!manifest || typeof manifest.id !== 'string' || manifest.id.length === 0) {
-    console.warn('[caputchin/game-sdk] register() called with a manifest missing `id`; skipping');
+  if (!manifest || typeof manifest !== 'object') {
+    console.warn('[caputchin/game-sdk] register() called without a manifest; skipping');
     return;
   }
+
+  const key = resolveRegistryKey(manifest);
 
   const g = globalThis as Record<string, unknown>;
 
@@ -217,10 +268,10 @@ export function register(manifest: GameManifest, factory: GameFactory): void {
   if (!caputchin.manifests) caputchin.manifests = {};
   if (!caputchin.games) caputchin.games = {};
 
-  if (Object.prototype.hasOwnProperty.call(caputchin.games, manifest.id)) {
-    console.warn(`[caputchin/game-sdk] duplicate game id "${manifest.id}"; last-write-wins`);
+  if (Object.prototype.hasOwnProperty.call(caputchin.games, key)) {
+    console.warn(`[caputchin/game-sdk] duplicate registry key "${key}"; last-write-wins`);
   }
 
-  caputchin.games[manifest.id] = factory;
-  caputchin.manifests[manifest.id] = manifest;
+  caputchin.games[key] = factory;
+  caputchin.manifests[key] = manifest;
 }
