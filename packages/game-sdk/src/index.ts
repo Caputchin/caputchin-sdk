@@ -36,11 +36,48 @@ export interface ResolvedLanguage {
   [key: string]: string;
 }
 
+/** Value type a skin key may carry. Drives the resolver's per-value validator
+ *  (allow-list of formats / mimetypes) and the widget shell's authoring
+ *  tooling. `color` accepts hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) and
+ *  functional `rgb(...)` / `rgba(...)`. Asset types accept absolute URLs,
+ *  bundle-relative paths (resolved against the package's bundle base, like
+ *  `game-src`), and `data:` URIs whose MIME prefix is on the allow-list. */
+export type SkinValueType = 'color' | 'image' | 'audio' | 'video';
+
+/** Schema entry for a single skin key. Bare type string short-form
+ *  (`"main_color": "color"`) and full descriptor (`{ type, name, description }`)
+ *  are both legal in the same `skins.schema` block. */
+export type SkinSchemaEntry =
+  | SkinValueType
+  | { type: SkinValueType; name?: string; description?: string };
+
+/** One skin preset declared in `caputchin.json` under `skins.presets`.
+ *  Underscore-prefixed keys are metadata; every other key is a typed value
+ *  (color string or asset URL/path). `_mode` defaults to `light` when
+ *  absent. `_extends` may target a preset name OR a mode shortcut (`light` /
+ *  `dark`) — the mode form resolves to that mode's `_default:true` preset. */
+export interface SkinPreset {
+  _mode?: 'light' | 'dark';
+  _default?: boolean;
+  _extends?: string;
+  [key: string]: string | boolean | undefined;
+}
+
+/** Final skin object the widget hands the game. `_extends` and `_default`
+ *  are stripped during resolution; `_mode` plus the flattened typed keys
+ *  survive. Asset URLs are already resolved to absolute form (bundle-base
+ *  relative paths joined; `data:` URIs verbatim). */
+export interface ResolvedSkin {
+  _mode: 'light' | 'dark';
+  [key: string]: string;
+}
+
 /** Per-session context the widget passes to the game factory as a third arg.
- *  Open extension point: future axes (skins, configurations) land here as
+ *  Open extension point: future axes (configurations) land here as
  *  additional fields without changing the factory signature. */
 export interface GameContext {
   lang: ResolvedLanguage | null;
+  skin: ResolvedSkin | null;
 }
 
 /** Documentation entry for a single text key in `languages.presets`.
@@ -87,6 +124,15 @@ export interface GameManifest {
      *  future dashboard override editor. Not read at runtime. */
     schema?: Record<string, LanguageKeySchema>;
     presets: Record<string, LanguagePreset>;
+  };
+  skins?: {
+    /** Per-key type declaration. Bare type-string and full descriptor forms
+     *  are both legal in the same block. The widget validates each preset
+     *  value against the declared type at resolve time; mismatches surface
+     *  as `invalid-config` events and the offending key falls through the
+     *  `_extends` chain. */
+    schema?: Record<string, SkinSchemaEntry>;
+    presets: Record<string, SkinPreset>;
   };
 }
 

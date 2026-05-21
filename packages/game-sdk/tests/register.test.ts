@@ -106,6 +106,25 @@ describe('register()', () => {
     expect(capGlobal().manifests['lang-game'].languages).toEqual(manifest.languages);
   });
 
+  it('round-trips skins.presets + skins.schema intact on the stored manifest', () => {
+    setCapGlobal({ games: {}, manifests: {} });
+    const manifest = makeManifest({
+      id: 'skin-game',
+      skins: {
+        schema: {
+          main_color: 'color',
+          leaf_img: { type: 'image', name: 'Leaf', description: 'leaf art' },
+        },
+        presets: {
+          light: { _mode: 'light', _default: true, main_color: '#fff', leaf_img: '/leaf-light.png' },
+          dark: { _mode: 'dark', _default: true, _extends: 'light', main_color: '#000' },
+        },
+      },
+    });
+    register(manifest, makeFactory());
+    expect(capGlobal().manifests['skin-game'].skins).toEqual(manifest.skins);
+  });
+
   it('Bridge type shape compiles and is callable', () => {
     const bridge = makeBridge();
     bridge.pass({ score: 0.5 });
@@ -144,7 +163,7 @@ describe('register()', () => {
 
     const container = document.createElement('div');
     const bridge = makeBridge();
-    const ctx: GameContext = { lang: null };
+    const ctx: GameContext = { lang: null, skin: null };
 
     expect(typeof capGlobal().games['with-cleanup']!(container, bridge, ctx)).toBe('function');
     expect(capGlobal().games['void-factory']!(container, bridge, ctx)).toBeUndefined();
@@ -156,6 +175,7 @@ describe('register()', () => {
     register(makeManifest({ id: 'ctx-game' }), factory);
     const ctx: GameContext = {
       lang: { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' },
+      skin: { _mode: 'dark', main_color: '#0F1810' },
     };
     const container = document.createElement('div');
     const bridge = makeBridge();

@@ -1,6 +1,8 @@
 import { inspectWidgetConfig } from '../config/widget.js';
 import { fireError } from '../errors.js';
 import { resolveWidgetShell } from '../lang/widget-shell.js';
+import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
+import { applySkinVars } from '../skin/css-vars.js';
 import { createPresentation } from '../modes/index.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -15,7 +17,7 @@ import { runCap } from '../verify/run-cap.js';
  * games, use `<caputchin-game>` instead.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang'];
+  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang', 'skin'];
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
@@ -41,6 +43,13 @@ export class CaputchinWidget extends HTMLElement {
     }
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
+    const skin = resolveWidgetShellSkin(state.config.skin);
+    for (const message of skin.issues) {
+      fireError(this, 'invalid-config', message);
+    }
+    this.setAttribute('data-skin-mode', skin.mode);
+    applySkinVars(this, skin.palette as unknown as Record<string, string>);
+
     state.presentation = createPresentation(state.config.invisible, {
       host: this,
       root: shadow,
@@ -49,6 +58,7 @@ export class CaputchinWidget extends HTMLElement {
       height: state.config.height,
       size: state.config.size,
       shell,
+      skin,
     });
     state.presentation.mount();
 

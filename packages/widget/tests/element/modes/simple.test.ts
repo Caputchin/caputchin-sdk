@@ -86,3 +86,49 @@ describe('widget lang attribute', () => {
     el.remove();
   });
 });
+
+describe('widget skin attribute', () => {
+  it('skin="light" sets data-skin-mode + writes CSS vars for primary', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'light' });
+    document.body.appendChild(el);
+    expect(el.getAttribute('data-skin-mode')).toBe('light');
+    expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#2F6640');
+    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe('#ffffff');
+    el.remove();
+  });
+
+  it('skin="dark" flips to dark palette CSS vars', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'dark' });
+    document.body.appendChild(el);
+    expect(el.getAttribute('data-skin-mode')).toBe('dark');
+    expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#4E9B65');
+    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe('#182518');
+    el.remove();
+  });
+
+  it('inline JSON skin fires invalid-config + falls back to auto', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: '{"_mode":"dark"}' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
+    // auto fallback: prefersDark unknown in test env → defaults to light
+    expect(el.getAttribute('data-skin-mode')).toBe('light');
+    el.remove();
+  });
+
+  it('unknown skin name fires invalid-config + falls back to auto', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'midnight' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /midnight/.test(m))).toBe(true);
+    el.remove();
+  });
+});

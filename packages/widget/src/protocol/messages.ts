@@ -1,10 +1,18 @@
-import type { LanguagePreset, Layout, ResolvedLanguage } from '@caputchin/game-sdk';
+import type {
+  LanguagePreset,
+  Layout,
+  ResolvedLanguage,
+  ResolvedSkin,
+  SkinPreset,
+  SkinSchemaEntry,
+} from '@caputchin/game-sdk';
 
 export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
   gameId: string | null;
   lang: ResolvedLanguage | null;
+  skin: ResolvedSkin | null;
 }
 
 export interface DisposeMessage {
@@ -53,6 +61,14 @@ export interface ManifestMessage {
   preferredWidth: number | null;
   preferredHeight: number | null;
   languages: { presets: Record<string, LanguagePreset> } | null;
+  /** Carries BOTH presets and schema, because the schema drives per-value
+   *  type validation at resolve time (color / image / audio / video
+   *  allow-list). The `languages` field has no analogue — lang validation
+   *  isn't type-based. */
+  skins: {
+    schema?: Record<string, SkinSchemaEntry>;
+    presets: Record<string, SkinPreset>;
+  } | null;
 }
 
 /** Initial-render size measurement / explicit `bridge.setSize()` from the

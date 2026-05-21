@@ -1,7 +1,7 @@
 // Self-contained iframe bootstrap. Only types imported; they erase at compile time.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLanguage } from '@caputchin/game-sdk';
+import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
 
 (function () {
   interface CaputchinGlobal {
@@ -113,6 +113,7 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLa
       preferredWidth: typeof manifest?.preferredWidth === 'number' ? manifest.preferredWidth : null,
       preferredHeight: typeof manifest?.preferredHeight === 'number' ? manifest.preferredHeight : null,
       languages: manifest?.languages ?? null,
+      skins: manifest?.skins ?? null,
     });
   }
 
@@ -149,6 +150,7 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLa
       seq = data['seq'] as number;
       kickoffGameId = (data['gameId'] as string | null) ?? null;
       const kickoffLang = (data['lang'] as ResolvedLanguage | null) ?? null;
+      const kickoffSkin = (data['skin'] as ResolvedSkin | null) ?? null;
 
       const root = document.getElementById('cpt-root');
       if (!root) {
@@ -211,7 +213,7 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLa
         },
       };
 
-      const ctx: GameContext = { lang: kickoffLang };
+      const ctx: GameContext = { lang: kickoffLang, skin: kickoffSkin };
 
       try {
         cleanup = factory(root, bridge, ctx);

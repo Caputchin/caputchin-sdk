@@ -1,6 +1,6 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
-import { LOGO_PRIMARY } from '../brand/logo.js';
 import type { ShellStrings } from '../lang/widget-shell.js';
+import type { ShellPalette } from '../skin/widget-shell-skin.js';
 
 /**
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
@@ -18,7 +18,7 @@ import type { ShellStrings } from '../lang/widget-shell.js';
  * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, height, size, shell } = input;
+  const { host, root: renderRoot, trigger, width, height, size, shell, skin } = input;
   const isInteractive = trigger === 'click';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
@@ -56,20 +56,22 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     homeLink.href = 'https://caputchin.com';
     homeLink.target = '_blank';
     homeLink.rel = 'noopener noreferrer';
-    homeLink.style.cssText = 'display:contents;color:#2F6640';
+    homeLink.style.cssText = 'display:contents;color:var(--cpt-skin-brand_text)';
 
     const logoSpan = document.createElement('span');
     logoSpan.setAttribute('part', 'simple-brand-logo');
     logoSpan.setAttribute('aria-hidden', 'true');
     logoSpan.style.cssText = 'display:inline-flex;line-height:0';
-    logoSpan.innerHTML = LOGO_PRIMARY;
-    const svg = logoSpan.querySelector('svg');
-    if (svg) {
-      svg.removeAttribute('id');
-      svg.removeAttribute('width');
-      svg.removeAttribute('height');
-      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    }
+    // Logo is a skin asset (declared in caputchin.json as an `image` type).
+    // Per skin preset ships its own mode-matched variant (green leaf for
+    // light, all-white for dark). The CSS rule below sizes the <img> to
+    // fill the wrapper span. Customer-curated paid skins can swap to any
+    // brand mark via the same key.
+    const logoImg = document.createElement('img');
+    logoImg.src = skin.palette.brand_logo;
+    logoImg.alt = '';
+    logoImg.style.cssText = 'width:100%;height:100%;display:block';
+    logoSpan.appendChild(logoImg);
 
     const wordmark = document.createElement('span');
     wordmark.setAttribute('part', 'simple-brand-name');
@@ -85,7 +87,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tag.target = '_blank';
     tag.rel = 'noopener noreferrer';
     tag.textContent = shell.strings.brandTag;
-    tag.style.cssText = 'color:#6e7681';
+    tag.style.cssText = 'color:var(--cpt-skin-text_muted)';
 
     container.appendChild(homeLink);
     container.appendChild(tag);
@@ -105,11 +107,11 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'display:flex',
         'align-items:center',
         'padding:0.5rem 0.75rem',
-        'border:1px solid #d0d7de',
+        'border:1px solid var(--cpt-skin-border)',
         'border-radius:0.5rem',
-        'background:#fff',
+        'background:var(--cpt-skin-surface_bg)',
         'font:14px system-ui, -apple-system, "Segoe UI", sans-serif',
-        'color:#1a1917',
+        'color:var(--cpt-skin-text_primary)',
         'user-select:none',
         'box-sizing:border-box',
         isFullWidth ? 'width:100%' : 'width:fit-content',
@@ -120,7 +122,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: shell.strings });
+      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: shell.strings, palette: skin.palette });
 
       label = document.createElement('span');
       label.setAttribute('part', 'simple-checkbox-label');
@@ -202,8 +204,9 @@ function createShieldIndicator(input: {
   onPointer: () => void;
   onKey: (e: KeyboardEvent) => void;
   strings: ShellStrings;
+  palette: ShellPalette;
 }): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
-  const { interactive, onPointer, onKey, strings } = input;
+  const { interactive, onPointer, onKey, strings, palette } = input;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('part', 'simple-shield-box');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -234,7 +237,7 @@ function createShieldIndicator(input: {
   spinner.setAttribute('cy', '13');
   spinner.setAttribute('r', '4.5');
   spinner.setAttribute('fill', 'none');
-  spinner.setAttribute('stroke', '#2F6640');
+  spinner.setAttribute('stroke', palette.primary);
   spinner.setAttribute('stroke-width', '2');
   spinner.setAttribute('stroke-linecap', 'round');
   spinner.setAttribute('stroke-dasharray', '14 28');
@@ -251,7 +254,7 @@ function createShieldIndicator(input: {
   glyph.setAttribute('font-size', '13');
   glyph.setAttribute('font-weight', '700');
   glyph.setAttribute('font-family', 'system-ui, sans-serif');
-  glyph.setAttribute('fill', '#fff');
+  glyph.setAttribute('fill', palette.glyph);
   svg.appendChild(glyph);
 
   return {
@@ -273,28 +276,28 @@ function createShieldIndicator(input: {
           // a lighter gray to read as "disabled / waiting"; interactive uses
           // the regular gray, with hover-scale + cursor:pointer signalling
           // the action.
-          shield.setAttribute('stroke', interactive ? '#6e7681' : '#b8bec5');
+          shield.setAttribute('stroke', interactive ? palette.text_muted : palette.text_passive);
           shield.setAttribute('fill', 'transparent');
           if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
         case 'verifying':
-          shield.setAttribute('stroke', '#2F6640');
+          shield.setAttribute('stroke', palette.primary);
           shield.setAttribute('fill', 'transparent');
           spinner.setAttribute('opacity', '1');
           if (interactive) svg.setAttribute('aria-checked', 'mixed');
           break;
         case 'verified':
-          shield.setAttribute('stroke', '#2F6640');
-          shield.setAttribute('fill', '#2F6640');
+          shield.setAttribute('stroke', palette.primary);
+          shield.setAttribute('fill', palette.primary);
           glyph.textContent = '✓';
-          glyph.setAttribute('fill', '#fff');
+          glyph.setAttribute('fill', palette.glyph);
           if (interactive) svg.setAttribute('aria-checked', 'true');
           break;
         case 'error':
-          shield.setAttribute('stroke', '#c2410c');
-          shield.setAttribute('fill', '#c2410c');
+          shield.setAttribute('stroke', palette.error);
+          shield.setAttribute('fill', palette.error);
           glyph.textContent = '!';
-          glyph.setAttribute('fill', '#fff');
+          glyph.setAttribute('fill', palette.glyph);
           if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
       }
@@ -323,35 +326,35 @@ function ensureStyles(root: ShadowRoot): void {
     // green via the SVG attribute swap.
     '[part="simple-shield-box"][data-interactive][data-state="idle"]{cursor:pointer}',
     '[part="simple-shield-box"][data-interactive][data-state="idle"]:hover,[part="simple-shield-box"][data-interactive][data-state="idle"]:focus-visible{transform:scale(1.12)}',
-    '[part="simple-shield-box"][data-interactive]:focus-visible{outline:2px solid #2F6640;outline-offset:2px;border-radius:0.25rem}',
+    '[part="simple-shield-box"][data-interactive]:focus-visible{outline:2px solid var(--cpt-skin-primary);outline-offset:2px;border-radius:0.25rem}',
     // Reduced motion: drop the scale lift; keep cursor + focus ring + color transitions.
     '@media (prefers-reduced-motion:reduce){',
       '[part="simple-shield-box"]{transition:none !important}',
       '[part="simple-shield-box"][data-interactive][data-state="idle"]:hover,[part="simple-shield-box"][data-interactive][data-state="idle"]:focus-visible{transform:none}',
     '}',
     // --- label: width locked to fit "Verifying…" so state changes don't reflow ---
-    '[part="simple-checkbox-label"]{color:#3d2a5e;font-size:0.85rem;min-width:5rem;display:inline-block;text-align:start}',
+    '[part="simple-checkbox-label"]{color:var(--cpt-skin-text_label);font-size:0.85rem;min-width:5rem;display:inline-block;text-align:start}',
 
     // --- brand block: normal layout (2-col grid, logo spans 2 rows) ---
     '[part="simple-brand"]{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:0.25rem;row-gap:0;align-items:center;line-height:1.2;flex:0 0 auto}',
     '[part="simple-brand-logo"]{grid-column:1;grid-row:1 / span 2;align-self:center;width:32px;height:32px}',
-    '[part="simple-brand-logo"] svg{width:100%;height:100%;display:block}',
+    '[part="simple-brand-logo"] img{width:100%;height:100%;display:block}',
     '[part="simple-brand-name"]{grid-column:2;grid-row:1;place-self:center;text-align:center;font-size:0.85rem}',
     '[part="simple-brand-tag"]{grid-column:2;grid-row:2;place-self:center;text-align:center;font-size:0.65rem}',
 
     '[part="simple-brand-home"],[part="simple-brand-tag"]{text-decoration:none;transition:color 0.15s ease}',
-    '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:#1f4a2c;text-decoration:underline;outline:none}',
-    '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:#2F6640;text-decoration:underline;outline:none}',
+    '[part="simple-brand-home"]:hover,[part="simple-brand-home"]:focus-visible{color:var(--cpt-skin-brand_text_hover);text-decoration:underline;outline:none}',
+    '[part="simple-brand-tag"]:hover,[part="simple-brand-tag"]:focus-visible{color:var(--cpt-skin-brand_text_hover);text-decoration:underline;outline:none}',
 
     // --- size="compact": single-row inline strip, dialed down ---
     '[data-size="compact"][part="simple-checkbox"]{padding:0.2rem 0.4rem;gap:0.35rem;border-radius:0.35rem;flex-wrap:nowrap;min-width:0 !important}',
     '[data-size="compact"] [part="simple-shield-box"]{width:1.1rem;height:1.1rem}',
-    '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:#3d2a5e;white-space:nowrap;min-width:3.6rem}',
+    '[data-size="compact"] [part="simple-checkbox-label"]{font-size:0.65rem;color:var(--cpt-skin-text_label);white-space:nowrap;min-width:3.6rem}',
     '[data-size="compact"] [part="simple-brand"]{display:flex;flex-direction:row;align-items:center;column-gap:0.25rem}',
     '[data-size="compact"] [part="simple-brand-logo"]{grid-column:auto;grid-row:auto;align-self:center;width:14px;height:14px}',
     '[data-size="compact"] [part="simple-brand-name"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.6rem}',
     '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.5rem}',
-    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:#c0c0c0;margin-inline-start:0.1rem}',
+    '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:var(--cpt-skin-text_muted);margin-inline-start:0.1rem}',
 
     // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
     '@media (max-width:28rem){',

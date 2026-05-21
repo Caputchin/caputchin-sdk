@@ -28,6 +28,11 @@ export interface GameConfig {
    *  the manifest postMessage arrives (presets live in the game's manifest).
    *  Null when omitted or empty. */
   lang: string | null;
+  /** Raw `skin` attribute value (un-resolved). Drives BOTH the game's skin
+   *  context AND the widget shell's skin (the shell consumes only `_mode`).
+   *  Resolved against the game's manifest skins after the manifest
+   *  postMessage arrives. Null when omitted or empty. */
+  skin: string | null;
 }
 
 /**
@@ -93,6 +98,8 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
 
   const rawLang = el.getAttribute('lang');
   const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
+  const rawSkin = el.getAttribute('skin');
+  const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
 
   return {
     config: {
@@ -105,6 +112,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       gameSrc,
       layout,
       lang,
+      skin,
     },
     issues,
     inert: false,

@@ -19,6 +19,11 @@ export interface WidgetConfig {
    *  only accepts preset names + ISO codes); omitted/empty means browser
    *  auto. */
   lang: string | null;
+  /** Raw `skin` attribute value. Resolved against the widget's bundled
+   *  skin presets at mount. Inline JSON is rejected; only `<mode>` /
+   *  `auto` / `<skin-name>` are accepted. Omitted/empty means auto
+   *  (honors `prefers-color-scheme`). */
+  skin: string | null;
 }
 
 /**
@@ -48,9 +53,11 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
 
   const rawLang = el.getAttribute('lang');
   const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
+  const rawSkin = el.getAttribute('skin');
+  const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
 
   return {
-    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, lang },
+    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, lang, skin },
     issues,
     inert,
   };

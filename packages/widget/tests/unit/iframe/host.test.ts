@@ -207,7 +207,21 @@ describe('IframeHost', () => {
     host.kickoff(1, lang);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang, skin: null }),
+    );
+
+    host.dispose();
+  });
+
+  it('kickoff(seq, lang, skin) forwards the resolved skin payload', () => {
+    const host = makeHost();
+    mountHost(host);
+
+    const skin = { _mode: 'dark' as const, primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
+    host.kickoff(1, null, skin);
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin }),
     );
 
     host.dispose();

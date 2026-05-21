@@ -1,5 +1,6 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetShell } from '../lang/widget-shell.js';
+import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -36,6 +37,12 @@ export interface PresentationFactoryInput {
    *  from its `lang` attribute and threads the result down so every nested
    *  presentation shares the same locale. */
   shell: WidgetShell;
+  /** Pre-resolved shell skin (mode + color palette). Owner element resolves
+   *  once from its `skin` attribute and threads the result down so every
+   *  nested presentation shares the same theme. CSS-var-driven colors apply
+   *  to most surfaces; SVG presentation attributes (shield stroke / fill)
+   *  consume the palette directly because CSS vars don't apply there. */
+  skin: WidgetShellSkin;
 }
 
 /**
