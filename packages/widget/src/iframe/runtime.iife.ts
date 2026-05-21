@@ -1,7 +1,9 @@
-// Self-contained iframe bootstrap. Only types imported; they erase at compile time.
+// Self-contained iframe bootstrap. esbuild bundles this file with its imports;
+// the resulting IIFE is injected into the srcdoc as a string literal.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
 import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
+import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
 (function () {
   interface CaputchinGlobal {
@@ -101,10 +103,15 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedCo
   }
 
   function postManifest(): void {
+    // ADR-0058: register() keys by manifest.id when present, otherwise by
+    // the runtime script's data-game-id (which matches embeddedGameId
+    // here), otherwise by DEFAULT_REGISTRY_KEY. Try the embeddedGameId
+    // slot first, then fall through to the default slot so author-declared
+    // ids and derived ids both reach the same manifest.
+    const manifests = (W['Caputchin'] as CaputchinGlobal).manifests;
     const manifest =
-      embeddedGameId !== null
-        ? (W['Caputchin'] as CaputchinGlobal).manifests[embeddedGameId]
-        : undefined;
+      (embeddedGameId !== null ? manifests[embeddedGameId] : undefined) ??
+      manifests[DEFAULT_REGISTRY_KEY];
     postToParent({
       kind: 'manifest',
       seq: 0,
@@ -167,7 +174,10 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedCo
 
       const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
 
-      const factory = registry[kickoffGameId];
+      // ADR-0058: same fallback as postManifest — try the marketplace id
+      // first, then fall through to the default slot so games that
+      // registered without an author-declared id still resolve.
+      const factory = registry[kickoffGameId] ?? registry[DEFAULT_REGISTRY_KEY];
       if (!factory) {
         postError('game-not-registered', `No game registered for id "${kickoffGameId}"`);
         return;
