@@ -1,5 +1,6 @@
-import type { ResolvedLanguage } from '@caputchin/game-sdk';
+import type { LanguagePreset, ResolvedLanguage } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
+import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import { resolveLanguage } from './resolver.js';
 
 /** Keys present in the widget's bundled shell presets. Adding a new
@@ -62,14 +63,22 @@ function readNavigatorLanguages(): readonly string[] {
  *  attribute value (omitted/`"auto"` ⇒ browser-auto). Inline JSON is
  *  rejected on the widget (parity decision: shell strings are bundled, so
  *  per-string overrides go through manifest authoring, not the element
- *  attribute). Unknown preset / ISO ⇒ issue + browser-auto fallback. */
+ *  attribute). Unknown preset / ISO ⇒ issue + browser-auto fallback.
+ *
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
+ *  ADR-0059), the override bank is injected as a second layer atop the
+ *  bundled bank before resolution; name-collision presets implicitly
+ *  extend their bundled twin so the override only needs to declare the
+ *  leaf keys it changes. */
 export function resolveWidgetShell(
   attrValue?: string | null,
   navLangs?: readonly string[],
+  overridePresets?: Record<string, LanguagePreset> | null,
 ): WidgetShell {
   const languages = navLangs ?? readNavigatorLanguages();
+  const merged = injectOverrideLayer(PRESETS as Record<string, LanguagePreset>, overridePresets);
   const { resolved, issues } = resolveLanguage(
-    PRESETS,
+    merged,
     attrValue ?? 'auto',
     languages,
     { rejectInlineJson: true },
