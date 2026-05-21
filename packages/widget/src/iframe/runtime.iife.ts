@@ -52,6 +52,34 @@ import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedLa
     }
   }
 
+  // ---- focus-steal guard ----
+  // Games commonly call element.focus() on mount (e.g. auto-focusing a
+  // Start button so keyboard users can hit Enter). Inside an iframe that
+  // hasn't been interacted with yet, focus() yanks focus away from the
+  // host page — interrupting whatever the user was typing into a form
+  // field, breaking RTM screen-readers, etc.
+  //
+  // Patch: while the iframe document is unfocused AND the user hasn't
+  // interacted with it yet, swallow focus() calls. Once the user clicks
+  // or types inside the iframe, lift the guard so in-game focus
+  // management (board navigation, win-screen retry button) works as
+  // authored.
+  //
+  // Scope: HTMLElement.prototype.focus is the entry point for buttons,
+  // inputs, divs, anchors — covers every focusable element. The runtime
+  // is the right layer for the patch (works for every game without each
+  // game opting in).
+  let userInteractedWithIframe = false;
+  const originalFocus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function focusGuarded(this: HTMLElement, options?: FocusOptions): void {
+    if (!userInteractedWithIframe && !document.hasFocus()) return;
+    return originalFocus.call(this, options);
+  };
+  const markUserInteracted = (): void => { userInteractedWithIframe = true; };
+  document.addEventListener('pointerdown', markUserInteracted, { once: true, capture: true });
+  document.addEventListener('keydown', markUserInteracted, { once: true, capture: true });
+  document.addEventListener('focusin', markUserInteracted, { once: true, capture: true });
+
   // Read embedded game id from the runtime script tag (srcdoc sets data-game-id).
   const runtimeScript = document.querySelector('script[data-game-id]');
   const embeddedRaw = runtimeScript ? runtimeScript.getAttribute('data-game-id') : null;

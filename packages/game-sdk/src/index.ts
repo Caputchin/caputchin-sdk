@@ -37,7 +37,7 @@ export interface ResolvedLanguage {
 }
 
 /** Per-session context the widget passes to the game factory as a third arg.
- *  Open extension point: future axes (themes, configurations) land here as
+ *  Open extension point: future axes (skins, configurations) land here as
  *  additional fields without changing the factory signature. */
 export interface GameContext {
   lang: ResolvedLanguage | null;

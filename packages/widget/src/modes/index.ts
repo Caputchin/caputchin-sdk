@@ -1,4 +1,5 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
+import type { WidgetShell } from '../lang/widget-shell.js';
 import { createInvisiblePresentation } from './invisible.js';
 import { createSimplePresentation } from './simple.js';
 
@@ -31,6 +32,10 @@ export interface PresentationFactoryInput {
    *  own height into the iframe; cap-widget uses this only for simple mode. */
   height?: WidgetHeight;
   size: WidgetSize;
+  /** Pre-resolved shell (strings + direction). Owner element resolves once
+   *  from its `lang` attribute and threads the result down so every nested
+   *  presentation shares the same locale. */
+  shell: WidgetShell;
 }
 
 /**

@@ -14,6 +14,11 @@ export interface WidgetConfig {
   width: WidgetWidth;
   height: WidgetHeight;
   size: WidgetSize;
+  /** Raw `lang` attribute value. Resolved against the widget's bundled
+   *  shell presets at mount. Inline JSON is rejected (the widget shell
+   *  only accepts preset names + ISO codes); omitted/empty means browser
+   *  auto. */
+  lang: string | null;
 }
 
 /**
@@ -41,8 +46,11 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
     inert = true;
   }
 
+  const rawLang = el.getAttribute('lang');
+  const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
+
   return {
-    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size },
+    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, lang },
     issues,
     inert,
   };

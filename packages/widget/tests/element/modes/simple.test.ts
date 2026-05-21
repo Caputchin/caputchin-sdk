@@ -41,3 +41,48 @@ describe('invisible widget presentation', () => {
     el.remove();
   });
 });
+
+describe('widget lang attribute', () => {
+  it('lang="ar" flips shell to arabic strings + dir="rtl"', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'ar' });
+    document.body.appendChild(el);
+    expect(el.getAttribute('dir')).toBe('rtl');
+    const text = el.shadowRoot!.textContent ?? '';
+    expect(text).toContain('تحقق'); // Verify
+    expect(text).toContain('كابوتشين'); // Caputchin brand
+    el.remove();
+  });
+
+  it('lang="ar-EG" normalizes to ar via primary subtag', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'ar-EG' });
+    document.body.appendChild(el);
+    expect(el.getAttribute('dir')).toBe('rtl');
+    expect(el.shadowRoot!.textContent ?? '').toContain('تحقق');
+    el.remove();
+  });
+
+  it('inline JSON fires invalid-config + falls back to auto (no dir flip)', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: '{"_iso":"ar"}' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
+    expect(el.getAttribute('dir')).not.toBe('rtl');
+    el.remove();
+  });
+
+  it('unknown preset name fires invalid-config + falls back to auto', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'xyz' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /xyz/.test(m))).toBe(true);
+    el.remove();
+  });
+});

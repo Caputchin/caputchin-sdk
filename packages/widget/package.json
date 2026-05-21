@@ -41,7 +41,7 @@
     "prebuild": "node scripts/build-iframe-runtime.mjs",
     "build": "tsup",
     "build:prod": "node scripts/build-iframe-runtime.mjs && CAPUTCHIN_API_HOST=https://caputchin.com tsup --minify",
-    "dev": "tsup --watch",
+    "dev": "node scripts/dev.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

@@ -2,10 +2,10 @@ import type { ResolvedLanguage } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
 import { resolveLanguage } from './resolver.js';
 
-/** Keys present in the widget's bundled chrome presets. Adding a new
+/** Keys present in the widget's bundled shell presets. Adding a new
  *  user-visible string means adding it to caputchin.json AND extending this
  *  type so the rest of the codebase gets autocomplete + miss detection. */
-export interface ChromeStrings {
+export interface ShellStrings {
   simpleVerify: string;
   simpleVerifying: string;
   simpleVerified: string;
@@ -17,15 +17,19 @@ export interface ChromeStrings {
   overlayClose: string;
 }
 
-export interface ChromeResolved {
+export interface WidgetShell {
   direction: 'ltr' | 'rtl';
   iso: string;
-  strings: ChromeStrings;
+  strings: ShellStrings;
+  /** Human-readable issues raised during resolution (unknown preset name,
+   *  unsupported inline JSON, etc.). The element layer translates each into
+   *  an `invalid-config` event so host pages can log misconfiguration. */
+  issues: string[];
 }
 
 const PRESETS = widgetManifest.languages?.presets ?? {};
 
-const HARDCODED_FALLBACK: ChromeStrings = {
+const HARDCODED_FALLBACK: ShellStrings = {
   simpleVerify: 'Verify',
   simpleVerifying: 'Verifying…',
   simpleVerified: 'Verified',
@@ -37,19 +41,16 @@ const HARDCODED_FALLBACK: ChromeStrings = {
   overlayClose: 'Close',
 };
 
-function toStrings(resolved: ResolvedLanguage | null): ChromeStrings {
+function toStrings(resolved: ResolvedLanguage | null): ShellStrings {
   if (!resolved) return HARDCODED_FALLBACK;
   const out = { ...HARDCODED_FALLBACK };
-  for (const key of Object.keys(HARDCODED_FALLBACK) as Array<keyof ChromeStrings>) {
+  for (const key of Object.keys(HARDCODED_FALLBACK) as Array<keyof ShellStrings>) {
     const value = resolved[key as string];
     if (typeof value === 'string') out[key] = value;
   }
   return out;
 }
 
-/** Resolve the widget chrome's own language pack. No `lang` attribute on
- *  the widget at MVP; resolution is browser-auto only. Future white-label
- *  layer overrides via a per-site-key fetch (not wired yet). */
 function readNavigatorLanguages(): readonly string[] {
   if (typeof navigator === 'undefined') return [];
   if (navigator.languages && navigator.languages.length > 0) return navigator.languages;
@@ -57,12 +58,26 @@ function readNavigatorLanguages(): readonly string[] {
   return [];
 }
 
-export function resolveWidgetChrome(navLangs?: readonly string[]): ChromeResolved {
+/** Resolve the widget shell language pack. Accepts the customer's `lang`
+ *  attribute value (omitted/`"auto"` ⇒ browser-auto). Inline JSON is
+ *  rejected on the widget (parity decision: shell strings are bundled, so
+ *  per-string overrides go through manifest authoring, not the element
+ *  attribute). Unknown preset / ISO ⇒ issue + browser-auto fallback. */
+export function resolveWidgetShell(
+  attrValue?: string | null,
+  navLangs?: readonly string[],
+): WidgetShell {
   const languages = navLangs ?? readNavigatorLanguages();
-  const { resolved } = resolveLanguage(PRESETS, 'auto', languages);
+  const { resolved, issues } = resolveLanguage(
+    PRESETS,
+    attrValue ?? 'auto',
+    languages,
+    { rejectInlineJson: true },
+  );
   return {
     direction: resolved?._direction ?? 'ltr',
     iso: resolved?._iso ?? 'en',
     strings: toStrings(resolved),
+    issues,
   };
 }

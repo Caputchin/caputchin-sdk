@@ -1,6 +1,6 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
 import { LOGO_PRIMARY } from '../brand/logo.js';
-import { resolveWidgetChrome, type ChromeStrings } from '../lang/widget-chrome.js';
+import type { ShellStrings } from '../lang/widget-shell.js';
 
 /**
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
@@ -18,18 +18,17 @@ import { resolveWidgetChrome, type ChromeStrings } from '../lang/widget-chrome.j
  * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, height, size } = input;
+  const { host, root: renderRoot, trigger, width, height, size, shell } = input;
   const isInteractive = trigger === 'click';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
   const pxWidth = typeof width === 'number' ? width : null;
   const pxHeight = typeof height === 'number' ? height : null;
-  const chrome = resolveWidgetChrome();
   const STATE_LABEL_LOCAL: Record<PresentationState, string> = {
-    idle: chrome.strings.simpleVerify,
-    verifying: chrome.strings.simpleVerifying,
-    verified: chrome.strings.simpleVerified,
-    error: chrome.strings.simpleFailed,
+    idle: shell.strings.simpleVerify,
+    verifying: shell.strings.simpleVerifying,
+    verified: shell.strings.simpleVerified,
+    error: shell.strings.simpleFailed,
   };
 
   let root: HTMLDivElement | null = null;
@@ -74,7 +73,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     const wordmark = document.createElement('span');
     wordmark.setAttribute('part', 'simple-brand-name');
-    wordmark.textContent = chrome.strings.brandName;
+    wordmark.textContent = shell.strings.brandName;
     wordmark.style.cssText = 'font-weight:600;color:inherit';
 
     homeLink.appendChild(logoSpan);
@@ -85,7 +84,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     tag.href = 'https://caputchin.com/legal';
     tag.target = '_blank';
     tag.rel = 'noopener noreferrer';
-    tag.textContent = chrome.strings.brandTag;
+    tag.textContent = shell.strings.brandTag;
     tag.style.cssText = 'color:#6e7681';
 
     container.appendChild(homeLink);
@@ -101,7 +100,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       root = document.createElement('div');
       root.setAttribute('part', 'simple-checkbox');
       if (isCompact) root.setAttribute('data-size', 'compact');
-      if (chrome.direction === 'rtl') root.setAttribute('dir', 'rtl');
+      if (shell.direction === 'rtl') root.setAttribute('dir', 'rtl');
       const rootStyles = [
         'display:flex',
         'align-items:center',
@@ -121,7 +120,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
       root.style.cssText = rootStyles.join(';');
 
-      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: chrome.strings });
+      indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: shell.strings });
 
       label = document.createElement('span');
       label.setAttribute('part', 'simple-checkbox-label');
@@ -202,7 +201,7 @@ function createShieldIndicator(input: {
   interactive: boolean;
   onPointer: () => void;
   onKey: (e: KeyboardEvent) => void;
-  strings: ChromeStrings;
+  strings: ShellStrings;
 }): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
   const { interactive, onPointer, onKey, strings } = input;
   const svg = document.createElementNS(SVG_NS, 'svg');
