@@ -1,8 +1,4 @@
 {
-  "id": "@caputchin/widget",
-  "version": "2.0.0",
-  "displayName": "Caputchin Widget",
-  "description": "Customer-facing CAPTCHA + game widgets for the Caputchin platform",
   "languages": {
     "schema": {
       "simpleVerify": {
