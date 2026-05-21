@@ -206,11 +206,19 @@ export function resolveConfig(input: ResolveConfigInput): ResolveConfigResult {
   }
 
   // Auto / 'auto' / empty.
+  //
+  // Case-sensitivity rule (intentional, parity with lang + skin resolvers):
+  // the `'auto'` magic keyword is matched case-insensitively because it's a
+  // fixed reserved token customers shouldn't have to memorize the exact
+  // casing of. Preset names below are matched case-sensitively because
+  // they're author-defined identifiers and a case-folded match would
+  // silently collide with two presets that differ only in case (`Default`
+  // vs `default`). Different concepts, different rules; same site.
   if (trimmed.length === 0 || trimmed.toLowerCase() === 'auto') {
     return { resolved: resolveAuto(presetsMap, schemaMap, issues), issues };
   }
 
-  // Preset name (case-sensitive).
+  // Preset name (case-sensitive — see comment above).
   const byName = findByName(presetsMap, trimmed);
   if (byName) {
     const resolved = resolveLeaf(presetsMap, schemaMap, byName.name, byName.preset, issues);
