@@ -3,6 +3,8 @@ import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
 import { resolveWidgetShell } from '../lang/widget-shell.js';
+import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
+import { applySkinVars } from '../skin/css-vars.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -26,7 +28,7 @@ import { runManual } from '../verify/run-manual.js';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang'];
+  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang', 'skin'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -83,6 +85,21 @@ export class CaputchinGame extends HTMLElement {
     }
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
+    // The shell consumes only `_mode` from the customer's `skin` attribute
+    // (parallel to how lang consumes only `_iso` + `_direction`). Inline
+    // JSON on the game side passes through to the game's own skin
+    // resolution downstream; here we just pull the mode hint so the
+    // widget shell itself flips light/dark consistently. Bare values
+    // (`light`/`dark`/`auto`/`<preset-name>`) pass through to the shell
+    // skin resolver verbatim.
+    const skinModeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
+    const skin = resolveWidgetShellSkin(skinModeHint);
+    for (const message of skin.issues) {
+      fireError(this, 'invalid-config', message);
+    }
+    this.setAttribute('data-skin-mode', skin.mode);
+    applySkinVars(this, skin.palette as unknown as Record<string, string>);
+
     const gp = createGamePresentation({
       host: this,
       root: shadow,
@@ -92,6 +109,7 @@ export class CaputchinGame extends HTMLElement {
       layout,
       manual: isManual,
       shell,
+      skin,
     });
     state.gamePresentation = gp;
     gp.mount();
@@ -182,6 +200,24 @@ function deriveShellSignals(raw: string): ShellSignals {
   else if (typeof obj._extends === 'string' && obj._extends.length > 0) hint = obj._extends;
   const direction = obj._direction === 'rtl' || obj._direction === 'ltr' ? obj._direction : null;
   return { hint, direction };
+}
+
+/** Pull a mode hint from the customer's `skin` attribute for the widget
+ *  shell. The shell never consumes per-key overrides; it just needs to
+ *  know whether to render light or dark. For non-JSON values the raw
+ *  string passes through (light/dark/auto/preset-name). For inline JSON
+ *  we extract `_mode`, falling back to `_extends` if it names a mode
+ *  shortcut. Malformed JSON yields `null` → shell auto. */
+function deriveShellSkinHint(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{')) return raw;
+  let parsed: unknown;
+  try { parsed = JSON.parse(trimmed); } catch { return null; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const obj = parsed as Record<string, unknown>;
+  if (obj._mode === 'light' || obj._mode === 'dark') return obj._mode;
+  if (obj._extends === 'light' || obj._extends === 'dark') return obj._extends;
+  return null;
 }
 
 function resolveLayout(attr: LayoutAttr): 'inline' | 'modal' | 'fullscreen' {

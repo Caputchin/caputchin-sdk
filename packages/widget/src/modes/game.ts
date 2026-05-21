@@ -1,6 +1,7 @@
 import type { Presentation, PresentationState } from './index.js';
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetShell } from '../lang/widget-shell.js';
+import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { createSimplePresentation } from './simple.js';
 import { emitDialogShown, emitDialogHidden } from '../verify/events.js';
 
@@ -50,6 +51,12 @@ export interface GamePresentationInput {
    *  `<caputchin-game>` element so the embedded simple presentation and
    *  the overlay dialog share the customer's `lang` selection. */
   shell: WidgetShell;
+  /** Pre-resolved shell skin (mode + color palette). Threaded down so the
+   *  embedded simple presentation and the overlay dialog share the same
+   *  theme. The element layer already wrote the CSS vars onto the shadow
+   *  host; this struct exists so the simple presentation can read raw
+   *  palette values for its SVG shield strokes/fills. */
+  skin: WidgetShellSkin;
 }
 
 export function createGamePresentation(input: GamePresentationInput): GamePresentation {
@@ -60,7 +67,7 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, width, height, manual, shell } = input;
+  const { host, root: renderRoot, width, height, manual, shell, skin } = input;
   const isFullWidth = width === 'full';
   const isFullHeight = height === 'full';
   const pxWidth = typeof width === 'number' ? width : null;
@@ -105,6 +112,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         host,
         root: badgeSlot as unknown as ShadowRoot,
         trigger: 'auto' as WidgetTrigger,
+        skin,
         // Full-width so the strip spans the game-frame edge to edge, flush
         // with the iframe panel above. Brand still hugs the trailing edge
         // via the margin-inline-start:auto rule in simple.ts (flips under
@@ -221,7 +229,7 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout, manual, width, height, shell } = input;
+  const { host, root: renderRoot, layout, manual, width, height, shell, skin } = input;
   let container: HTMLDivElement | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
@@ -325,6 +333,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         // Inline uses compact (hardcoded in createInlineGame).
         size: 'normal' as WidgetSize,
         shell,
+        skin,
       });
       subSimple.mount();
       // Pin checkboxSlot to the customer dims so the simple presentation's
@@ -443,10 +452,10 @@ function ensureGameStyles(root: ShadowRoot): void {
     // One unified bordered card containing the iframe + a brand strip below.
     // The simple widget inside the badge slot has its own border/radius/bg
     // stripped so the outer frame border reads as the only edge.
-    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid #d0d7de;border-radius:0.5rem;background:#fff;overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
+    '[part="game-frame"][data-layout="inline"]{display:flex;flex-direction:column;border:1px solid var(--cpt-skin-border);border-radius:0.5rem;background:var(--cpt-skin-surface_bg);overflow:hidden;width:fit-content;max-width:100%;box-sizing:border-box}',
     '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
     '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
-    '[part="game-iframe-slot"] iframe{display:block;border:0;background:#fff}',
+    '[part="game-iframe-slot"] iframe{display:block;border:0;background:var(--cpt-skin-surface_bg)}',
     // When the customer pins the inline frame size (width/height attr), the
     // iframe stretches to fill the slot instead of staying at the game's
     // manifest preferred size.
@@ -461,7 +470,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;flex:1 1 auto}',
     '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;flex:1 1 auto}',
     // Badge slot: thin separator line between iframe and brand strip.
-    '[part="game-badge-slot"]{display:flex;border-top:1px solid #d0d7de;background:#fff}',
+    '[part="game-badge-slot"]{display:flex;border-top:1px solid var(--cpt-skin-border);background:var(--cpt-skin-surface_bg)}',
     // Strip the embedded simple widget of its own border/radius/bg so it
     // visually merges with the outer game-frame card.
     '[part="game-badge-slot"] [part="simple-checkbox"]{border:none !important;border-radius:0 !important;background:transparent !important}',
@@ -475,16 +484,16 @@ function ensureGameStyles(root: ShadowRoot): void {
     // appear. The iframe is sized to the game's manifest dimensions (or the
     // 400x300 default); the dialog hugs that plus its own padding. Capped to
     // 90vw / 90vh so very large games still fit the viewport.
-    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:#fff;padding:1rem;width:fit-content;height:fit-content;max-width:90vw;max-height:90vh;box-shadow:0 20px 50px rgba(0,0,0,0.25)}',
+    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:var(--cpt-skin-surface_bg);padding:1rem;width:fit-content;height:fit-content;max-width:90vw;max-height:90vh;box-shadow:0 20px 50px var(--cpt-skin-shadow)}',
     // Modal + fill: switch the dialog off shrink-wrap on the filled axis so
     // the iframe inside actually has a definite size to stretch into. Pinned
     // to 90vw / 90vh (matching the existing max-* cap) so the modal still
     // reads as a dialog with backdrop, not as a fullscreen overlay.
     '[part="game-overlay-dialog"][data-layout="modal"][data-fill-x="true"]{width:90vw}',
     '[part="game-overlay-dialog"][data-layout="modal"][data-fill-y="true"]{height:90vh}',
-    '[part="game-overlay-dialog"][data-layout="modal"]::backdrop{background:rgba(0,0,0,0.45)}',
-    '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:#fff}',
-    '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:rgba(0,0,0,0.8)}',
+    '[part="game-overlay-dialog"][data-layout="modal"]::backdrop{background:var(--cpt-skin-modal_backdrop)}',
+    '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:var(--cpt-skin-surface_bg)}',
+    '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:var(--cpt-skin-fullscreen_backdrop)}',
     // Overlay (modal + fullscreen): iframe stays at its manifest preferred
     // size (set by applyIframeSize); slot fills the dialog interior and
     // centers the iframe both axes. Matters most for fullscreen; the
@@ -506,7 +515,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-dialog"][data-fill-x="true"] [part="game-iframe-slot"] iframe{width:100%!important}',
     '[part="game-overlay-dialog"][data-fill-y="true"] [part="game-iframe-slot"]{align-items:stretch}',
     '[part="game-overlay-dialog"][data-fill-y="true"] [part="game-iframe-slot"] iframe{height:100%!important}',
-    '[part="game-overlay-close"]{position:absolute;top:0.5rem;inset-inline-end:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:rgba(255,255,255,0.9);color:#1a1917;font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
+    '[part="game-overlay-close"]{position:absolute;top:0.5rem;inset-inline-end:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:var(--cpt-skin-close_btn_bg);color:var(--cpt-skin-text_primary);font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
 
     // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---
     // Modal: 180ms scale + fade. Fullscreen: 220ms slide-up + fade.

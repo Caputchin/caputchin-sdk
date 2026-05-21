@@ -21,9 +21,9 @@ beforeEach(() => {
   posted.length = 0;
 });
 
-function dispatchKickoff(gameId: string | null, seq = 1, lang: unknown = null): void {
+function dispatchKickoff(gameId: string | null, seq = 1, lang: unknown = null, skin: unknown = null): void {
   const event = new MessageEvent('message', {
-    data: { kind: 'kickoff', seq, gameId, lang },
+    data: { kind: 'kickoff', seq, gameId, lang, skin },
     source: window,
   });
   window.dispatchEvent(event);
@@ -135,6 +135,10 @@ describe('iframe runtime — manifest posted on boot', () => {
   it('manifest carries null languages when no manifest registered', () => {
     expect(manifestOnBoot!['languages']).toBeNull();
   });
+
+  it('manifest carries null skins when no manifest registered', () => {
+    expect(manifestOnBoot!['skins']).toBeNull();
+  });
 });
 
 describe('iframe runtime — kickoff ctx delivery', () => {
@@ -145,7 +149,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     });
     const lang = { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' };
     dispatchKickoff('ctx-1', 200, lang);
-    expect(capturedCtx).toEqual({ lang });
+    expect(capturedCtx).toEqual({ lang, skin: null });
   });
 
   it('kickoff with no lang forwards ctx.lang=null', () => {
@@ -154,7 +158,17 @@ describe('iframe runtime — kickoff ctx delivery', () => {
       capturedCtx = ctx;
     });
     dispatchKickoff('ctx-2', 201);
-    expect(capturedCtx).toEqual({ lang: null });
+    expect(capturedCtx).toEqual({ lang: null, skin: null });
+  });
+
+  it('kickoff with skin payload forwards ctx.skin to the factory', () => {
+    let capturedCtx: unknown = null;
+    registerGame('ctx-3', (_root, _bridge, ctx) => {
+      capturedCtx = ctx;
+    });
+    const skin = { _mode: 'dark', primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
+    dispatchKickoff('ctx-3', 202, null, skin);
+    expect(capturedCtx).toEqual({ lang: null, skin });
   });
 });
 

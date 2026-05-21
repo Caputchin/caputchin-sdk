@@ -31,6 +31,13 @@ const sharedDefine = {
   'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
 };
 
+// SVG brand assets get inlined as data URIs at build time via esbuild's
+// `dataurl` loader. Source files live at src/assets/*.svg; the import gives
+// us back a `data:image/svg+xml;base64,…` string the widget shell skin
+// injects into the resolved palette. Lets the SVGs stay editable as files
+// instead of 30KB strings in caputchin.json.
+const sharedLoader = { '.svg': 'dataurl' } as const;
+
 // Two builds:
 //   1. ESM single entry (`widget.mjs`) — npm consumers import {CaputchinWidget,
 //      CaputchinGame} from '@caputchin/widget'. Tree-shakable.
@@ -46,6 +53,7 @@ export default defineConfig([
     clean: true,
     outExtension: () => ({ js: '.mjs' }),
     define: sharedDefine,
+    loader: sharedLoader,
   },
   {
     entry: {
@@ -61,5 +69,6 @@ export default defineConfig([
     clean: false,
     outExtension: () => ({ js: '.js' }),
     define: sharedDefine,
+    loader: sharedLoader,
   },
 ]);

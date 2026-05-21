@@ -2,6 +2,7 @@ import type { GameConfig } from '../config/game.js';
 import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
 import { resolveLanguage } from '../lang/resolver.js';
+import { resolveSkin } from '../skin/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
 
@@ -46,7 +47,8 @@ export async function installGameFrame(
   applyIframeSize(host, config, manifest);
   host.setLayoutContext(layout);
   const lang = resolveLangForGame(el, config, manifest);
-  host.kickoff(1, lang);
+  const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl());
+  host.kickoff(1, lang, skin);
 }
 
 /** Resolve the customer's `lang` attribute against the game's manifest
@@ -64,6 +66,35 @@ function resolveLangForGame(
     ? navigator.languages
     : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
   const { resolved, issues } = resolveLanguage(presets, config.lang, navLangs);
+  for (const message of issues) {
+    fireError(el, 'invalid-config', message);
+  }
+  return resolved;
+}
+
+/** Resolve the customer's `skin` attribute against the game's manifest
+ *  skin block. Returns null when the game ships no skin presets, which
+ *  the iframe runtime forwards as `ctx.skin = null` so games stay
+ *  single-skin by default. Bundle-relative asset paths resolve against
+ *  the game bundle URL (mirrors `game-src` resolution). */
+function resolveSkinForGame(
+  el: HTMLElement,
+  config: GameConfig,
+  manifest: ManifestMessage | null,
+  baseUrl: string | null,
+): ReturnType<typeof resolveSkin>['resolved'] {
+  const skinBlock = manifest?.skins;
+  if (!skinBlock) return null;
+  const prefersDark = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const { resolved, issues } = resolveSkin(
+    skinBlock.presets,
+    skinBlock.schema ?? null,
+    config.skin,
+    prefersDark,
+    { baseUrl, rejectInlineJson: false },
+  );
   for (const message of issues) {
     fireError(el, 'invalid-config', message);
   }

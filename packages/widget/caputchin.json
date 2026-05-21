@@ -70,5 +70,136 @@
         "overlayClose": "إغلاق"
       }
     }
+  },
+  "skins": {
+    "schema": {
+      "primary": {
+        "type": "color",
+        "name": "Primary action",
+        "description": "Verify button, shield verified state, focus outline, brand link colors."
+      },
+      "primary_hover": {
+        "type": "color",
+        "name": "Primary hover",
+        "description": "Darker variant of primary used on hover for brand links."
+      },
+      "surface_bg": {
+        "type": "color",
+        "name": "Surface background",
+        "description": "Card / dialog background. Frames the verify checkbox and game dialog."
+      },
+      "text_primary": {
+        "type": "color",
+        "name": "Primary text",
+        "description": "Verify checkbox text, close button text."
+      },
+      "text_label": {
+        "type": "color",
+        "name": "State label",
+        "description": "The Verify / Verifying / Verified / Failed label color."
+      },
+      "text_muted": {
+        "type": "color",
+        "name": "Muted text",
+        "description": "Brand tag, shield outline in interactive idle state, separator dots."
+      },
+      "text_passive": {
+        "type": "color",
+        "name": "Passive text",
+        "description": "Shield outline in passive (auto / form-submit) idle state."
+      },
+      "border": {
+        "type": "color",
+        "name": "Border",
+        "description": "Card outline, frame divider, badge slot divider."
+      },
+      "glyph": {
+        "type": "color",
+        "name": "Glyph",
+        "description": "Checkmark / error glyph fill rendered on top of the shield."
+      },
+      "error": {
+        "type": "color",
+        "name": "Error",
+        "description": "Shield stroke + fill when verification fails."
+      },
+      "shadow": {
+        "type": "color",
+        "name": "Modal shadow",
+        "description": "Drop shadow on the modal dialog."
+      },
+      "modal_backdrop": {
+        "type": "color",
+        "name": "Modal backdrop",
+        "description": "Backdrop wash behind the modal dialog."
+      },
+      "fullscreen_backdrop": {
+        "type": "color",
+        "name": "Fullscreen backdrop",
+        "description": "Backdrop wash behind the fullscreen dialog."
+      },
+      "close_btn_bg": {
+        "type": "color",
+        "name": "Close button bg",
+        "description": "Background of the close (x) button on the fullscreen dialog."
+      },
+      "brand_text": {
+        "type": "color",
+        "name": "Brand text",
+        "description": "Color of the Caputchin wordmark + home link in the brand strip. Pairs with brand_logo so wordmark + leaf match."
+      },
+      "brand_text_hover": {
+        "type": "color",
+        "name": "Brand text hover",
+        "description": "Color of the brand wordmark + tag links on hover/focus."
+      },
+      "brand_logo": {
+        "type": "image",
+        "name": "Brand logo",
+        "description": "Leaf monogram rendered at the start of the brand strip. Asset must match the skin mode (light/dark variant)."
+      }
+    },
+    "presets": {
+      "light": {
+        "_mode": "light",
+        "_default": true,
+        "primary": "#2F6640",
+        "primary_hover": "#1f4a2c",
+        "surface_bg": "#ffffff",
+        "text_primary": "#1a1917",
+        "text_label": "#3d2a5e",
+        "text_muted": "#6e7681",
+        "text_passive": "#b8bec5",
+        "border": "#d0d7de",
+        "glyph": "#ffffff",
+        "error": "#c2410c",
+        "shadow": "rgba(0,0,0,0.25)",
+        "modal_backdrop": "rgba(0,0,0,0.45)",
+        "fullscreen_backdrop": "rgba(0,0,0,0.8)",
+        "close_btn_bg": "rgba(255,255,255,0.9)",
+        "brand_text": "#2F6640",
+        "brand_text_hover": "#1f4a2c"
+      },
+      "dark": {
+        "_mode": "dark",
+        "_default": true,
+        "primary": "#4E9B65",
+        "primary_hover": "#3A7D4F",
+        "surface_bg": "#182518",
+        "text_primary": "#F7F5F2",
+        "text_label": "#9ACE9B",
+        "text_muted": "#9ACE9B",
+        "text_passive": "#243526",
+        "border": "#2F6640",
+        "glyph": "#0F1810",
+        "error": "#FCA5A5",
+        "shadow": "rgba(0,0,0,0.6)",
+        "modal_backdrop": "rgba(0,0,0,0.65)",
+        "fullscreen_backdrop": "rgba(0,0,0,0.85)",
+        "close_btn_bg": "rgba(36,53,38,0.92)",
+        "brand_text": "#F7F5F2",
+        "brand_text_hover": "#9ACE9B"
+      }
+    }
   }
 }

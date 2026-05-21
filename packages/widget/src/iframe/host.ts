@@ -1,7 +1,7 @@
 import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
 import type { IframeToWidget, ManifestMessage } from '../protocol/messages.js';
-import type { Layout, ResolvedLanguage } from '@caputchin/game-sdk';
+import type { Layout, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
 
 // srcdoc iframes always fire `load` for the wrapper document; even on CSP block or 404.
 // The real readiness signal is `game-started` postMessage from the runtime.
@@ -108,6 +108,14 @@ export class IframeHost {
     return this.iframe;
   }
 
+  /** Returns the game bundle URL (passed via `<caputchin-game game-src>`
+   *  or derived from the `game` attribute's npm/CDN lookup). Used by the
+   *  skin resolver as the base for bundle-relative asset paths in
+   *  `skins.presets`. `null` for game-only-no-bundle cases. */
+  getGameUrl(): string | null {
+    return this.gameUrl;
+  }
+
   /**
    * Wait for the iframe runtime to post its manifest. Resolves to the message
    * if received within `timeoutMs`, or `null` on timeout. Safe to call multiple
@@ -165,13 +173,18 @@ export class IframeHost {
     send(this.iframe, { kind: 'visibility', seq: 0, visible });
   }
 
-  kickoff(seq: number, lang: ResolvedLanguage | null = null): void {
+  kickoff(
+    seq: number,
+    lang: ResolvedLanguage | null = null,
+    skin: ResolvedSkin | null = null,
+  ): void {
     if (!this.iframe) return;
     send(this.iframe, {
       kind: 'kickoff',
       seq,
       gameId: this.gameId,
       lang,
+      skin,
     });
 
     // Start ack timer after kickoff is sent; waiting for game-started postMessage.
