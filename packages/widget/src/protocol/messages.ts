@@ -1,6 +1,9 @@
 import type {
+  ConfigPreset,
+  ConfigSchemaEntry,
   LanguagePreset,
   Layout,
+  ResolvedConfig,
   ResolvedLanguage,
   ResolvedSkin,
   SkinPreset,
@@ -13,6 +16,7 @@ export interface KickoffMessage {
   gameId: string | null;
   lang: ResolvedLanguage | null;
   skin: ResolvedSkin | null;
+  config: ResolvedConfig | null;
 }
 
 export interface DisposeMessage {
@@ -68,6 +72,12 @@ export interface ManifestMessage {
   skins: {
     schema?: Record<string, SkinSchemaEntry>;
     presets: Record<string, SkinPreset>;
+  } | null;
+  /** Configurations block from the game's manifest. Carries schema + presets
+   *  because schema drives runtime validation, parallel to skins. */
+  configurations: {
+    schema?: Record<string, ConfigSchemaEntry>;
+    presets: Record<string, ConfigPreset>;
   } | null;
 }
 

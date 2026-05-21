@@ -33,6 +33,12 @@ export interface GameConfig {
    *  Resolved against the game's manifest skins after the manifest
    *  postMessage arrives. Null when omitted or empty. */
   skin: string | null;
+  /** Raw `config` attribute value (un-resolved). Drives the game's
+   *  configuration context. Does NOT propagate to widget shell config
+   *  (no shared dimension across the two surfaces). Resolved against the
+   *  game's manifest configurations after the manifest postMessage
+   *  arrives. Null when omitted or empty. */
+  config: string | null;
 }
 
 /**
@@ -100,6 +106,8 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
   const rawSkin = el.getAttribute('skin');
   const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
+  const rawConfig = el.getAttribute('config');
+  const configAttr = rawConfig !== null && rawConfig.trim().length > 0 ? rawConfig : null;
 
   return {
     config: {
@@ -113,6 +121,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       layout,
       lang,
       skin,
+      config: configAttr,
     },
     issues,
     inert: false,

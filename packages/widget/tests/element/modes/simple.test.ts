@@ -132,3 +132,49 @@ describe('widget skin attribute', () => {
     el.remove();
   });
 });
+
+describe('widget config attribute (brand link wiring)', () => {
+  it('default brand strip points at caputchin.com + /legal', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
+    document.body.appendChild(el);
+    const home = el.shadowRoot!.querySelector('[part="simple-brand-home"]') as HTMLAnchorElement;
+    const tag = el.shadowRoot!.querySelector('[part="simple-brand-tag"]') as HTMLAnchorElement;
+    expect(home.href).toBe('https://caputchin.com/');
+    expect(tag.href).toBe('https://caputchin.com/legal');
+    el.remove();
+  });
+
+  it('config="default" resolves the same brand links as auto', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', config: 'default' });
+    document.body.appendChild(el);
+    const home = el.shadowRoot!.querySelector('[part="simple-brand-home"]') as HTMLAnchorElement;
+    expect(home.href).toBe('https://caputchin.com/');
+    el.remove();
+  });
+
+  it('inline JSON config fires invalid-config + falls back to default', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', config: '{"home_link":"https://attacker.example"}' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
+    const home = el.shadowRoot!.querySelector('[part="simple-brand-home"]') as HTMLAnchorElement;
+    expect(home.href).toBe('https://caputchin.com/');
+    el.remove();
+  });
+
+  it('unknown config name fires invalid-config + falls back to default', () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', config: 'not-a-preset' });
+    const messages: string[] = [];
+    el.addEventListener('error', (e) => {
+      const detail = (e as CustomEvent).detail as { message?: string };
+      if (detail?.message) messages.push(detail.message);
+    });
+    document.body.appendChild(el);
+    expect(messages.some((m) => /not-a-preset/.test(m))).toBe(true);
+    el.remove();
+  });
+});

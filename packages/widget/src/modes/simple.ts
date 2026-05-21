@@ -18,7 +18,7 @@ import type { ShellPalette } from '../skin/widget-shell-skin.js';
  * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, height, size, shell, skin } = input;
+  const { host, root: renderRoot, trigger, width, height, size, shell, skin, shellConfig } = input;
   const isInteractive = trigger === 'click';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
@@ -53,7 +53,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     const homeLink = document.createElement('a');
     homeLink.setAttribute('part', 'simple-brand-home');
-    homeLink.href = 'https://caputchin.com';
+    homeLink.href = shellConfig.values.home_link;
     homeLink.target = '_blank';
     homeLink.rel = 'noopener noreferrer';
     homeLink.style.cssText = 'display:contents;color:var(--cpt-skin-brand_text)';
@@ -83,7 +83,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
     const tag = document.createElement('a');
     tag.setAttribute('part', 'simple-brand-tag');
-    tag.href = 'https://caputchin.com/legal';
+    tag.href = shellConfig.values.legal_link;
     tag.target = '_blank';
     tag.rel = 'noopener noreferrer';
     tag.textContent = shell.strings.brandTag;

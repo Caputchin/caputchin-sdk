@@ -208,5 +208,26 @@
         "separator": "#3A7D4F"
       }
     }
+  },
+  "configurations": {
+    "schema": {
+      "home_link": {
+        "type": "link",
+        "name": "Brand home link",
+        "description": "External URL the leaf + Caputchin wordmark in the brand strip links to."
+      },
+      "legal_link": {
+        "type": "link",
+        "name": "Brand legal link",
+        "description": "External URL the small tagline under the wordmark links to. Typically the privacy / legal page."
+      }
+    },
+    "presets": {
+      "default": {
+        "_default": true,
+        "home_link": "https://caputchin.com",
+        "legal_link": "https://caputchin.com/legal"
+      }
+    }
   }
 }

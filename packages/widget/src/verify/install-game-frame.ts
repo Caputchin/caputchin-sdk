@@ -3,6 +3,7 @@ import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
 import { resolveLanguage } from '../lang/resolver.js';
 import { resolveSkin } from '../skin/resolver.js';
+import { resolveConfig } from '../configurations/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
 
@@ -48,7 +49,8 @@ export async function installGameFrame(
   host.setLayoutContext(layout);
   const lang = resolveLangForGame(el, config, manifest);
   const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl());
-  host.kickoff(1, lang, skin);
+  const cfg = resolveConfigForGame(el, config, manifest);
+  host.kickoff(1, lang, skin, cfg);
 }
 
 /** Resolve the customer's `lang` attribute against the game's manifest
@@ -66,6 +68,30 @@ function resolveLangForGame(
     ? navigator.languages
     : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
   const { resolved, issues } = resolveLanguage(presets, config.lang, navLangs);
+  for (const message of issues) {
+    fireError(el, 'invalid-config', message);
+  }
+  return resolved;
+}
+
+/** Resolve the customer's `config` attribute against the game's manifest
+ *  configurations block. Returns null when the game ships no
+ *  configurations presets, which the iframe runtime forwards as
+ *  `ctx.config = null`. Mirrors `resolveSkinForGame` minus the bundle
+ *  base URL (configurations carry typed scalars, not asset paths). */
+function resolveConfigForGame(
+  el: HTMLElement,
+  config: GameConfig,
+  manifest: ManifestMessage | null,
+): ReturnType<typeof resolveConfig>['resolved'] {
+  const block = manifest?.configurations;
+  if (!block) return null;
+  const { resolved, issues } = resolveConfig({
+    presets: block.presets,
+    schema: block.schema ?? null,
+    attrValue: config.config,
+    rejectInlineJson: false,
+  });
   for (const message of issues) {
     fireError(el, 'invalid-config', message);
   }

@@ -1,7 +1,7 @@
 import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
 import type { IframeToWidget, ManifestMessage } from '../protocol/messages.js';
-import type { Layout, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
+import type { Layout, ResolvedConfig, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
 
 // srcdoc iframes always fire `load` for the wrapper document; even on CSP block or 404.
 // The real readiness signal is `game-started` postMessage from the runtime.
@@ -177,6 +177,7 @@ export class IframeHost {
     seq: number,
     lang: ResolvedLanguage | null = null,
     skin: ResolvedSkin | null = null,
+    config: ResolvedConfig | null = null,
   ): void {
     if (!this.iframe) return;
     send(this.iframe, {
@@ -185,6 +186,7 @@ export class IframeHost {
       gameId: this.gameId,
       lang,
       skin,
+      config,
     });
 
     // Start ack timer after kickoff is sent; waiting for game-started postMessage.

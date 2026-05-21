@@ -5,6 +5,7 @@ import { fireError } from '../errors.js';
 import { resolveWidgetShell } from '../lang/widget-shell.js';
 import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
+import { resolveWidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -28,7 +29,7 @@ import { runManual } from '../verify/run-manual.js';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang', 'skin'];
+  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang', 'skin', 'config'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -100,6 +101,14 @@ export class CaputchinGame extends HTMLElement {
     this.setAttribute('data-skin-mode', skin.mode);
     applySkinVars(this, skin.palette);
 
+    // Widget shell config (brand link targets) stays at the bundled default
+    // on the game element. The customer's `config` attribute on
+    // <caputchin-game> drives the GAME's configurations only — see
+    // install-game-frame for that resolution. There's no shared dimension
+    // between game configurations and widget shell configurations
+    // (configurations have no analog to skin's `_mode` cross-cutting key).
+    const shellConfig = resolveWidgetShellConfig(null);
+
     const gp = createGamePresentation({
       host: this,
       root: shadow,
@@ -110,6 +119,7 @@ export class CaputchinGame extends HTMLElement {
       manual: isManual,
       shell,
       skin,
+      shellConfig,
     });
     state.gamePresentation = gp;
     gp.mount();
