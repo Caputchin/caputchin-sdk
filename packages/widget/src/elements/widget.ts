@@ -1,5 +1,6 @@
 import { inspectWidgetConfig } from '../config/widget.js';
 import { fireError } from '../errors.js';
+import { resolveWidgetShell } from '../lang/widget-shell.js';
 import { createPresentation } from '../modes/index.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -14,7 +15,7 @@ import { runCap } from '../verify/run-cap.js';
  * games, use `<caputchin-game>` instead.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size'];
+  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang'];
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
@@ -34,6 +35,12 @@ export class CaputchinWidget extends HTMLElement {
     const apiHost = __CAPUTCHIN_API_HOST__;
     const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
+    const shell = resolveWidgetShell(state.config.lang);
+    for (const message of shell.issues) {
+      fireError(this, 'invalid-config', message);
+    }
+    if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
+
     state.presentation = createPresentation(state.config.invisible, {
       host: this,
       root: shadow,
@@ -41,6 +48,7 @@ export class CaputchinWidget extends HTMLElement {
       width: state.config.width,
       height: state.config.height,
       size: state.config.size,
+      shell,
     });
     state.presentation.mount();
 

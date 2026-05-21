@@ -58,15 +58,15 @@ export class IframeHost {
    * Apply width/height to the iframe. Pass `null` for an axis to keep
    * whatever was previously set (or the default). Pixel numbers become
    * `${n}px`; the special string `'100%'` is passed through (used by
-   * width="full" in game presentation).
+   * width="full" / height="full" in game presentation).
    */
-  setSize(width: number | '100%' | null, height: number | null): void {
+  setSize(width: number | '100%' | null, height: number | '100%' | null): void {
     if (!this.iframe) return;
     if (width !== null) {
       this.iframe.style.width = typeof width === 'number' ? `${width}px` : width;
     }
     if (height !== null) {
-      this.iframe.style.height = `${height}px`;
+      this.iframe.style.height = typeof height === 'number' ? `${height}px` : height;
     }
   }
 
@@ -86,7 +86,7 @@ export class IframeHost {
         return;
       }
       if (msg.kind === 'dimensions-measured') {
-        // Apply directly to the iframe; outer chrome (inline frame /
+        // Apply directly to the iframe; outer shell (inline frame /
         // overlay dialog) re-flows automatically. Iframe-slot `data-fill`
         // path (customer-pinned inline) intentionally overrides via CSS
         // so customer attrs still win over auto-measure.

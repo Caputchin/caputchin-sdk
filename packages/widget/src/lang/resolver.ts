@@ -17,6 +17,15 @@ export interface ResolveResult {
   issues: string[];
 }
 
+export interface ResolveOptions {
+  /** Reject inline-JSON attribute values. The widget shell layer
+   *  (`<caputchin-widget lang="…">`) sets this so authors are limited to
+   *  ISO codes / preset names; inline JSON would imply per-string overrides
+   *  the bundled shell doesn't support. Inline JSON detected under this
+   *  flag emits an issue and cascades to browser-auto. */
+  rejectInlineJson?: boolean;
+}
+
 type PresetMap = Record<string, LanguagePreset>;
 
 function normalizeIso(iso: string): string {
@@ -180,6 +189,7 @@ export function resolveLanguage(
   presets: PresetMap | null | undefined,
   attrValue: string | null | undefined,
   navigatorLanguages: readonly string[],
+  options: ResolveOptions = {},
 ): ResolveResult {
   const issues: string[] = [];
   const presetsMap = presets ?? {};
@@ -192,37 +202,56 @@ export function resolveLanguage(
 
   // Inline JSON path.
   if (trimmed.startsWith('{')) {
+    if (options.rejectInlineJson) {
+      issues.push('lang attribute on <caputchin-widget> does not accept inline JSON; pass a preset name or ISO code; falling through to auto');
+      return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };
+    }
     const inline = tryParseInlineJson(trimmed, issues);
     if (inline) {
-      if (typeof inline._extends === 'string' && inline._extends.length > 0) {
-        const resolved = resolveLeaf(presetsMap, null, inline, issues);
+      // If inline declares `_extends`, resolve via that chain. If inline
+      // omits `_extends` but declares `_iso`, treat the iso as an implicit
+      // `_extends` so the resolved object inherits the matching preset's
+      // text strings by default; the customer's inline keys still win
+      // during chain flattening. Inline with neither falls through to the
+      // layer-atop-auto path further down.
+      const hasExtends = typeof inline._extends === 'string' && inline._extends.length > 0;
+      const implicitExtends = !hasExtends && typeof inline._iso === 'string' && inline._iso.length > 0
+        ? inline._iso
+        : null;
+      if (hasExtends || implicitExtends !== null) {
+        const effective: LanguagePreset = implicitExtends !== null
+          ? { ...inline, _extends: implicitExtends }
+          : inline;
+        const resolved = resolveLeaf(presetsMap, null, effective, issues);
         if (resolved) return { resolved, issues };
-        return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };
-      } else {
-        // Layer inline atop the auto-resolved base.
-        const base = resolveAuto(presetsMap, navigatorLanguages, issues);
-        const merged: Record<string, string> = {};
-        if (base) {
-          for (const [k, v] of Object.entries(base)) {
-            if (typeof v === 'string') merged[k] = v;
-          }
-        }
-        for (const [k, v] of Object.entries(inline)) {
-          if (k === '_extends' || k === '_default') continue;
+        // _extends / iso target missing → fall through to layer-atop-auto so
+        // the customer still gets *something* visible (auto base + their
+        // inline overrides). The missing-target issue is already on the
+        // issues list from buildChain.
+      }
+      // Layer inline atop the auto-resolved base.
+      const base = resolveAuto(presetsMap, navigatorLanguages, issues);
+      const merged: Record<string, string> = {};
+      if (base) {
+        for (const [k, v] of Object.entries(base)) {
           if (typeof v === 'string') merged[k] = v;
         }
-        const inlineIso = typeof inline._iso === 'string' ? inline._iso : merged['_iso'];
-        const iso = (inlineIso ?? ISO_FALLBACK).toLowerCase();
-        const direction = inline._direction === 'ltr' || inline._direction === 'rtl'
-          ? inline._direction
-          : (isRtl(iso) ? 'rtl' : 'ltr');
-        const resolved: ResolvedLanguage = {
-          ...merged,
-          _iso: iso,
-          _direction: direction,
-        };
-        return { resolved, issues };
       }
+      for (const [k, v] of Object.entries(inline)) {
+        if (k === '_extends' || k === '_default') continue;
+        if (typeof v === 'string') merged[k] = v;
+      }
+      const inlineIso = typeof inline._iso === 'string' ? inline._iso : merged['_iso'];
+      const iso = (inlineIso ?? ISO_FALLBACK).toLowerCase();
+      const direction = inline._direction === 'ltr' || inline._direction === 'rtl'
+        ? inline._direction
+        : (isRtl(iso) ? 'rtl' : 'ltr');
+      const resolved: ResolvedLanguage = {
+        ...merged,
+        _iso: iso,
+        _direction: direction,
+      };
+      return { resolved, issues };
     }
     // Inline JSON failed; cascade.
     return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };

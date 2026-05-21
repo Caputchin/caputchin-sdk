@@ -252,6 +252,60 @@ describe('resolveLanguage — inline JSON', () => {
     expect(resolved!['hello']).toBe('مرحبا');
   });
 
+  it('inline JSON with _iso uses it as implicit _extends (pulls iso base strings)', () => {
+    // Browser prefers en, customer passes `{ _iso: "ar", overrideKey: "X" }`.
+    // Old behavior layered atop the en (auto) base — surprising because
+    // declaring _iso=ar means "I want ar". New behavior treats _iso as
+    // implicit _extends so unspecified keys come from the ar preset.
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
+      ar: { _iso: 'ar', _default: true, hello: 'مرحبا', bye: 'وداعا' },
+    });
+    const inline = JSON.stringify({ _iso: 'ar', bye: 'CUSTOM' });
+    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    expect(resolved!._iso).toBe('ar');
+    expect(resolved!._direction).toBe('rtl');
+    expect(resolved!['hello']).toBe('مرحبا'); // inherited from ar via implicit extends
+    expect(resolved!['bye']).toBe('CUSTOM');   // inline override wins
+  });
+
+  it('inline JSON with _iso + _direction also pulls iso base via implicit _extends', () => {
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi' },
+      ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
+    });
+    const inline = JSON.stringify({ _iso: 'ar', _direction: 'rtl', custom: 'X' });
+    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    expect(resolved!._iso).toBe('ar');
+    expect(resolved!._direction).toBe('rtl');
+    expect(resolved!['hello']).toBe('مرحبا');
+    expect(resolved!['custom']).toBe('X');
+  });
+
+  it('inline JSON with _iso missing from presets falls back to auto + layers', () => {
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi' },
+    });
+    const inline = JSON.stringify({ _iso: 'xx', hello: 'CUSTOM' });
+    const { resolved, issues } = resolveLanguage(presets, inline, ['en']);
+    // Implicit _extends: xx target is missing → fall through to layer-atop-auto.
+    // Result: auto base (en) + inline overrides (_iso=xx wins, hello=CUSTOM wins).
+    expect(resolved!._iso).toBe('xx');
+    expect(resolved!['hello']).toBe('CUSTOM');
+    expect(issues.length).toBeGreaterThan(0);
+  });
+
+  it('inline JSON with no _iso and no _extends layers atop auto base (unchanged)', () => {
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
+    });
+    const inline = JSON.stringify({ hello: 'Hey' });
+    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    expect(resolved!._iso).toBe('en');
+    expect(resolved!['hello']).toBe('Hey');
+    expect(resolved!['bye']).toBe('Bye');
+  });
+
   it('inline malformed JSON emits issue and falls through to auto', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
@@ -268,6 +322,29 @@ describe('resolveLanguage — inline JSON', () => {
     const { resolved, issues } = resolveLanguage(presets, '{42}', ['en']);
     expect(issues.length).toBeGreaterThan(0);
     expect(resolved!._iso).toBe('en');
+  });
+});
+
+describe('resolveLanguage — rejectInlineJson option', () => {
+  it('emits an issue and falls back to auto when inline JSON arrives under the flag', () => {
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi' },
+      ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
+    });
+    const inline = JSON.stringify({ _iso: 'ar', hello: 'مرحبا' });
+    const { resolved, issues } = resolveLanguage(presets, inline, ['en'], { rejectInlineJson: true });
+    expect(issues.some((m) => /inline JSON/i.test(m))).toBe(true);
+    expect(resolved!._iso).toBe('en');
+  });
+
+  it('plain preset name still resolves under the flag', () => {
+    const presets = presetsOf({
+      en: { _iso: 'en', _default: true, hello: 'Hi' },
+      ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
+    });
+    const { resolved, issues } = resolveLanguage(presets, 'ar', ['en'], { rejectInlineJson: true });
+    expect(issues).toEqual([]);
+    expect(resolved!._iso).toBe('ar');
   });
 });
 

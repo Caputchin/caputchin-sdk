@@ -131,6 +131,11 @@ describe('inspectGameConfig — height attr', () => {
     expect(r).toBe(300);
   });
 
+  it('accepts "full"', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', height: 'full' })).config.height;
+    expect(r).toBe('full');
+  });
+
   it('ignores bogus value + emits issue', () => {
     const r = inspectGameConfig(el({ game: '@x/y', height: 'bogus' }));
     expect(r.config.height).toBeNull();

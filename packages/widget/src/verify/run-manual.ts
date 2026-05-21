@@ -5,7 +5,7 @@ import type { GameConfig } from '../config/game.js';
 
 /**
  * Manual orchestrator for `<caputchin-game trigger="manual">`; the customer
- * hosts the game UX in their own DOM (slotted into the layout chrome) and
+ * hosts the game UX in their own DOM (slotted into the layout shell) and
  * drives completion via `widget.pass({ score, durationMs })` /
  * `widget.fail({ code, message })`. No iframe mounts.
  *

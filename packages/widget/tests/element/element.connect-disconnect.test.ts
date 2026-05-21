@@ -17,7 +17,7 @@ beforeAll(() => {
 
 describe('CaputchinWidget lifecycle', () => {
   it('observedAttributes covers cap surface', () => {
-    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'invisible', 'trigger', 'width', 'height', 'size']);
+    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang']);
   });
 
   it('does NOT observe game attrs (game attrs belong on <caputchin-game>)', () => {

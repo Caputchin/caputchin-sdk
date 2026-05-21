@@ -2,9 +2,11 @@
  * number is an explicit pixel value that overrides both (and any game
  * preferredWidth). */
 export type WidgetWidth = 'auto' | 'full' | number;
-/** Explicit pixel height. `null` means "auto"; defer to the game's
- * preferredHeight (if any) or the widget default. */
-export type WidgetHeight = number | null;
+/** `null` means "auto" — defer to the game's preferredHeight (if any) or
+ *  the widget default. `'full'` spans the parent (and, for game widgets in
+ *  overlay layouts, stretches the iframe vertically inside the dialog).
+ *  A positive number is an explicit pixel value. */
+export type WidgetHeight = 'full' | number | null;
 export type WidgetSize = 'normal' | 'compact';
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';
 
@@ -101,9 +103,12 @@ export function parseCommonAttrs(el: HTMLElement, issues: ConfigIssue[]): {
 
   let height: WidgetHeight = null;
   if (rawHeight !== null && rawHeight !== '') {
-    const px = parsePixelValue(rawHeight);
-    if (px === null) issues.push({ message: `height="${rawHeight}" is invalid; expected a positive pixel value; ignoring` });
-    else height = px;
+    if (rawHeight === 'full') height = 'full';
+    else {
+      const px = parsePixelValue(rawHeight);
+      if (px === null) issues.push({ message: `height="${rawHeight}" is invalid; expected full or a positive pixel value; ignoring` });
+      else height = px;
+    }
   }
 
   let size: WidgetSize;

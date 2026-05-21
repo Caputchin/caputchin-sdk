@@ -72,14 +72,18 @@ function resolveLangForGame(
 
 /**
  * Size the iframe by the game's manifest (or defaults). The customer's
- * `width` / `height` attributes apply to the OUTER chrome instead:
+ * `width` / `height` attributes apply to the OUTER shell instead:
  *   - inline: customer dims set the bordered frame total size; iframe gets
  *     manifest-preferred dimensions and the brand strip fills the leftover.
  *   - modal/fullscreen: customer dims set the entry-checkbox size; iframe
  *     gets manifest-preferred dimensions and the dialog shrink-wraps to it.
  *
- * The only special case here is `width="full"` on inline; the iframe
- * stretches to 100% of the (full-width) frame.
+ * Exceptions: `width="full"` and `height="full"` stretch the iframe to
+ * 100% along that axis. In inline mode the iframe fills the bordered
+ * frame; in overlay (modal/fullscreen) mode the iframe fills the dialog
+ * along the requested axis (paired with the `data-fill-x` / `data-fill-y`
+ * CSS rules in modes/game.ts that opt the slot out of the centering
+ * layout on that axis).
  */
 export function applyIframeSize(
   host: IframeHost,
@@ -89,6 +93,8 @@ export function applyIframeSize(
   const widthCss: number | '100%' = config.width === 'full'
     ? '100%'
     : (manifest?.preferredWidth ?? DEFAULT_W);
-  const heightCss = manifest?.preferredHeight ?? DEFAULT_H;
+  const heightCss: number | '100%' = config.height === 'full'
+    ? '100%'
+    : (manifest?.preferredHeight ?? DEFAULT_H);
   host.setSize(widthCss, heightCss);
 }

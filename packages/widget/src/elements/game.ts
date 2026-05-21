@@ -2,6 +2,7 @@ import { inspectGameConfig } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
+import { resolveWidgetShell } from '../lang/widget-shell.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -21,7 +22,7 @@ import { runManual } from '../verify/run-manual.js';
  *   - `inline` (default) → iframe up on mount, trigger=auto.
  *   - `modal` / `fullscreen` → checkbox entry, iframe opens on click.
  *   - `trigger="manual"` → no iframe; customer slots custom game DOM into
- *     the layout chrome via the default `<slot>`. Methods `start` / `pass`
+ *     the layout shell via the default `<slot>`. Methods `start` / `pass`
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
@@ -51,10 +52,36 @@ export class CaputchinGame extends HTMLElement {
 
     // Warn (but keep widget running) if non-manual mode receives slotted
     // children; they'd never appear without a <slot>. Manual is the only
-    // mode where customer DOM gets projected into the chrome.
+    // mode where customer DOM gets projected into the shell.
     if (!isManual && this.childElementCount > 0) {
       fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
     }
+
+    // Resolve shell from the same `lang` attribute so the widget's own UI
+    // strings (Verify label, brand, close button) match the customer's
+    // locale choice. Inline JSON is valid on the game side but not on the
+    // shell side — so we don't pass the JSON through verbatim. Instead we
+    // pull TWO signals out of inline payloads:
+    //   1. A locale hint (`_iso` first, then `_extends`) used as the
+    //      shell's preset selector. Declaring `_iso: "ar"` for the game
+    //      implies the surrounding shell should also resolve to ar.
+    //   2. An explicit direction override (`_direction`). Always wins
+    //      over the resolved shell's direction. Useful for the case
+    //      `{ _direction: "rtl", ... }` — customer wants the shell to
+    //      flip RTL without picking a specific Arabic locale.
+    // Neither signal present → shell falls back to browser auto.
+    // Malformed JSON also falls back silently (the game-side resolveLanguage
+    // already emits a parse issue).
+    const rawLang = state.config.lang;
+    const inlineSignals = rawLang ? deriveShellSignals(rawLang) : { hint: null, direction: null };
+    const baseShell = resolveWidgetShell(inlineSignals.hint);
+    const shell = inlineSignals.direction
+      ? { ...baseShell, direction: inlineSignals.direction }
+      : baseShell;
+    for (const message of baseShell.issues) {
+      fireError(this, 'invalid-config', message);
+    }
+    if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
     const gp = createGamePresentation({
       host: this,
@@ -64,6 +91,7 @@ export class CaputchinGame extends HTMLElement {
       height: state.config.height,
       layout,
       manual: isManual,
+      shell,
     });
     state.gamePresentation = gp;
     gp.mount();
@@ -124,6 +152,36 @@ export class CaputchinGame extends HTMLElement {
       console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
     }
   }
+}
+
+interface ShellSignals {
+  /** Preset name / ISO to feed to `resolveWidgetShell`. `null` ⇒ browser auto. */
+  hint: string | null;
+  /** Explicit direction override pulled from inline JSON's `_direction`.
+   *  Applied on top of the shell's own resolved direction. */
+  direction: 'ltr' | 'rtl' | null;
+}
+
+/** Pull shell-relevant signals out of the customer's `lang` attribute.
+ *  Non-JSON values pass through verbatim as the hint (no direction
+ *  override). Inline JSON contributes `_iso` / `_extends` as the hint AND
+ *  `_direction` as an explicit override. Malformed JSON yields no signals
+ *  (shell falls back to browser auto; the game-side resolver emits the
+ *  parse issue). */
+function deriveShellSignals(raw: string): ShellSignals {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{')) return { hint: raw, direction: null };
+  let parsed: unknown;
+  try { parsed = JSON.parse(trimmed); } catch { return { hint: null, direction: null }; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { hint: null, direction: null };
+  }
+  const obj = parsed as Record<string, unknown>;
+  let hint: string | null = null;
+  if (typeof obj._iso === 'string' && obj._iso.length > 0) hint = obj._iso;
+  else if (typeof obj._extends === 'string' && obj._extends.length > 0) hint = obj._extends;
+  const direction = obj._direction === 'rtl' || obj._direction === 'ltr' ? obj._direction : null;
+  return { hint, direction };
 }
 
 function resolveLayout(attr: LayoutAttr): 'inline' | 'modal' | 'fullscreen' {
