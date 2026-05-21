@@ -34,13 +34,28 @@ describe('fetchMarketplaceResolution', () => {
     if (!r.ok) expect(r.code).toBe('resolve-failed');
   });
 
-  it('encodes game ID in URL', async () => {
+  it('encodes game ID in the URL query string', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(
       JSON.stringify({ url: 'https://x.com/g.js', integrity: 'sha384-x' }),
       { status: 200 }
     ));
     await fetchMarketplaceResolution('@org/my game', API_HOST);
     const calledUrl = (vi.mocked(fetch).mock.calls[0]![0] as string);
-    expect(calledUrl).toContain('%40org%2Fmy%20game');
+    // URLSearchParams encodes per application/x-www-form-urlencoded: space → `+`,
+    // `@` → `%40`, `/` → `%2F`. Servers decode both `+` and `%20` as space, so
+    // the wire format is interoperable.
+    expect(calledUrl).toContain('game=%40org%2Fmy+game');
+  });
+
+  it('builds the URL against the new resolve endpoint shape (ADR-0058)', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ url: 'https://x.com/g.js', integrity: 'sha384-x' }),
+      { status: 200 }
+    ));
+    await fetchMarketplaceResolution('caputchin/games/leaf-memory', API_HOST);
+    const calledUrl = (vi.mocked(fetch).mock.calls[0]![0] as string);
+    expect(calledUrl).toBe(
+      'https://api.example.com/api/v1/games/resolve?game=caputchin%2Fgames%2Fleaf-memory'
+    );
   });
 });

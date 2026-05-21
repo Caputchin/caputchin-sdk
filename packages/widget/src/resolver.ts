@@ -11,8 +11,12 @@ export async function fetchMarketplaceResolution(
   id: string,
   apiHost: string
 ): Promise<ResolutionResult> {
-  const encodedId = encodeURIComponent(id);
-  const url = `${apiHost}/api/v1/games/${encodedId}/resolve`;
+  // ADR-0058: derived ids contain slashes (`owner/repo` / `owner/repo/leaf`).
+  // The endpoint takes the id as a query parameter named `game` (matching the
+  // statistics dashboard's filter convention) so we sidestep path-segment
+  // encoding entirely; URLSearchParams handles encoding for free.
+  const params = new URLSearchParams({ game: id });
+  const url = `${apiHost}/api/v1/games/resolve?${params.toString()}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {
