@@ -86,4 +86,32 @@ describe('injectOverrideLayer', () => {
     expect(bundledOrig).toEqual(bundledSnap);
     expect(overrideOrig).toEqual(overrideSnap);
   });
+
+  // ADR-0059 default-selection is override-first: the merged map iterates
+  // override entries before bundled, so a downstream first-`_default` scan
+  // picks the customer's preset over a bundled one in the same group.
+  it('iterates override presets before bundled (override-first selection order)', () => {
+    const bundled = {
+      en: { _iso: 'en', primary: '#bundled' },
+      ar: { _iso: 'ar', primary: '#bundled-ar' },
+    } as Record<string, FakePreset>;
+    const override = {
+      'en-formal': { _iso: 'en', primary: '#override' },
+    } as Record<string, FakePreset>;
+    const keys = Object.keys(injectOverrideLayer(bundled, override));
+    // Override new-name first, then bundled-only, aliases (none here) last.
+    expect(keys).toEqual(['en-formal', 'en', 'ar']);
+  });
+
+  it('on collision: override slot precedes bundled-only, aliased bundled is last', () => {
+    const bundled = {
+      en: { _iso: 'en', primary: '#bundled-en' },
+      ar: { _iso: 'ar', primary: '#bundled-ar' },
+    } as Record<string, FakePreset>;
+    const override = {
+      en: { _iso: 'en', primary: '#override-en' },
+    } as Record<string, FakePreset>;
+    const keys = Object.keys(injectOverrideLayer(bundled, override));
+    expect(keys).toEqual(['en', 'ar', `${BUNDLED_NAMESPACE_PREFIX}en`]);
+  });
 });
