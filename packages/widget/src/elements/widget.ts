@@ -1,6 +1,6 @@
 import { inspectWidgetConfig } from '../config/widget.js';
 import { fireError } from '../errors.js';
-import { resolveWidgetShell } from '../lang/widget-shell.js';
+import { resolveWidgetShell } from '../locale/widget-shell.js';
 import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
 import { resolveWidgetShellConfig } from '../configurations/widget-shell-config.js';
@@ -12,7 +12,7 @@ import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
 import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { ConfigPreset, LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
+import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk';
 
 /**
  * `<caputchin-widget>`; cap PoW + instrumentation only. Default renders
@@ -26,7 +26,7 @@ import type { ConfigPreset, LanguagePreset, SkinPreset } from '@caputchin/game-s
  * bootstrap resolves; bundled fallback applies on timeout / network error.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang', 'skin', 'config'];
+  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'locale', 'skin', 'config'];
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
@@ -50,14 +50,14 @@ export class CaputchinWidget extends HTMLElement {
 
     // Bundled cascade once for hint extraction. Synchronous + cheap; result
     // discarded because mount re-runs the resolvers with the override layer.
-    const hintShell = resolveWidgetShell(state.config.lang);
+    const hintShell = resolveWidgetShell(state.config.locale);
     const hintSkin = resolveWidgetShellSkin(state.config.skin);
 
     void fetchBootstrap({
       apiHost,
       sitekey: state.config.sitekey,
-      langIso: hintShell.iso,
-      skinMode: hintSkin.mode,
+      localeIso: hintShell.iso,
+      skinTheme: hintSkin.theme,
     }).then((bootstrap) => {
       // Disconnect race: element removed from DOM during the bootstrap
       // wait. The new state bag from disconnectedCallback has no config,
@@ -73,11 +73,11 @@ export class CaputchinWidget extends HTMLElement {
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
-    const langOverride = (overrides?.language?.presets ?? null) as Record<string, LanguagePreset> | null;
+    const localeOverride = (overrides?.locale?.presets ?? null) as Record<string, LocalePreset> | null;
     const skinOverride = (overrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
     const configOverride = (overrides?.configuration?.presets ?? null) as Record<string, ConfigPreset> | null;
 
-    const shell = resolveWidgetShell(state.config.lang, undefined, langOverride);
+    const shell = resolveWidgetShell(state.config.locale, undefined, localeOverride);
     for (const message of shell.issues) {
       fireError(this, 'invalid-config', message);
     }
@@ -87,7 +87,7 @@ export class CaputchinWidget extends HTMLElement {
     for (const message of skin.issues) {
       fireError(this, 'invalid-config', message);
     }
-    this.setAttribute('data-skin-mode', skin.mode);
+    this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
     const shellConfig = resolveWidgetShellConfig(state.config.config, configOverride);

@@ -1,5 +1,5 @@
 {
-  "languages": {
+  "locales": {
     "schema": {
       "simpleVerify": {
         "name": "Verify label (idle)",
@@ -162,7 +162,7 @@
     },
     "presets": {
       "light": {
-        "_mode": "light",
+        "_theme": "light",
         "_default": true,
         "primary": "#2F6640",
         "primary_hover": "#1f4a2c",
@@ -183,7 +183,7 @@
         "separator": "#c0c0c0"
       },
       "dark": {
-        "_mode": "dark",
+        "_theme": "dark",
         "_default": true,
         "primary": "#4E9B65",
         "primary_hover": "#3A7D4F",

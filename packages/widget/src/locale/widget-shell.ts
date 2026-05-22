@@ -1,7 +1,7 @@
-import type { LanguagePreset, ResolvedLanguage } from '@caputchin/game-sdk';
+import type { LocalePreset, ResolvedLocale } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
 import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
-import { resolveLanguage } from './resolver.js';
+import { resolveLocale } from './resolver.js';
 
 /** Keys present in the widget's bundled shell presets. Adding a new
  *  user-visible string means adding it to caputchin.json AND extending this
@@ -28,7 +28,7 @@ export interface WidgetShell {
   issues: string[];
 }
 
-const PRESETS = widgetManifest.languages?.presets ?? {};
+const PRESETS = widgetManifest.locales?.presets ?? {};
 
 const HARDCODED_FALLBACK: ShellStrings = {
   simpleVerify: 'Verify',
@@ -42,7 +42,7 @@ const HARDCODED_FALLBACK: ShellStrings = {
   overlayClose: 'Close',
 };
 
-function toStrings(resolved: ResolvedLanguage | null): ShellStrings {
+function toStrings(resolved: ResolvedLocale | null): ShellStrings {
   if (!resolved) return HARDCODED_FALLBACK;
   const out = { ...HARDCODED_FALLBACK };
   for (const key of Object.keys(HARDCODED_FALLBACK) as Array<keyof ShellStrings>) {
@@ -73,11 +73,11 @@ function readNavigatorLanguages(): readonly string[] {
 export function resolveWidgetShell(
   attrValue?: string | null,
   navLangs?: readonly string[],
-  overridePresets?: Record<string, LanguagePreset> | null,
+  overridePresets?: Record<string, LocalePreset> | null,
 ): WidgetShell {
   const languages = navLangs ?? readNavigatorLanguages();
-  const merged = injectOverrideLayer(PRESETS as Record<string, LanguagePreset>, overridePresets);
-  const { resolved, issues } = resolveLanguage(
+  const merged = injectOverrideLayer(PRESETS as Record<string, LocalePreset>, overridePresets);
+  const { resolved, issues } = resolveLocale(
     merged,
     attrValue ?? 'auto',
     languages,

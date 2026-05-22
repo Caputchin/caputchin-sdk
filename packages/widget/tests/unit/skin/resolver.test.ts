@@ -3,8 +3,8 @@ import type { SkinPreset, SkinSchemaEntry } from '@caputchin/game-sdk';
 import { resolveSkin } from '../../../src/skin/resolver.js';
 
 const PRESETS_LIGHT_DARK: Record<string, SkinPreset> = {
-  light: { _mode: 'light', _default: true, primary: '#2F6640', surface_bg: '#ffffff' },
-  dark: { _mode: 'dark', _default: true, primary: '#4E9B65', surface_bg: '#182518' },
+  light: { _theme: 'light', _default: true, primary: '#2F6640', surface_bg: '#ffffff' },
+  dark: { _theme: 'dark', _default: true, primary: '#4E9B65', surface_bg: '#182518' },
 };
 
 const SCHEMA_COLORS: Record<string, SkinSchemaEntry> = {
@@ -30,7 +30,7 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: 'light',
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
     expect(r.resolved?.['primary']).toBe('#2F6640');
   });
 
@@ -41,7 +41,7 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: 'dark',
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
     expect(r.resolved?.['surface_bg']).toBe('#182518');
   });
 
@@ -52,7 +52,7 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: 'auto',
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
 
   it('attr="auto" + prefersDark=true → dark', () => {
@@ -62,7 +62,7 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: 'auto',
       prefersDark: true,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
   });
 
   it('attr=null + prefersDark=true → dark', () => {
@@ -72,7 +72,7 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: null,
       prefersDark: true,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
   });
 
   it('attr=empty string + prefersDark=false → light', () => {
@@ -82,14 +82,14 @@ describe('resolveSkin — basic cascade', () => {
       attrValue: '',
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
 });
 
 describe('resolveSkin — preset name lookup', () => {
   const presets: Record<string, SkinPreset> = {
-    'sun': { _mode: 'light', _default: true, primary: '#fff' },
-    'moon': { _mode: 'dark', _default: true, primary: '#000' },
+    'sun': { _theme: 'light', _default: true, primary: '#fff' },
+    'moon': { _theme: 'dark', _default: true, primary: '#000' },
   };
   it('matches preset by exact name', () => {
     const r = resolveSkin({
@@ -98,7 +98,7 @@ describe('resolveSkin — preset name lookup', () => {
       attrValue: 'moon',
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
     expect(r.resolved?.['primary']).toBe('#000');
   });
   it('unknown preset name surfaces issue + cascades to auto', () => {
@@ -109,15 +109,15 @@ describe('resolveSkin — preset name lookup', () => {
       prefersDark: false,
     });
     expect(r.issues.some((m) => m.includes('unknown'))).toBe(true);
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
 });
 
 describe('resolveSkin — mode shortcut tie-break', () => {
   it('mode "light" picks _default:true', () => {
     const presets: Record<string, SkinPreset> = {
-      a: { _mode: 'light', primary: '#aaa' },
-      b: { _mode: 'light', _default: true, primary: '#bbb' },
+      a: { _theme: 'light', primary: '#aaa' },
+      b: { _theme: 'light', _default: true, primary: '#bbb' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -129,8 +129,8 @@ describe('resolveSkin — mode shortcut tie-break', () => {
   });
   it('mode "light" with no _default picks first declared in that mode', () => {
     const presets: Record<string, SkinPreset> = {
-      first: { _mode: 'light', primary: '#aaa' },
-      second: { _mode: 'light', primary: '#bbb' },
+      first: { _theme: 'light', primary: '#aaa' },
+      second: { _theme: 'light', primary: '#bbb' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -142,7 +142,7 @@ describe('resolveSkin — mode shortcut tie-break', () => {
   });
   it('mode "dark" with no dark preset → cascade auto', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, primary: '#fff' },
+      light: { _theme: 'light', _default: true, primary: '#fff' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -150,27 +150,27 @@ describe('resolveSkin — mode shortcut tie-break', () => {
       attrValue: 'dark',
       prefersDark: false,
     });
-    expect(r.issues.some((m) => m.includes('_mode=dark'))).toBe(true);
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.issues.some((m) => m.includes('_theme=dark'))).toBe(true);
+    expect(r.resolved?._theme).toBe('light');
   });
 
   // ANTI-DRIFT CONTRACT (mirrors caputchin-platform
   // lib/white-label/effective-default.test.ts): modeOf coerces anything not
-  // exactly "dark" to light, so a preset with NO `_mode` (or junk) is a live
+  // exactly "dark" to light, so a preset with NO `_theme` (or junk) is a live
   // light candidate. The dashboard's groupKeyOf coerces identically; these
   // two test cases MUST agree on the outcome.
-  it('preset with NO _mode is treated as a light candidate', () => {
+  it('preset with NO _theme is treated as a light candidate', () => {
     const presets: Record<string, SkinPreset> = {
-      brand: { _default: true, primary: '#brand' }, // no _mode
-      light: { _mode: 'light', primary: '#fff' },
+      brand: { _default: true, primary: '#brand' }, // no _theme
+      light: { _theme: 'light', primary: '#fff' },
     };
     const r = resolveSkin({ presets, schema: null, attrValue: 'light', prefersDark: false });
     // brand has _default + coerces to light → wins the light group.
     expect(r.resolved?.['primary']).toBe('#brand');
   });
-  it('preset with wrong-case _mode "Dark" coerces to light, not dark', () => {
+  it('preset with wrong-case _theme "Dark" coerces to light, not dark', () => {
     const presets: Record<string, SkinPreset> = {
-      a: { _mode: 'Dark' as SkinPreset['_mode'], _default: true, primary: '#a' },
+      a: { _theme: 'Dark' as SkinPreset['_theme'], _default: true, primary: '#a' },
     };
     const r = resolveSkin({ presets, schema: null, attrValue: 'light', prefersDark: false });
     expect(r.resolved?.['primary']).toBe('#a');
@@ -180,7 +180,7 @@ describe('resolveSkin — mode shortcut tie-break', () => {
 describe('resolveSkin — auto cascade', () => {
   it('prefersDark=true with no dark preset falls back to light', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, primary: '#fff' },
+      light: { _theme: 'light', _default: true, primary: '#fff' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -188,7 +188,7 @@ describe('resolveSkin — auto cascade', () => {
       attrValue: null,
       prefersDark: true,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
   it('falls back to first declared when no mode preset matches', () => {
     const presets: Record<string, SkinPreset> = {
@@ -200,15 +200,15 @@ describe('resolveSkin — auto cascade', () => {
       attrValue: null,
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('light'); // default mode
+    expect(r.resolved?._theme).toBe('light'); // default mode
   });
 });
 
 describe('resolveSkin — _extends chain', () => {
   it('extends a preset by name; child wins on key conflict', () => {
     const presets: Record<string, SkinPreset> = {
-      base: { _mode: 'dark', _default: true, primary: '#000', accent: '#444' },
-      child: { _mode: 'dark', _extends: 'base', primary: '#111' },
+      base: { _theme: 'dark', _default: true, primary: '#000', accent: '#444' },
+      child: { _theme: 'dark', _extends: 'base', primary: '#111' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -219,30 +219,30 @@ describe('resolveSkin — _extends chain', () => {
     expect(r.resolved?.['primary']).toBe('#111');
     expect(r.resolved?.['accent']).toBe('#444');
   });
-  it('child preset inherits parent _mode when absent', () => {
+  it('child preset inherits parent _theme when absent', () => {
     const presets: Record<string, SkinPreset> = {
-      'dark-base': { _mode: 'dark', primary: '#000' },
-      // Child declares no `_mode`; flattening should pick up `dark` from the parent.
+      'dark-base': { _theme: 'dark', primary: '#000' },
+      // Child declares no `_theme`; flattening should pick up `dark` from the parent.
       'derived': { _extends: 'dark-base', primary: '#111' },
     };
     const r = resolveSkin({ presets, schema: null, attrValue: 'derived', prefersDark: false });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
     expect(r.resolved?.['primary']).toBe('#111');
   });
 
-  it('child preset _mode wins over parent _mode when both present', () => {
+  it('child preset _theme wins over parent _theme when both present', () => {
     const presets: Record<string, SkinPreset> = {
-      'dark-base': { _mode: 'dark', primary: '#000' },
-      'forced-light': { _mode: 'light', _extends: 'dark-base', primary: '#fff' },
+      'dark-base': { _theme: 'dark', primary: '#000' },
+      'forced-light': { _theme: 'light', _extends: 'dark-base', primary: '#fff' },
     };
     const r = resolveSkin({ presets, schema: null, attrValue: 'forced-light', prefersDark: false });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
 
   it('extends a mode shortcut: _extends: "dark" → that mode\'s _default', () => {
     const presets: Record<string, SkinPreset> = {
-      'dark-default': { _mode: 'dark', _default: true, primary: '#000', accent: '#aaa' },
-      'red-on-dark': { _mode: 'dark', _extends: 'dark', primary: '#ff0000' },
+      'dark-default': { _theme: 'dark', _default: true, primary: '#000', accent: '#aaa' },
+      'red-on-dark': { _theme: 'dark', _extends: 'dark', primary: '#ff0000' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -255,8 +255,8 @@ describe('resolveSkin — _extends chain', () => {
   });
   it('rejects cycle and cascades to auto', () => {
     const presets: Record<string, SkinPreset> = {
-      a: { _mode: 'light', _default: true, _extends: 'b', primary: '#aaa' },
-      b: { _mode: 'light', _extends: 'a', primary: '#bbb' },
+      a: { _theme: 'light', _default: true, _extends: 'b', primary: '#aaa' },
+      b: { _theme: 'light', _extends: 'a', primary: '#bbb' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -268,10 +268,10 @@ describe('resolveSkin — _extends chain', () => {
   });
   it('rejects depth >8 and cascades to auto', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, primary: '#fff' },
+      light: { _theme: 'light', _default: true, primary: '#fff' },
     };
     for (let i = 0; i <= 9; i += 1) {
-      presets[`l${i}`] = { _mode: 'light', _extends: i === 0 ? 'light' : `l${i - 1}`, primary: `#${i}${i}${i}` };
+      presets[`l${i}`] = { _theme: 'light', _extends: i === 0 ? 'light' : `l${i - 1}`, primary: `#${i}${i}${i}` };
     }
     const r = resolveSkin({
       presets: presets,
@@ -283,8 +283,8 @@ describe('resolveSkin — _extends chain', () => {
   });
   it('extends missing target surfaces issue + cascades to auto', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, primary: '#fff' },
-      orphan: { _mode: 'light', _extends: 'nope', primary: '#000' },
+      light: { _theme: 'light', _default: true, primary: '#fff' },
+      orphan: { _theme: 'light', _extends: 'nope', primary: '#000' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -293,7 +293,7 @@ describe('resolveSkin — _extends chain', () => {
       prefersDark: false,
     });
     expect(r.issues.some((m) => m.includes('does not match'))).toBe(true);
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
 });
 
@@ -302,12 +302,12 @@ describe('resolveSkin — inline JSON', () => {
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
       schema: SCHEMA_COLORS,
-      attrValue: '{"_mode":"dark"}',
+      attrValue: '{"_theme":"dark"}',
       prefersDark: false,
       rejectInlineJson: true,
     });
     expect(r.issues.some((m) => m.includes('does not accept inline JSON'))).toBe(true);
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
   it('inline with _extends targets preset name', () => {
     const r = resolveSkin({
@@ -316,7 +316,7 @@ describe('resolveSkin — inline JSON', () => {
       attrValue: JSON.stringify({ _extends: 'dark', primary: '#ff0000' }),
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
     expect(r.resolved?.['primary']).toBe('#ff0000');
     expect(r.resolved?.['surface_bg']).toBe('#182518');
   });
@@ -327,41 +327,41 @@ describe('resolveSkin — inline JSON', () => {
       attrValue: JSON.stringify({ _extends: 'light', primary: '#abcdef' }),
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
     expect(r.resolved?.['primary']).toBe('#abcdef');
   });
-  it('inline _mode drives base selection (no light/dark mismatch)', () => {
-    // Inline _mode='dark' on a system with prefersDark=false: the BASE
+  it('inline _theme drives base selection (no light/dark mismatch)', () => {
+    // Inline _theme='dark' on a system with prefersDark=false: the BASE
     // should resolve to dark too so surface_bg + primary etc. match the
     // declared mode. Inline override (primary:'#abc') wins atop.
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
       schema: SCHEMA_COLORS,
-      attrValue: JSON.stringify({ _mode: 'dark', primary: '#abc' }),
+      attrValue: JSON.stringify({ _theme: 'dark', primary: '#abc' }),
       prefersDark: false,
     });
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
     expect(r.resolved?.['primary']).toBe('#abc'); // inline wins
     expect(r.resolved?.['surface_bg']).toBe('#182518'); // dark base, NOT light
   });
-  it('inline _mode="light" on prefersDark=true forces light base', () => {
+  it('inline _theme="light" on prefersDark=true forces light base', () => {
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
       schema: SCHEMA_COLORS,
-      attrValue: JSON.stringify({ _mode: 'light', primary: '#abc' }),
+      attrValue: JSON.stringify({ _theme: 'light', primary: '#abc' }),
       prefersDark: true,
     });
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
     expect(r.resolved?.['surface_bg']).toBe('#ffffff'); // light base, NOT dark
   });
-  it('inline without _mode falls back to system prefersDark for base', () => {
+  it('inline without _theme falls back to system prefersDark for base', () => {
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
       schema: SCHEMA_COLORS,
       attrValue: JSON.stringify({ primary: '#abc' }),
       prefersDark: true,
     });
-    expect(r.resolved?._mode).toBe('dark'); // from auto base
+    expect(r.resolved?._theme).toBe('dark'); // from auto base
     expect(r.resolved?.['surface_bg']).toBe('#182518');
   });
   it('inline malformed JSON cascades to auto with issue', () => {
@@ -372,7 +372,7 @@ describe('resolveSkin — inline JSON', () => {
       prefersDark: false,
     });
     expect(r.issues.some((m) => m.includes('failed to parse'))).toBe(true);
-    expect(r.resolved?._mode).toBe('light');
+    expect(r.resolved?._theme).toBe('light');
   });
   it('inline non-object JSON (array) emits issue', () => {
     const r = resolveSkin({
@@ -390,7 +390,7 @@ describe('resolveSkin — inline JSON', () => {
 describe('resolveSkin — schema-driven validation', () => {
   it('drops key on invalid color value + emits issue', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, primary: '#zzz', accent: '#fff' },
+      light: { _theme: 'light', _default: true, primary: '#zzz', accent: '#fff' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -403,7 +403,7 @@ describe('resolveSkin — schema-driven validation', () => {
   });
   it('drops invalid image asset + emits issue', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, leaf: 'https://x.com/leaf.bmp' },
+      light: { _theme: 'light', _default: true, leaf: 'https://x.com/leaf.bmp' },
     };
     const schema: Record<string, SkinSchemaEntry> = { leaf: 'image' };
     const r = resolveSkin({
@@ -417,7 +417,7 @@ describe('resolveSkin — schema-driven validation', () => {
   });
   it('resolves bundle-relative image path against baseUrl', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, leaf: '/leaf.png' },
+      light: { _theme: 'light', _default: true, leaf: '/leaf.png' },
     };
     const schema: Record<string, SkinSchemaEntry> = { leaf: 'image' };
     const r = resolveSkin({
@@ -431,7 +431,7 @@ describe('resolveSkin — schema-driven validation', () => {
   });
   it('passes data: image URI through after validation', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, leaf: 'data:image/png;base64,abc' },
+      light: { _theme: 'light', _default: true, leaf: 'data:image/png;base64,abc' },
     };
     const schema: Record<string, SkinSchemaEntry> = { leaf: 'image' };
     const r = resolveSkin({
@@ -444,7 +444,7 @@ describe('resolveSkin — schema-driven validation', () => {
   });
   it('schema omitted → values pass through unvalidated', () => {
     const presets: Record<string, SkinPreset> = {
-      light: { _mode: 'light', _default: true, anything: 'whatever' },
+      light: { _theme: 'light', _default: true, anything: 'whatever' },
     };
     const r = resolveSkin({
       presets: presets,
@@ -458,13 +458,13 @@ describe('resolveSkin — schema-driven validation', () => {
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
       schema: SCHEMA_COLORS,
-      attrValue: JSON.stringify({ _mode: 'dark', primary: '#zzz' }),
+      attrValue: JSON.stringify({ _theme: 'dark', primary: '#zzz' }),
       prefersDark: false,
     });
     expect(r.issues.some((m) => m.includes('inline'))).toBe(true);
-    // Inline _mode='dark' drives base to dark; invalid override dropped;
+    // Inline _theme='dark' drives base to dark; invalid override dropped;
     // dark preset's primary survives.
     expect(r.resolved?.['primary']).toBe('#4E9B65');
-    expect(r.resolved?._mode).toBe('dark');
+    expect(r.resolved?._theme).toBe('dark');
   });
 });

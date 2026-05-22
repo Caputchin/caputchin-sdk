@@ -1,5 +1,5 @@
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
-import type { WidgetShell } from '../lang/widget-shell.js';
+import type { WidgetShell } from '../locale/widget-shell.js';
 import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
 import type { WidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createInvisiblePresentation } from './invisible.js';

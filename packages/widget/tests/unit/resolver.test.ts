@@ -11,7 +11,7 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap per ADR-005
   it('returns ok:true on 200 with game.url + game.integrity', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(
       JSON.stringify({
-        widget: { overrides: { language: null, skin: null, configuration: null } },
+        widget: { overrides: { locale: null, skin: null, configuration: null } },
         game: { url: 'https://cdn.example.com/game.js', integrity: 'sha384-abc', overrides: null },
       }),
       { status: 200 }

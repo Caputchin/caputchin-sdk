@@ -7,30 +7,30 @@ const LIGHT_PRESET = widgetManifest.skins.presets.light as Record<string, string
 describe('resolveWidgetShellSkin', () => {
   it('attr=null + prefersDark=false → light palette', () => {
     const r = resolveWidgetShellSkin(null, false);
-    expect(r.mode).toBe('light');
+    expect(r.theme).toBe('light');
     expect(r.palette.primary).toBe('#2F6640');
     expect(r.palette.surface_bg).toBe('#ffffff');
     expect(r.issues).toHaveLength(0);
   });
   it('attr=null + prefersDark=true → dark palette', () => {
     const r = resolveWidgetShellSkin(null, true);
-    expect(r.mode).toBe('dark');
+    expect(r.theme).toBe('dark');
     expect(r.palette.primary).toBe('#4E9B65');
     expect(r.palette.surface_bg).toBe('#182518');
   });
   it('attr="dark" overrides system (prefersDark=false)', () => {
     const r = resolveWidgetShellSkin('dark', false);
-    expect(r.mode).toBe('dark');
+    expect(r.theme).toBe('dark');
     expect(r.palette.primary).toBe('#4E9B65');
   });
   it('attr="light" overrides system (prefersDark=true)', () => {
     const r = resolveWidgetShellSkin('light', true);
-    expect(r.mode).toBe('light');
+    expect(r.theme).toBe('light');
     expect(r.palette.primary).toBe('#2F6640');
   });
   it('attr="auto" + prefersDark=true → dark', () => {
     const r = resolveWidgetShellSkin('auto', true);
-    expect(r.mode).toBe('dark');
+    expect(r.theme).toBe('dark');
   });
 
   it('light preset carries the green wordmark color and primary brand logo', () => {
@@ -56,12 +56,12 @@ describe('resolveWidgetShellSkin', () => {
   it('unknown preset name emits issue + cascades to auto', () => {
     const r = resolveWidgetShellSkin('not-a-preset', false);
     expect(r.issues.length).toBeGreaterThan(0);
-    expect(r.mode).toBe('light');
+    expect(r.theme).toBe('light');
   });
   it('inline JSON is rejected, emits issue, cascades to auto', () => {
-    const r = resolveWidgetShellSkin('{"_mode":"dark","primary":"#ff0000"}', false);
+    const r = resolveWidgetShellSkin('{"_theme":"dark","primary":"#ff0000"}', false);
     expect(r.issues.some((m) => m.includes('does not accept inline JSON'))).toBe(true);
-    expect(r.mode).toBe('light');
+    expect(r.theme).toBe('light');
     // primary stays at the light preset's value, NOT the inline override
     expect(r.palette.primary).toBe('#2F6640');
   });

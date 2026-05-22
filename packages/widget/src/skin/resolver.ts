@@ -50,7 +50,7 @@ export interface ResolveSkinInput {
 }
 
 function modeOf(preset: SkinPreset): Mode {
-  return preset._mode === MODE_DARK ? MODE_DARK : MODE_LIGHT;
+  return preset._theme === MODE_DARK ? MODE_DARK : MODE_LIGHT;
 }
 
 function findByName(presets: PresetMap, name: string): { name: string; preset: SkinPreset } | null {
@@ -120,7 +120,7 @@ function buildChain(
 }
 
 /** Flatten a chain (deepest ancestor first) into a single resolved object.
- *  `_mode` inherits from any preset in the chain (later wins); typed keys
+ *  `_theme` inherits from any preset in the chain (later wins); typed keys
  *  are validated against the schema and asset URLs are resolved against
  *  `baseUrl`. Invalid values are dropped + the offending key surfaces an
  *  issue. `_extends` and `_default` are stripped from the output. */
@@ -135,8 +135,8 @@ function flattenChain(
   let inheritedMode: Mode | undefined;
 
   for (const preset of chain) {
-    if (preset._mode === MODE_LIGHT || preset._mode === MODE_DARK) {
-      inheritedMode = preset._mode;
+    if (preset._theme === MODE_LIGHT || preset._theme === MODE_DARK) {
+      inheritedMode = preset._theme;
     }
     for (const [key, raw] of Object.entries(preset)) {
       if (key.startsWith('_')) continue;
@@ -159,7 +159,7 @@ function flattenChain(
     }
   }
 
-  return { _mode: inheritedMode ?? MODE_LIGHT, ...merged };
+  return { _theme: inheritedMode ?? MODE_LIGHT, ...merged };
 }
 
 function resolveLeaf(
@@ -249,14 +249,14 @@ export function resolveSkin(input: ResolveSkinInput): ResolveSkinResult {
       // values. Inline's own keys ARE validated; invalid inline keys
       // surface an issue and leave the base value in place.
       //
-      // When inline declares its own `_mode`, that mode drives the base
-      // selection too - otherwise an inline `{_mode:'dark', primary:'#abc'}`
+      // When inline declares its own `_theme`, that mode drives the base
+      // selection too - otherwise an inline `{_theme:'dark', primary:'#abc'}`
       // on a system in light mode would label the result `dark` while all
       // surrounding colors stayed light (mismatched payload). Inline
-      // `_mode` is the customer's explicit pick; respect it through the
+      // `_theme` is the customer's explicit pick; respect it through the
       // whole resolution.
       const inlineMode: Mode | undefined =
-        inline._mode === MODE_LIGHT || inline._mode === MODE_DARK ? inline._mode : undefined;
+        inline._theme === MODE_LIGHT || inline._theme === MODE_DARK ? inline._theme : undefined;
       const basePrefersDark = inlineMode === MODE_DARK
         ? true
         : (inlineMode === MODE_LIGHT ? false : prefersDark);
@@ -264,7 +264,7 @@ export function resolveSkin(input: ResolveSkinInput): ResolveSkinResult {
       const merged: Record<string, string> = {};
       if (base) {
         for (const [k, v] of Object.entries(base)) {
-          if (k === '_mode') continue;
+          if (k === '_theme') continue;
           if (typeof v === 'string') merged[k] = v;
         }
       }
@@ -283,8 +283,8 @@ export function resolveSkin(input: ResolveSkinInput): ResolveSkinResult {
           merged[key] = raw;
         }
       }
-      const resolvedMode: Mode = inlineMode ?? (base?._mode as Mode | undefined) ?? MODE_LIGHT;
-      return { resolved: { _mode: resolvedMode, ...merged }, issues };
+      const resolvedMode: Mode = inlineMode ?? (base?._theme as Mode | undefined) ?? MODE_LIGHT;
+      return { resolved: { _theme: resolvedMode, ...merged }, issues };
     }
     // Inline JSON failed; cascade.
     return { resolved: resolveAuto(presetsMap, schemaMap, baseUrl, prefersDark, issues), issues };
@@ -302,7 +302,7 @@ export function resolveSkin(input: ResolveSkinInput): ResolveSkinResult {
       const resolved = resolveLeaf(presetsMap, schemaMap, baseUrl, hit.name, hit.preset, issues);
       if (resolved) return { resolved, issues };
     }
-    issues.push(`skin="${trimmed}" matched no preset with _mode=${trimmed}; falling through to auto`);
+    issues.push(`skin="${trimmed}" matched no preset with _theme=${trimmed}; falling through to auto`);
     return { resolved: resolveAuto(presetsMap, schemaMap, baseUrl, prefersDark, issues), issues };
   }
 

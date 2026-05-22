@@ -2,7 +2,7 @@
 // the resulting IIFE is injected into the srcdoc as a string literal.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLanguage, ResolvedSkin } from '@caputchin/game-sdk';
+import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin } from '@caputchin/game-sdk';
 import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
 (function () {
@@ -119,7 +119,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
       preferredLayout: manifest?.preferredLayout ?? null,
       preferredWidth: typeof manifest?.preferredWidth === 'number' ? manifest.preferredWidth : null,
       preferredHeight: typeof manifest?.preferredHeight === 'number' ? manifest.preferredHeight : null,
-      languages: manifest?.languages ?? null,
+      locales: manifest?.locales ?? null,
       skins: manifest?.skins ?? null,
       configurations: manifest?.configurations ?? null,
     });
@@ -157,7 +157,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
     if (data['kind'] === 'kickoff') {
       seq = data['seq'] as number;
       kickoffGameId = (data['gameId'] as string | null) ?? null;
-      const kickoffLang = (data['lang'] as ResolvedLanguage | null) ?? null;
+      const kickoffLocale = (data['locale'] as ResolvedLocale | null) ?? null;
       const kickoffSkin = (data['skin'] as ResolvedSkin | null) ?? null;
       const kickoffConfig = (data['config'] as ResolvedConfig | null) ?? null;
 
@@ -225,7 +225,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
         },
       };
 
-      const ctx: GameContext = { lang: kickoffLang, skin: kickoffSkin, config: kickoffConfig };
+      const ctx: GameContext = { locale: kickoffLocale, skin: kickoffSkin, config: kickoffConfig };
 
       try {
         cleanup = factory(root, bridge, ctx);

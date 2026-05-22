@@ -66,8 +66,8 @@ describe('invisible widget presentation', () => {
 });
 
 describe('widget lang attribute', () => {
-  it('lang="ar" flips shell to arabic strings + dir="rtl"', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'ar' });
+  it('locale="ar" flips shell to arabic strings + dir="rtl"', async () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar' });
     document.body.appendChild(el);
     await flushMount();
     expect(el.getAttribute('dir')).toBe('rtl');
@@ -77,8 +77,8 @@ describe('widget lang attribute', () => {
     el.remove();
   });
 
-  it('lang="ar-EG" normalizes to ar via primary subtag', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'ar-EG' });
+  it('locale="ar-EG" normalizes to ar via primary subtag', async () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar-EG' });
     document.body.appendChild(el);
     await flushMount();
     expect(el.getAttribute('dir')).toBe('rtl');
@@ -87,7 +87,7 @@ describe('widget lang attribute', () => {
   });
 
   it('inline JSON fires invalid-config + falls back to auto (no dir flip)', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: '{"_iso":"ar"}' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: '{"_iso":"ar"}' });
     const messages: string[] = [];
     el.addEventListener('error', (e) => {
       const detail = (e as CustomEvent).detail as { message?: string };
@@ -101,7 +101,7 @@ describe('widget lang attribute', () => {
   });
 
   it('unknown preset name fires invalid-config + falls back to auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', lang: 'xyz' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'xyz' });
     const messages: string[] = [];
     el.addEventListener('error', (e) => {
       const detail = (e as CustomEvent).detail as { message?: string };
@@ -115,11 +115,11 @@ describe('widget lang attribute', () => {
 });
 
 describe('widget skin attribute', () => {
-  it('skin="light" sets data-skin-mode + writes CSS vars for primary', async () => {
+  it('skin="light" sets data-skin-theme + writes CSS vars for primary', async () => {
     const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'light' });
     document.body.appendChild(el);
     await flushMount();
-    expect(el.getAttribute('data-skin-mode')).toBe('light');
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
     expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#2F6640');
     expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe('#ffffff');
     el.remove();
@@ -129,14 +129,14 @@ describe('widget skin attribute', () => {
     const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'dark' });
     document.body.appendChild(el);
     await flushMount();
-    expect(el.getAttribute('data-skin-mode')).toBe('dark');
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
     expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#4E9B65');
     expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe('#182518');
     el.remove();
   });
 
   it('inline JSON skin fires invalid-config + falls back to auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: '{"_mode":"dark"}' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: '{"_theme":"dark"}' });
     const messages: string[] = [];
     el.addEventListener('error', (e) => {
       const detail = (e as CustomEvent).detail as { message?: string };
@@ -146,7 +146,7 @@ describe('widget skin attribute', () => {
     await flushMount();
     expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
     // auto fallback: prefersDark unknown in test env → defaults to light
-    expect(el.getAttribute('data-skin-mode')).toBe('light');
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
     el.remove();
   });
 

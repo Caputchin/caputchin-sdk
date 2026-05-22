@@ -146,20 +146,20 @@ describe('inspectGameConfig — height attr', () => {
 describe('inspectGameConfig — lang attr', () => {
   it('defaults to null when omitted', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));
-    expect(r.config.lang).toBeNull();
+    expect(r.config.locale).toBeNull();
   });
 
   it('reads a preset name', () => {
-    expect(inspectGameConfig(el({ game: '@x/y', lang: 'ar' })).config.lang).toBe('ar');
+    expect(inspectGameConfig(el({ game: '@x/y', locale: 'ar' })).config.locale).toBe('ar');
   });
 
   it('reads inline JSON unchanged', () => {
-    const r = inspectGameConfig(el({ game: '@x/y', lang: '{"_iso":"ar"}' }));
-    expect(r.config.lang).toBe('{"_iso":"ar"}');
+    const r = inspectGameConfig(el({ game: '@x/y', locale: '{"_iso":"ar"}' }));
+    expect(r.config.locale).toBe('{"_iso":"ar"}');
   });
 
   it('treats whitespace-only value as null', () => {
-    const r = inspectGameConfig(el({ game: '@x/y', lang: '   ' }));
-    expect(r.config.lang).toBeNull();
+    const r = inspectGameConfig(el({ game: '@x/y', locale: '   ' }));
+    expect(r.config.locale).toBeNull();
   });
 });

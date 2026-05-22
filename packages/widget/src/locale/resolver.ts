@@ -1,4 +1,4 @@
-import type { LanguagePreset, ResolvedLanguage } from '@caputchin/game-sdk';
+import type { LocalePreset, ResolvedLocale } from '@caputchin/game-sdk';
 
 /** ISO 639 primary tags whose scripts read right-to-left. Direction can
  *  always be set explicitly on a preset via `_direction`; this set is just
@@ -13,20 +13,20 @@ const MAX_EXTENDS_DEPTH = 8;
 const ISO_FALLBACK = 'en';
 
 export interface ResolveResult {
-  resolved: ResolvedLanguage | null;
+  resolved: ResolvedLocale | null;
   issues: string[];
 }
 
 export interface ResolveOptions {
   /** Reject inline-JSON attribute values. The widget shell layer
-   *  (`<caputchin-widget lang="…">`) sets this so authors are limited to
+   *  (`<caputchin-widget locale="…">`) sets this so authors are limited to
    *  ISO codes / preset names; inline JSON would imply per-string overrides
    *  the bundled shell doesn't support. Inline JSON detected under this
    *  flag emits an issue and cascades to browser-auto. */
   rejectInlineJson?: boolean;
 }
 
-type PresetMap = Record<string, LanguagePreset>;
+type PresetMap = Record<string, LocalePreset>;
 
 function normalizeIso(iso: string): string {
   return iso.toLowerCase().split(/[-_]/)[0] ?? '';
@@ -36,17 +36,17 @@ function isRtl(iso: string): boolean {
   return RTL_LANGS.has(normalizeIso(iso));
 }
 
-function findByName(presets: PresetMap, name: string): { name: string; preset: LanguagePreset } | null {
+function findByName(presets: PresetMap, name: string): { name: string; preset: LocalePreset } | null {
   if (Object.prototype.hasOwnProperty.call(presets, name)) {
     return { name, preset: presets[name]! };
   }
   return null;
 }
 
-function findByIso(presets: PresetMap, iso: string): { name: string; preset: LanguagePreset } | null {
+function findByIso(presets: PresetMap, iso: string): { name: string; preset: LocalePreset } | null {
   const target = normalizeIso(iso);
   if (!target) return null;
-  let firstMatch: { name: string; preset: LanguagePreset } | null = null;
+  let firstMatch: { name: string; preset: LocalePreset } | null = null;
   for (const [name, preset] of Object.entries(presets)) {
     const presetIso = preset._iso ? normalizeIso(preset._iso) : null;
     if (presetIso !== target) continue;
@@ -56,7 +56,7 @@ function findByIso(presets: PresetMap, iso: string): { name: string; preset: Lan
   return firstMatch;
 }
 
-function lookupExtends(presets: PresetMap, target: string): { name: string; preset: LanguagePreset } | null {
+function lookupExtends(presets: PresetMap, target: string): { name: string; preset: LocalePreset } | null {
   return findByName(presets, target) ?? findByIso(presets, target);
 }
 
@@ -69,10 +69,10 @@ function lookupExtends(presets: PresetMap, target: string): { name: string; pres
 function buildChain(
   presets: PresetMap,
   leafName: string | null,
-  leafPreset: LanguagePreset,
+  leafPreset: LocalePreset,
   issues: string[],
-): LanguagePreset[] | null {
-  const chain: LanguagePreset[] = [leafPreset];
+): LocalePreset[] | null {
+  const chain: LocalePreset[] = [leafPreset];
   const visited = new Set<string>();
   if (leafName !== null) visited.add(leafName);
 
@@ -80,16 +80,16 @@ function buildChain(
   let depth = 0;
   while (current._extends) {
     if (depth >= MAX_EXTENDS_DEPTH) {
-      issues.push(`lang preset "${leafName ?? '<inline>'}" exceeded _extends depth ${MAX_EXTENDS_DEPTH}; falling through to auto`);
+      issues.push(`locale preset "${leafName ?? '<inline>'}" exceeded _extends depth ${MAX_EXTENDS_DEPTH}; falling through to auto`);
       return null;
     }
     const next = lookupExtends(presets, current._extends);
     if (!next) {
-      issues.push(`lang preset "${leafName ?? '<inline>'}" extends "${current._extends}" which does not match any preset name or ISO code; falling through to auto`);
+      issues.push(`locale preset "${leafName ?? '<inline>'}" extends "${current._extends}" which does not match any preset name or ISO code; falling through to auto`);
       return null;
     }
     if (visited.has(next.name)) {
-      issues.push(`lang preset "${leafName ?? '<inline>'}" has a circular _extends chain via "${next.name}"; falling through to auto`);
+      issues.push(`locale preset "${leafName ?? '<inline>'}" has a circular _extends chain via "${next.name}"; falling through to auto`);
       return null;
     }
     visited.add(next.name);
@@ -104,7 +104,7 @@ function buildChain(
  *  Metadata (`_iso`, `_direction`) inherits; text keys merge with each
  *  later (more specific) preset winning. `_extends` and `_default` are
  *  stripped from the output. */
-function flattenChain(chain: LanguagePreset[]): ResolvedLanguage {
+function flattenChain(chain: LocalePreset[]): ResolvedLocale {
   const text: Record<string, string> = {};
   let inheritedIso: string | undefined;
   let inheritedDirection: 'ltr' | 'rtl' | undefined;
@@ -137,9 +137,9 @@ function flattenChain(chain: LanguagePreset[]): ResolvedLanguage {
 function resolveLeaf(
   presets: PresetMap,
   leafName: string | null,
-  leafPreset: LanguagePreset,
+  leafPreset: LocalePreset,
   issues: string[],
-): ResolvedLanguage | null {
+): ResolvedLocale | null {
   const chain = buildChain(presets, leafName, leafPreset, issues);
   if (!chain) return null;
   return flattenChain(chain);
@@ -149,7 +149,7 @@ function resolveAuto(
   presets: PresetMap,
   navigatorLanguages: readonly string[],
   issues: string[],
-): ResolvedLanguage | null {
+): ResolvedLocale | null {
   // Primary-subtag match against the first navigator language; "en-GB" → "en".
   const primary = navigatorLanguages[0];
   if (primary) {
@@ -167,16 +167,16 @@ function resolveAuto(
   return null;
 }
 
-function tryParseInlineJson(attrValue: string, issues: string[]): LanguagePreset | null {
+function tryParseInlineJson(attrValue: string, issues: string[]): LocalePreset | null {
   try {
     const parsed = JSON.parse(attrValue);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as LanguagePreset;
+      return parsed as LocalePreset;
     }
     issues.push('lang attribute parsed as non-object JSON; falling through to auto');
     return null;
   } catch (e) {
-    issues.push(`lang attribute looked like JSON but failed to parse: ${(e as Error).message}; falling through to auto`);
+    issues.push(`locale attribute looked like JSON but failed to parse: ${(e as Error).message}; falling through to auto`);
     return null;
   }
 }
@@ -185,7 +185,7 @@ function tryParseInlineJson(attrValue: string, issues: string[]): LanguagePreset
  *  `navigator.languages`. Returns the resolved language object plus a list
  *  of human-readable issues the element layer translates into
  *  `invalid-config` events. */
-export function resolveLanguage(
+export function resolveLocale(
   presets: PresetMap | null | undefined,
   attrValue: string | null | undefined,
   navigatorLanguages: readonly string[],
@@ -219,7 +219,7 @@ export function resolveLanguage(
         ? inline._iso
         : null;
       if (hasExtends || implicitExtends !== null) {
-        const effective: LanguagePreset = implicitExtends !== null
+        const effective: LocalePreset = implicitExtends !== null
           ? { ...inline, _extends: implicitExtends }
           : inline;
         const resolved = resolveLeaf(presetsMap, null, effective, issues);
@@ -246,7 +246,7 @@ export function resolveLanguage(
       const direction = inline._direction === 'ltr' || inline._direction === 'rtl'
         ? inline._direction
         : (isRtl(iso) ? 'rtl' : 'ltr');
-      const resolved: ResolvedLanguage = {
+      const resolved: ResolvedLocale = {
         ...merged,
         _iso: iso,
         _direction: direction,
@@ -279,6 +279,6 @@ export function resolveLanguage(
   }
 
   // Unknown value; warn and fall through.
-  issues.push(`lang="${trimmed}" did not match any preset name or ISO code; falling through to auto`);
+  issues.push(`locale="${trimmed}" did not match any preset name or ISO code; falling through to auto`);
   return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };
 }

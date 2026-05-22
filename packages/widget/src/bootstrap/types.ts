@@ -10,7 +10,7 @@ export interface OverridePresetBank {
 }
 
 export interface OverridesPerAxis {
-  language: OverridePresetBank | null;
+  locale: OverridePresetBank | null;
   skin: OverridePresetBank | null;
   configuration: OverridePresetBank | null;
 }

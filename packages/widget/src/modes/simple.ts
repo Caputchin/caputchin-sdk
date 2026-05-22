@@ -1,5 +1,5 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
-import type { ShellStrings } from '../lang/widget-shell.js';
+import type { ShellStrings } from '../locale/widget-shell.js';
 import type { ShellPalette } from '../skin/widget-shell-skin.js';
 
 /**
