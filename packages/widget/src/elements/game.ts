@@ -89,6 +89,12 @@ export class CaputchinGame extends HTMLElement {
       // around the game still consumes only the widget block (its _theme /
       // _iso signals), same as before.
       this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
+      // The same bootstrap response already carries the marketplace bundle
+      // url + integrity for state.config.game — stash it (tagged with that
+      // id) so the game-load path can skip a second /widget/bootstrap call.
+      this.state.gameBundle = bootstrap?.game
+        ? { gameId: this.state.config.game, url: bootstrap.game.url, integrity: bootstrap.game.integrity }
+        : null;
       this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinThemeHint);
     });
   }
