@@ -30,24 +30,42 @@ export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, a
  *  lookup), or fire game-load-failed + return null. Returns null when the
  *  widget has no game configured at all (caller decides whether that's a
  *  warning or hard error). */
-async function resolveGameUrl(
+export async function resolveGameUrl(
   el: HTMLElement,
   cfg: GameConfig,
   apiHost: string,
   onError: () => void,
+  prefetched: WidgetState<GameConfig>['gameBundle'] = null,
 ): Promise<{ url: string | null; integrity: string | null; gameId: string | null }> {
   const gameId = resolveGameId(cfg);
   let url: string | null = cfg.gameSrc;
   let integrity: string | null = null;
   if (gameId && !url) {
-    const resolution = await fetchMarketplaceResolution(gameId, apiHost, cfg.sitekey);
-    if (!resolution.ok) {
-      fireError(el, 'game-load-failed', resolution.message, resolution.code);
-      onError();
-      return { url: null, integrity: null, gameId };
+    // Reuse the mount-time bootstrap's bundle when it was fetched for THIS
+    // id (ADR-0059 single round trip). A `games` pool pick can differ from
+    // the mount-time `game`, so the id guard sends that case to a fresh
+    // resolve. `prefetched.url === null` means the bootstrap saw no
+    // marketplace bundle for the id — the same outcome a fresh resolve
+    // would report, so fail closed identically.
+    const bundle = prefetched && prefetched.gameId === gameId ? prefetched : null;
+    if (bundle) {
+      if (!bundle.url) {
+        fireError(el, 'game-load-failed', `Widget bootstrap returned no marketplace bundle for game "${gameId}"`, 'resolve-failed');
+        onError();
+        return { url: null, integrity: null, gameId };
+      }
+      url = bundle.url;
+      integrity = bundle.integrity;
+    } else {
+      const resolution = await fetchMarketplaceResolution(gameId, apiHost, cfg.sitekey);
+      if (!resolution.ok) {
+        fireError(el, 'game-load-failed', resolution.message, resolution.code);
+        onError();
+        return { url: null, integrity: null, gameId };
+      }
+      url = resolution.url;
+      integrity = resolution.integrity;
     }
-    url = resolution.url;
-    integrity = resolution.integrity;
   }
   return { url, integrity, gameId };
 }
@@ -58,7 +76,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
 
   const resolved = await resolveGameUrl(el, cfg, apiHost, () => {
     state.gamePresentation?.setState('error');
-  });
+  }, state.gameBundle ?? null);
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
@@ -114,7 +132,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
 
 async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   const cfg = state.config!;
-  const resolved = await resolveGameUrl(el, cfg, apiHost, () => { /* game-only has no presentation state to flip */ });
+  const resolved = await resolveGameUrl(el, cfg, apiHost, () => { /* game-only has no presentation state to flip */ }, state.gameBundle ?? null);
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;

@@ -31,6 +31,14 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  presets when the iframe kicks off. Null when there's no sitekey (no
    *  bootstrap fetch) or the tier/scope yielded none. */
   gameOverrides?: OverridesPerAxis | null;
+  /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
+   *  `game` block, so the game-load path reuses that one round trip instead
+   *  of a second `/widget/bootstrap` call (ADR-0059 single-round-trip goal).
+   *  `gameId` records which id the bootstrap fetched for — the run-time
+   *  resolver only reuses it when the resolved id matches (a `games` pool
+   *  pick can differ from the mount-time `game`, so that path resolves
+   *  fresh). Null when no bootstrap ran (no sitekey) or it timed out. */
+  gameBundle?: { gameId: string | null; url: string | null; integrity: string | null } | null;
 }
 
 export function createInitialState<C extends WidgetConfig | GameConfig>(): WidgetState<C> {
@@ -49,5 +57,6 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     gameErrored: false,
     firstPassFired: false,
     gameOverrides: null,
+    gameBundle: null,
   };
 }
