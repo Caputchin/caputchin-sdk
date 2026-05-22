@@ -122,11 +122,11 @@ describe('register()', () => {
     warnSpy.mockRestore();
   });
 
-  it('round-trips languages.presets intact on the stored manifest', () => {
+  it('round-trips locales.presets intact on the stored manifest', () => {
     setCapGlobal({ games: {}, manifests: {} });
     const manifest = makeManifest({
-      id: 'lang-game',
-      languages: {
+      id: 'locale-game',
+      locales: {
         presets: {
           en: { _iso: 'en', _default: true, hello: 'Hi' },
           ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
@@ -134,7 +134,7 @@ describe('register()', () => {
       },
     });
     register(manifest, makeFactory());
-    expect(capGlobal().manifests['lang-game'].languages).toEqual(manifest.languages);
+    expect(capGlobal().manifests['locale-game'].locales).toEqual(manifest.locales);
   });
 
   it('round-trips skins.presets + skins.schema intact on the stored manifest', () => {
@@ -147,8 +147,8 @@ describe('register()', () => {
           leaf_img: { type: 'image', name: 'Leaf', description: 'leaf art' },
         },
         presets: {
-          light: { _mode: 'light', _default: true, main_color: '#fff', leaf_img: '/leaf-light.png' },
-          dark: { _mode: 'dark', _default: true, _extends: 'light', main_color: '#000' },
+          light: { _theme: 'light', _default: true, main_color: '#fff', leaf_img: '/leaf-light.png' },
+          dark: { _theme: 'dark', _default: true, _extends: 'light', main_color: '#000' },
         },
       },
     });
@@ -194,7 +194,7 @@ describe('register()', () => {
 
     const container = document.createElement('div');
     const bridge = makeBridge();
-    const ctx: GameContext = { lang: null, skin: null, config: null };
+    const ctx: GameContext = { locale: null, skin: null, config: null };
 
     expect(typeof capGlobal().games['with-cleanup']!(container, bridge, ctx)).toBe('function');
     expect(capGlobal().games['void-factory']!(container, bridge, ctx)).toBeUndefined();
@@ -205,8 +205,8 @@ describe('register()', () => {
     const factory = makeFactory();
     register(makeManifest({ id: 'ctx-game' }), factory);
     const ctx: GameContext = {
-      lang: { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' },
-      skin: { _mode: 'dark', main_color: '#0F1810' },
+      locale: { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' },
+      skin: { _theme: 'dark', main_color: '#0F1810' },
       config: { show_high_score: true, max_level: 4, policy_link: 'https://example.com/policy' },
     };
     const container = document.createElement('div');

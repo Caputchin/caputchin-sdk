@@ -15,11 +15,13 @@ export interface Bridge {
   readonly layout: Layout | null;
 }
 
-/** One language preset declared in `caputchin.json` under `languages.presets`.
+/** One locale preset declared in `caputchin.json` under `locales.presets`.
  *  Underscore-prefixed keys are metadata; every other key is a translatable
- *  text token. Direction can be omitted and is auto-derived from `_iso` when
- *  the language is in the RTL set (ar, he, fa, ur, yi, ps, sd). */
-export interface LanguagePreset {
+ *  text token. A locale carries an `_iso` language tag; multiple presets may
+ *  share an `_iso` (e.g. two English copy variants). Direction can be omitted
+ *  and is auto-derived from `_iso` when the language is in the RTL set (ar,
+ *  he, fa, ur, yi, ps, sd). */
+export interface LocalePreset {
   _iso?: string;
   _direction?: 'ltr' | 'rtl';
   _default?: boolean;
@@ -27,10 +29,10 @@ export interface LanguagePreset {
   [key: string]: string | boolean | undefined;
 }
 
-/** Final language object the widget hands the game. `_extends` and
+/** Final locale object the widget hands the game. `_extends` and
  *  `_default` are stripped during resolution; only metadata (`_iso`,
  *  `_direction`) and text tokens survive. */
-export interface ResolvedLanguage {
+export interface ResolvedLocale {
   _direction: 'ltr' | 'rtl';
   _iso: string;
   [key: string]: string;
@@ -53,22 +55,22 @@ export type SkinSchemaEntry =
 
 /** One skin preset declared in `caputchin.json` under `skins.presets`.
  *  Underscore-prefixed keys are metadata; every other key is a typed value
- *  (color string or asset URL/path). `_mode` defaults to `light` when
- *  absent. `_extends` may target a preset name OR a mode shortcut (`light` /
- *  `dark`) - the mode form resolves to that mode's `_default:true` preset. */
+ *  (color string or asset URL/path). `_theme` defaults to `light` when
+ *  absent. `_extends` may target a preset name OR a theme shortcut (`light` /
+ *  `dark`) - the theme form resolves to that theme's `_default:true` preset. */
 export interface SkinPreset {
-  _mode?: 'light' | 'dark';
+  _theme?: 'light' | 'dark';
   _default?: boolean;
   _extends?: string;
   [key: string]: string | boolean | undefined;
 }
 
 /** Final skin object the widget hands the game. `_extends` and `_default`
- *  are stripped during resolution; `_mode` plus the flattened typed keys
+ *  are stripped during resolution; `_theme` plus the flattened typed keys
  *  survive. Asset URLs are already resolved to absolute form (bundle-base
  *  relative paths joined; `data:` URIs verbatim). */
 export interface ResolvedSkin {
-  _mode: 'light' | 'dark';
+  _theme: 'light' | 'dark';
   [key: string]: string;
 }
 
@@ -119,17 +121,17 @@ export interface ResolvedConfig {
 
 /** Per-session context the widget passes to the game factory as a third arg. */
 export interface GameContext {
-  lang: ResolvedLanguage | null;
+  locale: ResolvedLocale | null;
   skin: ResolvedSkin | null;
   config: ResolvedConfig | null;
 }
 
-/** Documentation entry for a single text key in `languages.presets`.
+/** Documentation entry for a single text key in `locales.presets`.
  *  Optional and additive: omitting `schema` entirely or omitting individual
  *  keys does not affect resolution. Schema is consumed by author tooling,
  *  translator workflows, and the future per-site-key override dashboard;
  *  the widget runtime ignores it. */
-export interface LanguageKeySchema {
+export interface LocaleKeySchema {
   /** Short readable label translators see in tooling and dashboard. */
   name: string;
   /** Longer helper text: what this string IS in the UX, not where it
@@ -164,7 +166,7 @@ export interface MarketplaceMetadata {
 
 /** The full package manifest the game ships in `caputchin.json`. Authors
  *  import this file and pass the parsed object to `register`. The widget
- *  reads runtime hints (preferred layout / size, language presets) directly
+ *  reads runtime hints (preferred layout / size, locale presets) directly
  *  off the manifest.
  *
  *  Manifest shape and the rationale for the nested `marketplace` block,
@@ -186,11 +188,11 @@ export interface GameManifest {
   preferredLayout?: Layout;
   preferredWidth?: number;
   preferredHeight?: number;
-  languages?: {
+  locales?: {
     /** Optional per-key documentation. Drives translator tooling and the
      *  future dashboard override editor. Not read at runtime. */
-    schema?: Record<string, LanguageKeySchema>;
-    presets: Record<string, LanguagePreset>;
+    schema?: Record<string, LocaleKeySchema>;
+    presets: Record<string, LocalePreset>;
   };
   skins?: {
     /** Per-key type declaration. Bare type-string and full descriptor forms
