@@ -64,8 +64,8 @@ importers:
   packages/widget:
     dependencies:
       '@cap.js/widget':
-        specifier: ~0.1.50
-        version: 0.1.50
+        specifier: ~0.1.53
+        version: 0.1.53
       valibot:
         specifier: ^1.4.0
         version: 1.4.0(typescript@5.9.3)
@@ -80,8 +80,8 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@20.19.40)(happy-dom@14.12.3))
       esbuild:
-        specifier: ^0.21.0
-        version: 0.21.5
+        specifier: ^0.28.0
+        version: 0.28.0
       happy-dom:
         specifier: ^14.0.0
         version: 14.12.3
@@ -121,8 +121,8 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@cap.js/widget@0.1.50':
-    resolution: {integrity: sha512-ijGWIPwI/5qBGw1ny+nq7pm+crOhTNtvki5I7umHAS5vwNezuDA2VtLsBYU3OPn1RJPMw+uEONUGrR5l2YEpQQ==}
+  '@cap.js/widget@0.1.53':
+    resolution: {integrity: sha512-C+TZPxACMHIINz9ZOet7WstVdW3LzlREATVoHyKUzxTt4VMBK7NMYR/brK3aVvcYJ/GAsVTqcu60rYHD4gPVrQ==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1735,7 +1735,7 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@cap.js/widget@0.1.50': {}
+  '@cap.js/widget@0.1.53': {}
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
