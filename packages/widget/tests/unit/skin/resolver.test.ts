@@ -153,6 +153,28 @@ describe('resolveSkin — mode shortcut tie-break', () => {
     expect(r.issues.some((m) => m.includes('_mode=dark'))).toBe(true);
     expect(r.resolved?._mode).toBe('light');
   });
+
+  // ANTI-DRIFT CONTRACT (mirrors caputchin-platform
+  // lib/white-label/effective-default.test.ts): modeOf coerces anything not
+  // exactly "dark" to light, so a preset with NO `_mode` (or junk) is a live
+  // light candidate. The dashboard's groupKeyOf coerces identically; these
+  // two test cases MUST agree on the outcome.
+  it('preset with NO _mode is treated as a light candidate', () => {
+    const presets: Record<string, SkinPreset> = {
+      brand: { _default: true, primary: '#brand' }, // no _mode
+      light: { _mode: 'light', primary: '#fff' },
+    };
+    const r = resolveSkin({ presets, schema: null, attrValue: 'light', prefersDark: false });
+    // brand has _default + coerces to light → wins the light group.
+    expect(r.resolved?.['primary']).toBe('#brand');
+  });
+  it('preset with wrong-case _mode "Dark" coerces to light, not dark', () => {
+    const presets: Record<string, SkinPreset> = {
+      a: { _mode: 'Dark' as SkinPreset['_mode'], _default: true, primary: '#a' },
+    };
+    const r = resolveSkin({ presets, schema: null, attrValue: 'light', prefersDark: false });
+    expect(r.resolved?.['primary']).toBe('#a');
+  });
 });
 
 describe('resolveSkin — auto cascade', () => {
