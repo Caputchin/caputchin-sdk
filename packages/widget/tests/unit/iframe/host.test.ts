@@ -142,7 +142,7 @@ describe('IframeHost', () => {
     const host = new IframeHost(null, null, 'g1', document.createElement('div'), onMessage);
     mountHost(host);
 
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, languages: null });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, locales: null });
     expect(onMessage).not.toHaveBeenCalled();
 
     host.dispose();
@@ -153,7 +153,7 @@ describe('IframeHost', () => {
     mountHost(host);
 
     const promise = host.waitManifest(5_000);
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, languages: null });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'modal', preferredWidth: null, preferredHeight: null, locales: null });
     await vi.runAllTimersAsync();
 
     const result = await promise;
@@ -167,7 +167,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     mountHost(host);
 
-    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'fullscreen', preferredWidth: null, preferredHeight: null, languages: null });
+    capturedListener?.({ kind: 'manifest', seq: 0, gameId: 'g1', preferredLayout: 'fullscreen', preferredWidth: null, preferredHeight: null, locales: null });
     const result = await host.waitManifest(5_000);
     expect(result?.preferredLayout).toBe('fullscreen');
 
@@ -193,7 +193,7 @@ describe('IframeHost', () => {
     host.kickoff(1);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null }),
     );
 
     host.dispose();
@@ -207,7 +207,7 @@ describe('IframeHost', () => {
     host.kickoff(1, lang);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang, skin: null, config: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: lang, skin: null, config: null }),
     );
 
     host.dispose();
@@ -217,11 +217,11 @@ describe('IframeHost', () => {
     const host = makeHost();
     mountHost(host);
 
-    const skin = { _mode: 'dark' as const, primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
+    const skin = { _theme: 'dark' as const, primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
     host.kickoff(1, null, skin);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin, config: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null, skin, config: null }),
     );
 
     host.dispose();
@@ -235,7 +235,7 @@ describe('IframeHost', () => {
     host.kickoff(1, null, null, config);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', lang: null, skin: null, config }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null, skin: null, config }),
     );
 
     host.dispose();

@@ -17,7 +17,7 @@ beforeAll(() => {
 
 describe('CaputchinWidget lifecycle', () => {
   it('observedAttributes covers cap surface', () => {
-    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'lang', 'skin', 'config']);
+    expect(CaputchinWidget.observedAttributes).toEqual(['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'locale', 'skin', 'config']);
   });
 
   it('does NOT observe game attrs (game attrs belong on <caputchin-game>)', () => {
@@ -54,7 +54,7 @@ describe('CaputchinWidget lifecycle', () => {
 describe('CaputchinGame lifecycle', () => {
   it('observedAttributes covers game surface', () => {
     expect(CaputchinGame.observedAttributes).toEqual(
-      ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang', 'skin', 'config']
+      ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'config']
     );
   });
 

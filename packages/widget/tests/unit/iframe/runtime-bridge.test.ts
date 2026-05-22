@@ -21,9 +21,9 @@ beforeEach(() => {
   posted.length = 0;
 });
 
-function dispatchKickoff(gameId: string | null, seq = 1, lang: unknown = null, skin: unknown = null, config: unknown = null): void {
+function dispatchKickoff(gameId: string | null, seq = 1, locale: unknown = null, skin: unknown = null, config: unknown = null): void {
   const event = new MessageEvent('message', {
-    data: { kind: 'kickoff', seq, gameId, lang, skin, config },
+    data: { kind: 'kickoff', seq, gameId, locale, skin, config },
     source: window,
   });
   window.dispatchEvent(event);
@@ -133,7 +133,7 @@ describe('iframe runtime — manifest posted on boot', () => {
   });
 
   it('manifest carries null languages when no manifest registered', () => {
-    expect(manifestOnBoot!['languages']).toBeNull();
+    expect(manifestOnBoot!['locales']).toBeNull();
   });
 
   it('manifest carries null skins when no manifest registered', () => {
@@ -146,23 +146,23 @@ describe('iframe runtime — manifest posted on boot', () => {
 });
 
 describe('iframe runtime — kickoff ctx delivery', () => {
-  it('kickoff with lang payload forwards ctx.lang to the factory', () => {
+  it('kickoff with lang payload forwards ctx.locale to the factory', () => {
     let capturedCtx: unknown = null;
     registerGame('ctx-1', (_root, _bridge, ctx) => {
       capturedCtx = ctx;
     });
     const lang = { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' };
     dispatchKickoff('ctx-1', 200, lang);
-    expect(capturedCtx).toEqual({ lang, skin: null, config: null });
+    expect(capturedCtx).toEqual({ locale: lang, skin: null, config: null });
   });
 
-  it('kickoff with no lang forwards ctx.lang=null', () => {
+  it('kickoff with no lang forwards ctx.locale=null', () => {
     let capturedCtx: unknown = null;
     registerGame('ctx-2', (_root, _bridge, ctx) => {
       capturedCtx = ctx;
     });
     dispatchKickoff('ctx-2', 201);
-    expect(capturedCtx).toEqual({ lang: null, skin: null, config: null });
+    expect(capturedCtx).toEqual({ locale: null, skin: null, config: null });
   });
 
   it('kickoff with skin payload forwards ctx.skin to the factory', () => {
@@ -170,9 +170,9 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     registerGame('ctx-3', (_root, _bridge, ctx) => {
       capturedCtx = ctx;
     });
-    const skin = { _mode: 'dark', primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
+    const skin = { _theme: 'dark', primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
     dispatchKickoff('ctx-3', 202, null, skin);
-    expect(capturedCtx).toEqual({ lang: null, skin, config: null });
+    expect(capturedCtx).toEqual({ locale: null, skin, config: null });
   });
 
   it('kickoff with config payload forwards ctx.config to the factory', () => {
@@ -182,7 +182,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     });
     const config = { show_high_score: true, difficulty: 'hard', peek_seconds: 1.5 };
     dispatchKickoff('ctx-4', 203, null, null, config);
-    expect(capturedCtx).toEqual({ lang: null, skin: null, config });
+    expect(capturedCtx).toEqual({ locale: null, skin: null, config });
   });
 });
 

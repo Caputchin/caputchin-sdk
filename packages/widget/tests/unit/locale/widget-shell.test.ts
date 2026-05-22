@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveWidgetShell } from '../../../src/lang/widget-shell.js';
+import { resolveWidgetShell } from '../../../src/locale/widget-shell.js';
 
 describe('resolveWidgetShell — browser-auto path', () => {
   it('defaults to en + ltr when no navigator hint provided', () => {
@@ -33,7 +33,7 @@ describe('resolveWidgetShell — browser-auto path', () => {
     expect(shell.direction).toBe('ltr');
   });
 
-  it('treats lang="auto" the same as null/omitted', () => {
+  it('treats locale="auto" the same as null/omitted', () => {
     const shell = resolveWidgetShell('auto', ['ar']);
     expect(shell.iso).toBe('ar');
     expect(shell.direction).toBe('rtl');

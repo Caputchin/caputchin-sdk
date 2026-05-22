@@ -17,15 +17,15 @@ describe('buildBootstrapUrl', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      langIso: 'en',
-      langPreset: 'en-us',
-      skinMode: 'dark',
+      localeIso: 'en',
+      localePreset: 'en-us',
+      skinTheme: 'dark',
       skinPreset: 'midnight',
       configPreset: 'custom',
     });
-    expect(url).toContain('lang_iso=en');
-    expect(url).toContain('lang_preset=en-us');
-    expect(url).toContain('skin_mode=dark');
+    expect(url).toContain('locale_iso=en');
+    expect(url).toContain('locale_preset=en-us');
+    expect(url).toContain('skin_theme=dark');
     expect(url).toContain('skin_preset=midnight');
     expect(url).toContain('config_preset=custom');
   });
@@ -34,13 +34,13 @@ describe('buildBootstrapUrl', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      langIso: null,
-      langPreset: undefined,
-      skinMode: '',
+      localeIso: null,
+      localePreset: undefined,
+      skinTheme: '',
     });
-    expect(url).not.toContain('lang_iso');
-    expect(url).not.toContain('lang_preset');
-    expect(url).not.toContain('skin_mode');
+    expect(url).not.toContain('locale_iso');
+    expect(url).not.toContain('locale_preset');
+    expect(url).not.toContain('skin_theme');
   });
 });
 
@@ -60,7 +60,7 @@ describe('validateBootstrapResponse', () => {
   });
 
   it('accepts the empty-overrides shape', () => {
-    const raw = { widget: { overrides: { language: null, skin: null, configuration: null } }, game: null };
+    const raw = { widget: { overrides: { locale: null, skin: null, configuration: null } }, game: null };
     expect(validateBootstrapResponse(raw)).toEqual(raw);
   });
 
@@ -92,7 +92,7 @@ describe('fetchBootstrap', () => {
   });
 
   it('returns parsed response on 200 OK', async () => {
-    const body = { widget: { overrides: { language: null, skin: null, configuration: null } }, game: null };
+    const body = { widget: { overrides: { locale: null, skin: null, configuration: null } }, game: null };
     fetchSpy.mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
     expect(out).toEqual(body);

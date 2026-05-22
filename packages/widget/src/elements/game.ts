@@ -2,7 +2,7 @@ import { inspectGameConfig } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
-import { resolveWidgetShell } from '../lang/widget-shell.js';
+import { resolveWidgetShell } from '../locale/widget-shell.js';
 import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
 import { resolveWidgetShellConfig } from '../configurations/widget-shell-config.js';
@@ -15,7 +15,7 @@ import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
 import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
+import type { LocalePreset, SkinPreset } from '@caputchin/game-sdk';
 
 /**
  * `<caputchin-game>`; game host with optional cap verification.
@@ -32,7 +32,7 @@ import type { LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'lang', 'skin', 'config'];
+  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'config'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -66,14 +66,14 @@ export class CaputchinGame extends HTMLElement {
     // the bootstrap call). If sitekey is absent (game-only path), skip
     // bootstrap entirely — overrides are gated by sitekey/plan-tier and
     // there's nothing to fetch.
-    const rawLang = state.config.lang;
-    const inlineSignals = rawLang ? deriveShellSignals(rawLang) : { hint: null, direction: null };
-    const skinModeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
+    const rawLocale = state.config.locale;
+    const inlineSignals = rawLocale ? deriveShellSignals(rawLocale) : { hint: null, direction: null };
+    const skinThemeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
     const hintShell = resolveWidgetShell(inlineSignals.hint);
-    const hintSkin = resolveWidgetShellSkin(skinModeHint);
+    const hintSkin = resolveWidgetShellSkin(skinThemeHint);
 
     if (state.config.sitekey === null) {
-      this.completeMount(apiHost, null, inlineSignals, skinModeHint);
+      this.completeMount(apiHost, null, inlineSignals, skinThemeHint);
       return;
     }
 
@@ -81,15 +81,15 @@ export class CaputchinGame extends HTMLElement {
       apiHost,
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
-      langIso: hintShell.iso,
-      skinMode: hintSkin.mode,
+      localeIso: hintShell.iso,
+      skinTheme: hintSkin.theme,
     }).then((bootstrap) => {
       if (!this.state.connected || !this.state.config) return;
       // Game-scope override banks ride to the iframe via state; the shell
-      // around the game still consumes only the widget block (its _mode /
+      // around the game still consumes only the widget block (its _theme /
       // _iso signals), same as before.
       this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
-      this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinModeHint);
+      this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinThemeHint);
     });
   }
 
@@ -97,20 +97,20 @@ export class CaputchinGame extends HTMLElement {
     apiHost: string,
     overrides: OverridesPerAxis | null,
     inlineSignals: ShellSignals,
-    skinModeHint: string | null,
+    skinThemeHint: string | null,
   ): void {
     const state = this.state;
     if (!state.config) return;
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
-    const langOverride = (overrides?.language?.presets ?? null) as Record<string, LanguagePreset> | null;
+    const localeOverride = (overrides?.locale?.presets ?? null) as Record<string, LocalePreset> | null;
     const skinOverride = (overrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
     const isManual = state.config.trigger === 'manual';
     const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
 
-    const baseShell = resolveWidgetShell(inlineSignals.hint, undefined, langOverride);
+    const baseShell = resolveWidgetShell(inlineSignals.hint, undefined, localeOverride);
     const shell = inlineSignals.direction
       ? { ...baseShell, direction: inlineSignals.direction }
       : baseShell;
@@ -119,11 +119,11 @@ export class CaputchinGame extends HTMLElement {
     }
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = resolveWidgetShellSkin(skinModeHint, undefined, skinOverride);
+    const skin = resolveWidgetShellSkin(skinThemeHint, undefined, skinOverride);
     for (const message of skin.issues) {
       fireError(this, 'invalid-config', message);
     }
-    this.setAttribute('data-skin-mode', skin.mode);
+    this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
     // Widget shell config (brand link targets) on the game element always
@@ -246,7 +246,7 @@ function deriveShellSignals(raw: string): ShellSignals {
  *  shell. The shell never consumes per-key overrides; it just needs to
  *  know whether to render light or dark. For non-JSON values the raw
  *  string passes through (light/dark/auto/preset-name). For inline JSON
- *  we extract `_mode`, falling back to `_extends` if it names a mode
+ *  we extract `_theme`, falling back to `_extends` if it names a mode
  *  shortcut. Malformed JSON yields `null` → shell auto. */
 function deriveShellSkinHint(raw: string): string | null {
   const trimmed = raw.trim();
@@ -255,7 +255,7 @@ function deriveShellSkinHint(raw: string): string | null {
   try { parsed = JSON.parse(trimmed); } catch { return null; }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const obj = parsed as Record<string, unknown>;
-  if (obj._mode === 'light' || obj._mode === 'dark') return obj._mode;
+  if (obj._theme === 'light' || obj._theme === 'dark') return obj._theme;
   if (obj._extends === 'light' || obj._extends === 'dark') return obj._extends;
   return null;
 }

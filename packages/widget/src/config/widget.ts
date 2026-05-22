@@ -14,11 +14,11 @@ export interface WidgetConfig {
   width: WidgetWidth;
   height: WidgetHeight;
   size: WidgetSize;
-  /** Raw `lang` attribute value. Resolved against the widget's bundled
+  /** Raw `locale` attribute value. Resolved against the widget's bundled
    *  shell presets at mount. Inline JSON is rejected (the widget shell
    *  only accepts preset names + ISO codes); omitted/empty means browser
    *  auto. */
-  lang: string | null;
+  locale: string | null;
   /** Raw `skin` attribute value. Resolved against the widget's bundled
    *  skin presets at mount. Inline JSON is rejected; only `<mode>` /
    *  `auto` / `<skin-name>` are accepted. Omitted/empty means auto
@@ -55,15 +55,15 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
     inert = true;
   }
 
-  const rawLang = el.getAttribute('lang');
-  const lang = rawLang !== null && rawLang.trim().length > 0 ? rawLang : null;
+  const rawLocale = el.getAttribute('locale');
+  const locale = rawLocale !== null && rawLocale.trim().length > 0 ? rawLocale : null;
   const rawSkin = el.getAttribute('skin');
   const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
   const rawConfig = el.getAttribute('config');
   const configAttr = rawConfig !== null && rawConfig.trim().length > 0 ? rawConfig : null;
 
   return {
-    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, lang, skin, config: configAttr },
+    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, locale, skin, config: configAttr },
     issues,
     inert,
   };

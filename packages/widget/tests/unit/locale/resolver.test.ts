@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import type { LanguagePreset } from '@caputchin/game-sdk';
-import { resolveLanguage } from '../../../src/lang/resolver.js';
+import type { LocalePreset } from '@caputchin/game-sdk';
+import { resolveLocale } from '../../../src/locale/resolver.js';
 
-type Presets = Record<string, LanguagePreset>;
+type Presets = Record<string, LocalePreset>;
 
 function presetsOf(p: Presets): Presets {
   return p;
 }
 
-describe('resolveLanguage — preset name lookup', () => {
+describe('resolveLocale — preset name lookup', () => {
   it('matches preset by exact case-sensitive name', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'ar', ['en']);
+    const { resolved, issues } = resolveLocale(presets, 'ar', ['en']);
     expect(resolved).toEqual({ _iso: 'ar', _direction: 'rtl', hello: 'مرحبا' });
     expect(issues).toEqual([]);
   });
@@ -23,7 +23,7 @@ describe('resolveLanguage — preset name lookup', () => {
     const presets = presetsOf({
       Arabic: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'arabic', ['en']);
+    const { resolved, issues } = resolveLocale(presets, 'arabic', ['en']);
     // Preset name "Arabic" not matched by "arabic"; iso "arabic" doesn't normalize to "ar"; auto cascade.
     expect(resolved).not.toBeNull();
     expect(resolved!._iso).toBe('ar');
@@ -31,12 +31,12 @@ describe('resolveLanguage — preset name lookup', () => {
   });
 });
 
-describe('resolveLanguage — iso lookup', () => {
+describe('resolveLocale — iso lookup', () => {
   it('matches a single preset by iso (case-insensitive)', () => {
     const presets = presetsOf({
       english: { _iso: 'en', hello: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, 'EN', ['fr']);
+    const { resolved } = resolveLocale(presets, 'EN', ['fr']);
     expect(resolved).toEqual({ _iso: 'en', _direction: 'ltr', hello: 'Hi' });
   });
 
@@ -46,7 +46,7 @@ describe('resolveLanguage — iso lookup', () => {
       enUs: { _iso: 'en', _default: true, hello: 'Hi' },
       enAu: { _iso: 'en', hello: 'Gday' },
     });
-    const { resolved } = resolveLanguage(presets, 'en', []);
+    const { resolved } = resolveLocale(presets, 'en', []);
     expect(resolved!['hello']).toBe('Hi');
   });
 
@@ -55,7 +55,7 @@ describe('resolveLanguage — iso lookup', () => {
       enUk: { _iso: 'en', hello: 'Cheers' },
       enUs: { _iso: 'en', hello: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, 'en', []);
+    const { resolved } = resolveLocale(presets, 'en', []);
     expect(resolved!['hello']).toBe('Cheers');
   });
 
@@ -63,18 +63,18 @@ describe('resolveLanguage — iso lookup', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, 'en-GB', []);
+    const { resolved } = resolveLocale(presets, 'en-GB', []);
     expect(resolved!['hello']).toBe('Hi');
   });
 });
 
-describe('resolveLanguage — auto cascade', () => {
+describe('resolveLocale — auto cascade', () => {
   it('matches the first navigator.languages entry by primary subtag', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
       de: { _iso: 'de', _default: true, hello: 'Hallo' },
     });
-    const { resolved } = resolveLanguage(presets, 'auto', ['de-DE', 'en']);
+    const { resolved } = resolveLocale(presets, 'auto', ['de-DE', 'en']);
     expect(resolved!['hello']).toBe('Hallo');
   });
 
@@ -83,7 +83,7 @@ describe('resolveLanguage — auto cascade', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi' },
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
-    const { resolved } = resolveLanguage(presets, 'auto', ['ja']);
+    const { resolved } = resolveLocale(presets, 'auto', ['ja']);
     expect(resolved!['hello']).toBe('Hi');
   });
 
@@ -92,18 +92,18 @@ describe('resolveLanguage — auto cascade', () => {
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
       he: { _iso: 'he', hello: 'שלום' },
     });
-    const { resolved } = resolveLanguage(presets, 'auto', ['ja']);
+    const { resolved } = resolveLocale(presets, 'auto', ['ja']);
     expect(resolved!['hello']).toBe('مرحبا');
   });
 
   it('returns null when no presets are defined at all', () => {
-    const { resolved, issues } = resolveLanguage(null, 'auto', ['en']);
+    const { resolved, issues } = resolveLocale(null, 'auto', ['en']);
     expect(resolved).toBeNull();
     expect(issues).toEqual([]);
   });
 
   it('returns null when presets is empty object', () => {
-    const { resolved } = resolveLanguage({}, 'auto', ['en']);
+    const { resolved } = resolveLocale({}, 'auto', ['en']);
     expect(resolved).toBeNull();
   });
 
@@ -111,17 +111,17 @@ describe('resolveLanguage — auto cascade', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, null, ['en']);
+    const { resolved } = resolveLocale(presets, null, ['en']);
     expect(resolved!['hello']).toBe('Hi');
   });
 });
 
-describe('resolveLanguage — direction auto-derive', () => {
+describe('resolveLocale — direction auto-derive', () => {
   it('auto-derives rtl for arabic when _direction omitted', () => {
     const presets = presetsOf({
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
-    const { resolved } = resolveLanguage(presets, 'ar', []);
+    const { resolved } = resolveLocale(presets, 'ar', []);
     expect(resolved!._direction).toBe('rtl');
   });
 
@@ -129,7 +129,7 @@ describe('resolveLanguage — direction auto-derive', () => {
     const presets = presetsOf({
       ar: { _iso: 'ar', _direction: 'ltr', _default: true, hello: 'مرحبا' },
     });
-    const { resolved } = resolveLanguage(presets, 'ar', []);
+    const { resolved } = resolveLocale(presets, 'ar', []);
     expect(resolved!._direction).toBe('ltr');
   });
 
@@ -137,26 +137,26 @@ describe('resolveLanguage — direction auto-derive', () => {
     const presets = presetsOf({
       en: { _iso: 'en', hello: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, 'en', []);
+    const { resolved } = resolveLocale(presets, 'en', []);
     expect(resolved!._direction).toBe('ltr');
   });
 
   it('auto-derives rtl for he, fa, ur, yi, ps, sd', () => {
     for (const iso of ['he', 'fa', 'ur', 'yi', 'ps', 'sd']) {
       const presets = presetsOf({ p: { _iso: iso, hello: 'h' } });
-      const { resolved } = resolveLanguage(presets, iso, []);
+      const { resolved } = resolveLocale(presets, iso, []);
       expect(resolved!._direction).toBe('rtl');
     }
   });
 });
 
-describe('resolveLanguage — _extends chain merge', () => {
+describe('resolveLocale — _extends chain merge', () => {
   it('child overrides base text key', () => {
     const presets = presetsOf({
       base: { _iso: 'en', hello: 'Hi', bye: 'Bye' },
       child: { _extends: 'base', hello: 'Hello!' },
     });
-    const { resolved } = resolveLanguage(presets, 'child', []);
+    const { resolved } = resolveLocale(presets, 'child', []);
     expect(resolved!['hello']).toBe('Hello!');
     expect(resolved!['bye']).toBe('Bye');
     expect(resolved!._iso).toBe('en');
@@ -167,7 +167,7 @@ describe('resolveLanguage — _extends chain merge', () => {
       arBase: { _iso: 'ar', hello: 'مرحبا' },
       childAr: { _extends: 'arBase', greeting: 'Hi' },
     });
-    const { resolved } = resolveLanguage(presets, 'childAr', []);
+    const { resolved } = resolveLocale(presets, 'childAr', []);
     expect(resolved!._iso).toBe('ar');
     expect(resolved!._direction).toBe('rtl');
   });
@@ -178,7 +178,7 @@ describe('resolveLanguage — _extends chain merge', () => {
       enCasual: { _iso: 'en', hello: 'Hi' },
       extended: { _extends: 'en', greeting: 'Yo' },
     });
-    const { resolved } = resolveLanguage(presets, 'extended', []);
+    const { resolved } = resolveLocale(presets, 'extended', []);
     expect(resolved!['hello']).toBe('Good day');
     expect(resolved!['greeting']).toBe('Yo');
   });
@@ -189,7 +189,7 @@ describe('resolveLanguage — _extends chain merge', () => {
       b: { _extends: 'a', hello: 'B' },
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'a', ['en']);
+    const { resolved, issues } = resolveLocale(presets, 'a', ['en']);
     expect(issues.some((m) => /circular/i.test(m))).toBe(true);
     // Cascades to auto = en.
     expect(resolved!._iso).toBe('en');
@@ -200,7 +200,7 @@ describe('resolveLanguage — _extends chain merge', () => {
       child: { _extends: 'ghost', hello: 'Hi' },
       en: { _iso: 'en', _default: true, hello: 'Hello' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'child', ['en']);
+    const { resolved, issues } = resolveLocale(presets, 'child', ['en']);
     expect(issues.some((m) => /ghost/.test(m))).toBe(true);
     expect(resolved!['hello']).toBe('Hello');
   });
@@ -213,19 +213,19 @@ describe('resolveLanguage — _extends chain merge', () => {
       presets[name] = { _extends: prev, [`tag${i}`]: `t${i}` };
       prev = name;
     }
-    const { resolved, issues } = resolveLanguage(presets, 'l0', ['en']);
+    const { resolved, issues } = resolveLocale(presets, 'l0', ['en']);
     expect(issues.some((m) => /depth/i.test(m))).toBe(true);
     expect(resolved).not.toBeNull();
   });
 });
 
-describe('resolveLanguage — inline JSON', () => {
+describe('resolveLocale — inline JSON', () => {
   it('parses inline JSON with explicit _extends and merges chain', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
     });
     const inline = JSON.stringify({ _extends: 'en', hello: 'Howdy' });
-    const { resolved } = resolveLanguage(presets, inline, []);
+    const { resolved } = resolveLocale(presets, inline, []);
     expect(resolved!['hello']).toBe('Howdy');
     expect(resolved!['bye']).toBe('Bye');
     expect(resolved!._iso).toBe('en');
@@ -236,7 +236,7 @@ describe('resolveLanguage — inline JSON', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
     });
     const inline = JSON.stringify({ hello: 'Hey' });
-    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    const { resolved } = resolveLocale(presets, inline, ['en']);
     expect(resolved!['hello']).toBe('Hey');
     expect(resolved!['bye']).toBe('Bye');
   });
@@ -246,7 +246,7 @@ describe('resolveLanguage — inline JSON', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
     const inline = JSON.stringify({ _iso: 'ar', hello: 'مرحبا' });
-    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    const { resolved } = resolveLocale(presets, inline, ['en']);
     expect(resolved!._iso).toBe('ar');
     expect(resolved!._direction).toBe('rtl');
     expect(resolved!['hello']).toBe('مرحبا');
@@ -262,7 +262,7 @@ describe('resolveLanguage — inline JSON', () => {
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا', bye: 'وداعا' },
     });
     const inline = JSON.stringify({ _iso: 'ar', bye: 'CUSTOM' });
-    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    const { resolved } = resolveLocale(presets, inline, ['en']);
     expect(resolved!._iso).toBe('ar');
     expect(resolved!._direction).toBe('rtl');
     expect(resolved!['hello']).toBe('مرحبا'); // inherited from ar via implicit extends
@@ -275,7 +275,7 @@ describe('resolveLanguage — inline JSON', () => {
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
     const inline = JSON.stringify({ _iso: 'ar', _direction: 'rtl', custom: 'X' });
-    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    const { resolved } = resolveLocale(presets, inline, ['en']);
     expect(resolved!._iso).toBe('ar');
     expect(resolved!._direction).toBe('rtl');
     expect(resolved!['hello']).toBe('مرحبا');
@@ -287,7 +287,7 @@ describe('resolveLanguage — inline JSON', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
     const inline = JSON.stringify({ _iso: 'xx', hello: 'CUSTOM' });
-    const { resolved, issues } = resolveLanguage(presets, inline, ['en']);
+    const { resolved, issues } = resolveLocale(presets, inline, ['en']);
     // Implicit _extends: xx target is missing → fall through to layer-atop-auto.
     // Result: auto base (en) + inline overrides (_iso=xx wins, hello=CUSTOM wins).
     expect(resolved!._iso).toBe('xx');
@@ -300,7 +300,7 @@ describe('resolveLanguage — inline JSON', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
     });
     const inline = JSON.stringify({ hello: 'Hey' });
-    const { resolved } = resolveLanguage(presets, inline, ['en']);
+    const { resolved } = resolveLocale(presets, inline, ['en']);
     expect(resolved!._iso).toBe('en');
     expect(resolved!['hello']).toBe('Hey');
     expect(resolved!['bye']).toBe('Bye');
@@ -310,7 +310,7 @@ describe('resolveLanguage — inline JSON', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved, issues } = resolveLanguage(presets, '{not json', ['en']);
+    const { resolved, issues } = resolveLocale(presets, '{not json', ['en']);
     expect(issues.some((m) => /JSON/.test(m))).toBe(true);
     expect(resolved!['hello']).toBe('Hi');
   });
@@ -319,20 +319,20 @@ describe('resolveLanguage — inline JSON', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved, issues } = resolveLanguage(presets, '{42}', ['en']);
+    const { resolved, issues } = resolveLocale(presets, '{42}', ['en']);
     expect(issues.length).toBeGreaterThan(0);
     expect(resolved!._iso).toBe('en');
   });
 });
 
-describe('resolveLanguage — rejectInlineJson option', () => {
+describe('resolveLocale — rejectInlineJson option', () => {
   it('emits an issue and falls back to auto when inline JSON arrives under the flag', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
     const inline = JSON.stringify({ _iso: 'ar', hello: 'مرحبا' });
-    const { resolved, issues } = resolveLanguage(presets, inline, ['en'], { rejectInlineJson: true });
+    const { resolved, issues } = resolveLocale(presets, inline, ['en'], { rejectInlineJson: true });
     expect(issues.some((m) => /inline JSON/i.test(m))).toBe(true);
     expect(resolved!._iso).toBe('en');
   });
@@ -342,19 +342,19 @@ describe('resolveLanguage — rejectInlineJson option', () => {
       en: { _iso: 'en', _default: true, hello: 'Hi' },
       ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'ar', ['en'], { rejectInlineJson: true });
+    const { resolved, issues } = resolveLocale(presets, 'ar', ['en'], { rejectInlineJson: true });
     expect(issues).toEqual([]);
     expect(resolved!._iso).toBe('ar');
   });
 });
 
-describe('resolveLanguage — unknown attr value', () => {
+describe('resolveLocale — unknown attr value', () => {
   it('unknown preset and unknown iso emit issue and cascade to auto', () => {
     const presets = presetsOf({
       en: { _iso: 'en', _default: true, hello: 'Hi' },
     });
-    const { resolved, issues } = resolveLanguage(presets, 'xyz', ['en']);
-    expect(issues.some((m) => /lang="xyz"/.test(m))).toBe(true);
+    const { resolved, issues } = resolveLocale(presets, 'xyz', ['en']);
+    expect(issues.some((m) => /locale="xyz"/.test(m))).toBe(true);
     expect(resolved!._iso).toBe('en');
   });
 });

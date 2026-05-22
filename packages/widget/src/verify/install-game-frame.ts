@@ -1,14 +1,14 @@
 import type { GameConfig } from '../config/game.js';
 import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
-import { resolveLanguage } from '../lang/resolver.js';
+import { resolveLocale } from '../locale/resolver.js';
 import { resolveSkin } from '../skin/resolver.js';
 import { resolveConfig } from '../configurations/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
 import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { ConfigPreset, LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
+import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DEFAULT_W = 400;
@@ -51,32 +51,32 @@ export async function installGameFrame(
   const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
   applyIframeSize(host, config, manifest);
   host.setLayoutContext(layout);
-  const lang = resolveLangForGame(el, config, manifest, gameOverrides);
+  const locale = resolveLocaleForGame(el, config, manifest, gameOverrides);
   const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl(), gameOverrides);
   const cfg = resolveConfigForGame(el, config, manifest, gameOverrides);
-  host.kickoff(1, lang, skin, cfg);
+  host.kickoff(1, locale, skin, cfg);
 }
 
-/** Resolve the customer's `lang` attribute against the game's manifest
+/** Resolve the customer's `locale` attribute against the game's manifest
  *  presets, with any dashboard-authored override bank (from the bootstrap
  *  `game` block per ADR-0059) injected as a second layer on top — a
  *  name-collision override implicitly extends its bundled twin, same rule
  *  the widget shell uses. Issues fire as `invalid-config` events. Returns
  *  null when neither the manifest nor the overrides ship any preset, which
- *  the iframe runtime forwards as `ctx.lang = null`. */
-export function resolveLangForGame(
+ *  the iframe runtime forwards as `ctx.locale = null`. */
+export function resolveLocaleForGame(
   el: HTMLElement,
   config: GameConfig,
   manifest: ManifestMessage | null,
   gameOverrides: OverridesPerAxis | null,
-): ReturnType<typeof resolveLanguage>['resolved'] {
-  const overrideBank = (gameOverrides?.language?.presets ?? null) as Record<string, LanguagePreset> | null;
-  const presets = injectOverrideLayer(manifest?.languages?.presets, overrideBank);
+): ReturnType<typeof resolveLocale>['resolved'] {
+  const overrideBank = (gameOverrides?.locale?.presets ?? null) as Record<string, LocalePreset> | null;
+  const presets = injectOverrideLayer(manifest?.locales?.presets, overrideBank);
   if (Object.keys(presets).length === 0) return null;
   const navLangs = (typeof navigator !== 'undefined' && navigator.languages)
     ? navigator.languages
     : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
-  const { resolved, issues } = resolveLanguage(presets, config.lang, navLangs);
+  const { resolved, issues } = resolveLocale(presets, config.locale, navLangs);
   for (const message of issues) {
     fireError(el, 'invalid-config', message);
   }

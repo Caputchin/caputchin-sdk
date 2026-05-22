@@ -46,7 +46,7 @@ export interface ShellPalette {
 }
 
 export interface WidgetShellSkin {
-  mode: 'light' | 'dark';
+  theme: 'light' | 'dark';
   palette: ShellPalette;
   /** Human-readable issues raised during resolution. The element layer
    *  translates each into an `invalid-config` event so host pages can log
@@ -69,23 +69,23 @@ const HARDCODED_LIGHT: ShellPalette = {
   brand_logo: brandLogoLight,
 } as ShellPalette;
 
-const BRAND_LOGO_BY_MODE: Readonly<Record<'light' | 'dark', string>> = {
+const BRAND_LOGO_BY_THEME: Readonly<Record<'light' | 'dark', string>> = {
   light: brandLogoLight,
   dark: brandLogoDark,
 };
 
-function toPalette(resolved: ResolvedSkin | null, mode: 'light' | 'dark'): ShellPalette {
-  if (!resolved) return { ...HARDCODED_LIGHT, brand_logo: BRAND_LOGO_BY_MODE[mode] };
+function toPalette(resolved: ResolvedSkin | null, theme: 'light' | 'dark'): ShellPalette {
+  if (!resolved) return { ...HARDCODED_LIGHT, brand_logo: BRAND_LOGO_BY_THEME[theme] };
   const out: ShellPalette = { ...HARDCODED_LIGHT };
   for (const key of Object.keys(HARDCODED_LIGHT) as Array<keyof ShellPalette>) {
     const value = resolved[key as string];
     if (typeof value === 'string') out[key] = value;
   }
-  // Mode-matched brand logo applies when the resolved preset didn't carry
+  // Theme-matched brand logo applies when the resolved preset didn't carry
   // its own override. Customer-curated paid skins can override via the
   // `brand_logo` key in their preset and that wins via the loop above.
   if (typeof resolved['brand_logo'] !== 'string') {
-    out.brand_logo = BRAND_LOGO_BY_MODE[mode];
+    out.brand_logo = BRAND_LOGO_BY_THEME[theme];
   }
   return out;
 }
@@ -93,7 +93,7 @@ function toPalette(resolved: ResolvedSkin | null, mode: 'light' | 'dark'): Shell
 /** Resolve the widget shell skin. Accepts the customer's `skin` attribute
  *  value (omitted/`"auto"` ⇒ system `prefers-color-scheme`). Inline JSON is
  *  rejected on `<caputchin-widget>` (per shell-attribute parity with
- *  `lang`); the game element pre-derives a mode hint from inline JSON and
+ *  `lang`); the game element pre-derives a theme hint from inline JSON and
  *  passes it as a bare string before reaching this resolver.
  *
  *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
@@ -118,10 +118,10 @@ export function resolveWidgetShellSkin(
     rejectInlineJson: true,
     baseUrl: null,
   });
-  const mode: 'light' | 'dark' = resolved?._mode ?? 'light';
+  const theme: 'light' | 'dark' = resolved?._theme ?? 'light';
   return {
-    mode,
-    palette: toPalette(resolved, mode),
+    theme,
+    palette: toPalette(resolved, theme),
     issues,
   };
 }

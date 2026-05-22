@@ -1,10 +1,10 @@
 import type {
   ConfigPreset,
   ConfigSchemaEntry,
-  LanguagePreset,
+  LocalePreset,
   Layout,
   ResolvedConfig,
-  ResolvedLanguage,
+  ResolvedLocale,
   ResolvedSkin,
   SkinPreset,
   SkinSchemaEntry,
@@ -14,7 +14,7 @@ export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
   gameId: string | null;
-  lang: ResolvedLanguage | null;
+  locale: ResolvedLocale | null;
   skin: ResolvedSkin | null;
   config: ResolvedConfig | null;
 }
@@ -64,10 +64,10 @@ export interface ManifestMessage {
   preferredLayout: Layout | null;
   preferredWidth: number | null;
   preferredHeight: number | null;
-  languages: { presets: Record<string, LanguagePreset> } | null;
+  locales: { presets: Record<string, LocalePreset> } | null;
   /** Carries BOTH presets and schema, because the schema drives per-value
    *  type validation at resolve time (color / image / audio / video
-   *  allow-list). The `languages` field has no analogue — lang validation
+   *  allow-list). The `locales` field has no analogue — locale text validation
    *  isn't type-based. */
   skins: {
     schema?: Record<string, SkinSchemaEntry>;
