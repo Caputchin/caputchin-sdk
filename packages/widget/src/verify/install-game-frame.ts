@@ -6,6 +6,9 @@ import { resolveSkin } from '../skin/resolver.js';
 import { resolveConfig } from '../configurations/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
+import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
+import type { OverridesPerAxis } from '../bootstrap/types.js';
+import type { ConfigPreset, LanguagePreset, SkinPreset } from '@caputchin/game-sdk';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DEFAULT_W = 400;
@@ -24,6 +27,7 @@ export async function installGameFrame(
   host: IframeHost,
   onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
   onGameStarted: () => void,
+  gameOverrides: OverridesPerAxis | null,
 ): Promise<void> {
   if (!gp) {
     fireError(el, 'game-load-failed', 'game presentation not built', 'iframe-load-failed');
@@ -47,23 +51,28 @@ export async function installGameFrame(
   const manifest = await host.waitManifest(MANIFEST_TIMEOUT_MS);
   applyIframeSize(host, config, manifest);
   host.setLayoutContext(layout);
-  const lang = resolveLangForGame(el, config, manifest);
-  const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl());
-  const cfg = resolveConfigForGame(el, config, manifest);
+  const lang = resolveLangForGame(el, config, manifest, gameOverrides);
+  const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl(), gameOverrides);
+  const cfg = resolveConfigForGame(el, config, manifest, gameOverrides);
   host.kickoff(1, lang, skin, cfg);
 }
 
 /** Resolve the customer's `lang` attribute against the game's manifest
- *  presets. Issues fire as `invalid-config` events so the host page can
- *  log misconfigurations. Returns null when the game ships no presets,
- *  which the iframe runtime forwards as `ctx.lang = null`. */
-function resolveLangForGame(
+ *  presets, with any dashboard-authored override bank (from the bootstrap
+ *  `game` block per ADR-0059) injected as a second layer on top — a
+ *  name-collision override implicitly extends its bundled twin, same rule
+ *  the widget shell uses. Issues fire as `invalid-config` events. Returns
+ *  null when neither the manifest nor the overrides ship any preset, which
+ *  the iframe runtime forwards as `ctx.lang = null`. */
+export function resolveLangForGame(
   el: HTMLElement,
   config: GameConfig,
   manifest: ManifestMessage | null,
+  gameOverrides: OverridesPerAxis | null,
 ): ReturnType<typeof resolveLanguage>['resolved'] {
-  const presets = manifest?.languages?.presets;
-  if (!presets) return null;
+  const overrideBank = (gameOverrides?.language?.presets ?? null) as Record<string, LanguagePreset> | null;
+  const presets = injectOverrideLayer(manifest?.languages?.presets, overrideBank);
+  if (Object.keys(presets).length === 0) return null;
   const navLangs = (typeof navigator !== 'undefined' && navigator.languages)
     ? navigator.languages
     : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
@@ -79,15 +88,22 @@ function resolveLangForGame(
  *  configurations presets, which the iframe runtime forwards as
  *  `ctx.config = null`. Mirrors `resolveSkinForGame` minus the bundle
  *  base URL (configurations carry typed scalars, not asset paths). */
-function resolveConfigForGame(
+export function resolveConfigForGame(
   el: HTMLElement,
   config: GameConfig,
   manifest: ManifestMessage | null,
+  gameOverrides: OverridesPerAxis | null,
 ): ReturnType<typeof resolveConfig>['resolved'] {
   const block = manifest?.configurations;
+  // Skin/config carry typed values validated against the schema, and the
+  // schema is authoritative from the game manifest (override banks carry
+  // values only, never schema). So a game that declares no configurations
+  // block has nothing to validate overrides against — keep returning null.
   if (!block) return null;
+  const overrideBank = (gameOverrides?.configuration?.presets ?? null) as Record<string, ConfigPreset> | null;
+  const presets = injectOverrideLayer(block.presets, overrideBank);
   const { resolved, issues } = resolveConfig({
-    presets: block.presets,
+    presets,
     schema: block.schema ?? null,
     attrValue: config.config,
     rejectInlineJson: false,
@@ -103,19 +119,25 @@ function resolveConfigForGame(
  *  the iframe runtime forwards as `ctx.skin = null` so games stay
  *  single-skin by default. Bundle-relative asset paths resolve against
  *  the game bundle URL (mirrors `game-src` resolution). */
-function resolveSkinForGame(
+export function resolveSkinForGame(
   el: HTMLElement,
   config: GameConfig,
   manifest: ManifestMessage | null,
   baseUrl: string | null,
+  gameOverrides: OverridesPerAxis | null,
 ): ReturnType<typeof resolveSkin>['resolved'] {
   const skinBlock = manifest?.skins;
+  // Schema is authoritative from the manifest (override banks carry no
+  // schema); no manifest skin block ⇒ nothing to validate overrides
+  // against, so the game stays single-skin.
   if (!skinBlock) return null;
+  const overrideBank = (gameOverrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
+  const presets = injectOverrideLayer(skinBlock.presets, overrideBank);
   const prefersDark = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const { resolved, issues } = resolveSkin({
-    presets: skinBlock.presets,
+    presets,
     schema: skinBlock.schema ?? null,
     attrValue: config.skin,
     prefersDark,

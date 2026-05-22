@@ -85,6 +85,10 @@ export class CaputchinGame extends HTMLElement {
       skinMode: hintSkin.mode,
     }).then((bootstrap) => {
       if (!this.state.connected || !this.state.config) return;
+      // Game-scope override banks ride to the iframe via state; the shell
+      // around the game still consumes only the widget block (its _mode /
+      // _iso signals), same as before.
+      this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
       this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinModeHint);
     });
   }

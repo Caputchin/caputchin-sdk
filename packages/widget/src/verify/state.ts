@@ -5,6 +5,7 @@ import type { IframeHost } from '../iframe/host.js';
 import type { Presentation } from '../modes/index.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
+import type { OverridesPerAxis } from '../bootstrap/types.js';
 
 /** Per-mount mutable state. Generic in the config shape so both element
  *  classes share one definition; cap-only widgets simply leave the iframe
@@ -25,6 +26,11 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
   gameStartedEmitted?: boolean;
   gameErrored?: boolean;
   firstPassFired?: boolean;
+  /** Per-game override banks (language/skin/configuration) from the bootstrap
+   *  `game` block, captured at mount and applied over the game manifest
+   *  presets when the iframe kicks off. Null when there's no sitekey (no
+   *  bootstrap fetch) or the tier/scope yielded none. */
+  gameOverrides?: OverridesPerAxis | null;
 }
 
 export function createInitialState<C extends WidgetConfig | GameConfig>(): WidgetState<C> {
@@ -42,5 +48,6 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     gameStartedEmitted: false,
     gameErrored: false,
     firstPassFired: false,
+    gameOverrides: null,
   };
 }
