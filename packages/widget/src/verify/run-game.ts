@@ -105,6 +105,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
         state.gameStartedEmitted = true;
         dispatchStart();
       },
+      state.gameOverrides ?? null,
     );
   }
 
@@ -151,5 +152,6 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
       state.iframeHost = null;
     },
     dispatchStart,
+    state.gameOverrides ?? null,
   );
 }
