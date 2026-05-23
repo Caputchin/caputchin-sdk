@@ -13,6 +13,7 @@ export class IframeHost {
   private readonly gameId: string | null;
   private readonly onMessage: (msg: IframeToWidget) => void;
   private readonly hostEl: HTMLElement;
+  private readonly assetOrigins: string[];
 
   private iframe: HTMLIFrameElement | null = null;
   private unlisten: (() => void) | null = null;
@@ -29,13 +30,18 @@ export class IframeHost {
     integrity: string | null,
     gameId: string | null,
     hostEl: HTMLElement,
-    onMessage: (msg: IframeToWidget) => void
+    onMessage: (msg: IframeToWidget) => void,
+    // Customer-configured skin asset origins (ADR-0059) allowed in the
+    // frame's img-src / media-src. Defaults to none for game-only mounts
+    // with no override bank.
+    assetOrigins: string[] = []
   ) {
     this.gameUrl = gameUrl;
     this.integrity = integrity;
     this.gameId = gameId;
     this.hostEl = hostEl;
     this.onMessage = onMessage;
+    this.assetOrigins = assetOrigins;
   }
 
   build(): HTMLIFrameElement {
@@ -49,6 +55,7 @@ export class IframeHost {
       integrity: this.integrity,
       runtimeJs: __IFRAME_RUNTIME__,
       runtimeSha256: __IFRAME_RUNTIME_SHA256__,
+      assetOrigins: this.assetOrigins,
     });
     this.iframe = iframe;
     return iframe;

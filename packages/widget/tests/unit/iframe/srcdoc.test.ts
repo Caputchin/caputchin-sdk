@@ -101,4 +101,36 @@ describe('buildSrcdoc', () => {
     expect(html).toContain(location.origin + '/examples/simple-game.js');
     expect(html).not.toContain('script-src \'sha256-' + SHA + '\' /examples');
   });
+
+  it('adds customer asset origins to img-src and media-src only', () => {
+    const html = buildSrcdoc({ ...base, assetOrigins: ['https://cdn.acme.com'] });
+    expect(html).toContain('img-src data: https://cdn.acme.com');
+    expect(html).toContain('media-src data: https://cdn.acme.com');
+    // font-src stays locked to data: (assets are image/media, not fonts).
+    expect(html).toContain('font-src data:;');
+    // connect-src / script-src containment floor is untouched.
+    expect(html).toContain("connect-src 'none'");
+  });
+
+  it('keeps the data:-only default when no asset origins are given', () => {
+    const html = buildSrcdoc(base);
+    expect(html).toContain('img-src data:;');
+    expect(html).toContain('media-src data:;');
+  });
+
+  it('drops malformed asset origins that could inject extra CSP directives', () => {
+    const html = buildSrcdoc({
+      ...base,
+      assetOrigins: [
+        'https://ok.example.com',
+        'https://evil.com; script-src *', // space + ';', must be rejected
+        'https://evil.com/path', // path, not a bare origin
+        "https://evil.com'", // quote
+      ],
+    });
+    expect(html).toContain('https://ok.example.com');
+    expect(html).not.toContain('script-src *');
+    expect(html).not.toContain('evil.com/path');
+    expect(html).not.toContain("evil.com'");
+  });
 });

@@ -2,6 +2,7 @@ import { setupCapSession, awaitCapAndEmitPass } from './cap-session.js';
 import { fireError, mapIframeErrorCode } from '../errors.js';
 import { emitStart, emitPass } from './events.js';
 import { IframeHost } from '../iframe/host.js';
+import { collectSkinAssetOrigins } from '../bootstrap/asset-origins.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
 import { resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
@@ -107,7 +108,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
         state.gameErrored = true;
         client.abortGate(new Error(`game-error: ${msg.code}`));
       }
-    });
+    }, collectSkinAssetOrigins(state.gameOverrides ?? null));
     state.iframeHost = host;
 
     await installGameFrame(
@@ -160,7 +161,7 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
       fireError(el, code, msg.message, originalCode);
       state.gamePresentation?.setState('error');
     }
-  });
+  }, collectSkinAssetOrigins(state.gameOverrides ?? null));
   state.iframeHost = host;
 
   await installGameFrame(
