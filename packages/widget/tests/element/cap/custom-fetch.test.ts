@@ -35,14 +35,18 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     unregisterSession(id);
   });
 
-  it('rewrites /__cpt/{id}/redeem → /api/v1/verify/pass with the right session', async () => {
+  it('rewrites /__cpt/{id}/redeem → /api/v1/verify/pass and extracts platform.wrappedToken (not cap token)', async () => {
     const id = 'cpt_t2';
-    registerSession(id, { platform: {}, onWrappedToken: () => {} });
+    const onWrappedToken = vi.fn();
+    registerSession(id, { platform: {}, onWrappedToken });
     armRedeemGate(id);
     releaseRedeemGate(id, { score: 0.5, durationMs: 100 });
 
+    // Real verify/pass shape: cap's own token spread at the top level PLUS the
+    // platform wrapped token at platform.wrappedToken. The widget must inject
+    // the wrapped token, never the top-level cap token.
     const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
-      new Response('{"token":"x"}', { headers: { 'content-type': 'application/json' } })
+      new Response('{"token":"cap-raw","platform":{"wrappedToken":"wrapped-xyz"}}', { headers: { 'content-type': 'application/json' } })
     );
     await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/redeem`, {
       method: 'POST',
@@ -52,6 +56,9 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/verify/pass');
     const sentBody = JSON.parse((fetchSpy.mock.calls[0]![1] as RequestInit).body as string);
     expect(sentBody.platform.score).toBe(0.5);
+    expect(onWrappedToken).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'wrapped-xyz', score: 0.5, durationMs: 100 })
+    );
     fetchSpy.mockRestore();
     unregisterSession(id);
   });
