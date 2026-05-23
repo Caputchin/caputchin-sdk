@@ -39,7 +39,7 @@
       }
     },
     "presets": {
-      "en": {
+      "English": {
         "_iso": "en",
         "_default": true,
         "simpleVerify": "Verify",
@@ -52,7 +52,7 @@
         "simpleAriaStatus": "Caputchin verification status",
         "overlayClose": "Close"
       },
-      "ar": {
+      "Arabic": {
         "_iso": "ar",
         "_default": true,
         "simpleVerify": "تحقق",
