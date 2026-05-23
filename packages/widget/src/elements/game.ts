@@ -1,4 +1,4 @@
-import { inspectGameConfig } from '../config/game.js';
+import { inspectGameConfig, shouldVerify } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
@@ -32,7 +32,7 @@ import type { LocalePreset, SkinPreset } from '@caputchin/game-sdk';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'config'];
+  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'config'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -160,8 +160,11 @@ export class CaputchinGame extends HTMLElement {
     state.gamePresentation = gp;
     gp.mount();
 
-    // Game-only path (no sitekey): mount + run, no trigger axis.
-    if (state.config.sitekey === null && !isManual) {
+    // Game-only path (no verification gate): mount + run, no trigger axis.
+    // Covers both no-sitekey and explicit `no-verify` (with a sitekey, whose
+    // overrides were still fetched above). Modal/fullscreen fall through to
+    // the trigger so the game opens on click — it just won't run the gate.
+    if (!shouldVerify(state.config) && !isManual) {
       runGame(this, state, apiHost).catch(() => {});
       return;
     }

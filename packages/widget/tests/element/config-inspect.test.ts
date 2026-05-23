@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { inspectWidgetConfig } from '../../src/config/widget';
-import { inspectGameConfig } from '../../src/config/game';
+import { inspectGameConfig, shouldVerify } from '../../src/config/game';
 
 function el(attrs: Record<string, string>): HTMLElement {
   const e = document.createElement('div');
@@ -84,6 +84,29 @@ describe('inspectGameConfig — sitekey-optional', () => {
   it('never marks inert', () => {
     const r = inspectGameConfig(el({}));
     expect(r.inert).toBe(false);
+  });
+});
+
+describe('inspectGameConfig — no-verify / shouldVerify', () => {
+  it('noVerify is false by default', () => {
+    expect(inspectGameConfig(el({ sitekey: 'k', game: '@x/y' })).config.noVerify).toBe(false);
+  });
+
+  it('boolean `no-verify` attribute sets noVerify true (presence, value-agnostic)', () => {
+    expect(inspectGameConfig(el({ sitekey: 'k', game: '@x/y', 'no-verify': '' })).config.noVerify).toBe(true);
+  });
+
+  it('shouldVerify: sitekey + no no-verify → true (the gate runs)', () => {
+    expect(shouldVerify(inspectGameConfig(el({ sitekey: 'k', game: '@x/y' })).config)).toBe(true);
+  });
+
+  it('shouldVerify: sitekey + no-verify → false (overrides still fetched, gate skipped)', () => {
+    expect(shouldVerify(inspectGameConfig(el({ sitekey: 'k', game: '@x/y', 'no-verify': '' })).config)).toBe(false);
+  });
+
+  it('shouldVerify: no sitekey → false regardless of no-verify (nothing to verify against)', () => {
+    expect(shouldVerify(inspectGameConfig(el({ game: '@x/y' })).config)).toBe(false);
+    expect(shouldVerify(inspectGameConfig(el({ game: '@x/y', 'no-verify': '' })).config)).toBe(false);
   });
 });
 

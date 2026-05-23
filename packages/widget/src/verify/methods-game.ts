@@ -3,6 +3,7 @@ import { emitPass } from './events.js';
 import { normalizeOptionalNumber, type ManualPassPayload, type ManualFailPayload } from './payload.js';
 import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
+import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
 
 /**
@@ -27,9 +28,9 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
       const score = normalizeOptionalNumber(payload?.score);
       const durationMs = normalizeOptionalNumber(payload?.durationMs);
 
-      if (state.config.sitekey === null) {
-        // Game-only manual: no cap to release. Every pass fires a fresh
-        // event; multi-round works out of the box.
+      if (!shouldVerify(state.config)) {
+        // Game-only / no-verify manual: no cap to release. Every pass fires a
+        // fresh event; multi-round works out of the box.
         emitPass(el, { token: null, score, durationMs });
         state.gamePresentation?.setState('verified');
         return;
@@ -71,8 +72,9 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
       const message = typeof payload?.message === 'string' ? payload.message : 'Customer game reported failure';
 
       // Same guard as pass(): fail before verification started is meaningless
-      // for the cap path. Game-only manual has no cap gate so it's always OK.
-      if (state.config.sitekey !== null && !state.capClient) {
+      // for the cap path. Game-only / no-verify manual has no cap gate so it's
+      // always OK (relay straight through).
+      if (shouldVerify(state.config) && !state.capClient) {
         fireError(el, 'invalid-call', 'fail() called before verification started; open the dialog first');
         return;
       }

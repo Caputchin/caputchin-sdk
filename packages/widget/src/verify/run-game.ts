@@ -7,6 +7,7 @@ import { resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
 import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
+import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
 
 /**
@@ -19,7 +20,10 @@ import type { GameConfig } from '../config/game.js';
  */
 export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   if (!state.config) return;
-  if (state.config.sitekey) {
+  // Run the cap gate only when verification applies (sitekey + not no-verify).
+  // The no-verify path still mounts + runs the game and resolves the bundle
+  // (via the sitekey-backed bootstrap), it just skips the cap solve.
+  if (shouldVerify(state.config)) {
     await runGameWithVerify(el, state, apiHost);
   } else {
     await runGameOnly(el, state, apiHost);
