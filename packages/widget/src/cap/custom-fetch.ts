@@ -162,8 +162,15 @@ export function installCustomFetch(): void {
 
     if (ctx && response.ok) {
       try {
-        const data = await response.clone().json() as Record<string, unknown>;
-        if (data && typeof data['token'] === 'string') {
+        // The wrapped token the customer submits (to /siteverify or the HV
+        // forwarder) is the platform's base64url envelope at
+        // `platform.wrappedToken` — NOT the top-level `token`, which is Cap's
+        // own redeem token spread from the cap response. Reading `token` here
+        // injects an unverifiable value (unpack-failed downstream). Contract:
+        // GameCompleteRedeemed in @caputchin/api-schemas (verify/pass route).
+        const data = await response.clone().json() as { platform?: { wrappedToken?: unknown } };
+        const wrapped = data?.platform?.wrappedToken;
+        if (typeof wrapped === 'string') {
           // score/durationMs were sent in the request `platform` (from the
           // gate release payload); the server doesn't echo them. Read from
           // the local request payload so the customer's pass event detail
@@ -171,7 +178,7 @@ export function installCustomFetch(): void {
           const score = typeof platform['score'] === 'number' ? platform['score'] : null;
           const durationMs = typeof platform['durationMs'] === 'number' ? platform['durationMs'] : null;
           ctx.onWrappedToken(assembleWrappedToken({
-            token: data['token'] as string,
+            token: wrapped,
             score,
             durationMs,
           }));
