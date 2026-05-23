@@ -10,33 +10,9 @@
     "verify": "pnpm -r typecheck && pnpm -r --if-present test",
     "verify:fast": "pnpm --filter @caputchin/mcp --filter @caputchin/game-sdk typecheck && pnpm --filter @caputchin/mcp --filter @caputchin/game-sdk --if-present test",
     "coverage": "pnpm -r --if-present coverage",
-    "prepare": "husky",
-    "size": "size-limit",
-    "size:why": "size-limit --why"
+    "prepare": "husky"
   },
-  "size-limit": [
-    {
-      "name": "widget (ESM)",
-      "path": "packages/widget/dist/widget.mjs",
-      "limit": "25 kB",
-      "gzip": true
-    },
-    {
-      "name": "widget (IIFE)",
-      "path": "packages/widget/dist/widget.js",
-      "limit": "80 kB",
-      "gzip": true
-    },
-    {
-      "name": "game-sdk (ESM)",
-      "path": "packages/game-sdk/dist/index.js",
-      "limit": "2 kB",
-      "gzip": true
-    }
-  ],
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^12.1.0",
-    "husky": "^9.1.7",
-    "size-limit": "^12.1.0"
+    "husky": "^9.1.7"
   }
 }

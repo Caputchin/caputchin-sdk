@@ -1,12 +1,4 @@
-import * as v from 'valibot';
 import type { ConfigSchemaEntry, ConfigValueType } from '@caputchin/game-sdk';
-
-// Valibot's per-type schemas have heterogeneous output types (string vs
-// number vs boolean vs literal-union). The dispatch helper returns a
-// generic schema type covering the union; the concrete `safeParse` path
-// at the bottom narrows back to a boolean ok/reason verdict.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySchema = v.GenericSchema<any>;
 
 /** Normalized representation of a schema entry. Lets the validator pull
  *  a single shape regardless of which authoring form the manifest used:
@@ -57,57 +49,64 @@ export function normalizeSchemaEntry(entry: ConfigSchemaEntry | undefined): Norm
   return null;
 }
 
-/** Build a valibot validator for the normalized schema entry. Per-type
- *  schemas are intentionally narrow: no string-coercion, no number-coercion.
- *  The preset author is responsible for typing values correctly in the JSON.
- *  `link` is restricted to `http://` / `https://` via the protocol regex so
- *  `javascript:`, `data:text/html`, `file:` etc. never reach the iframe. */
-function buildSchema(entry: NormalizedSchemaEntry): AnySchema {
-  switch (entry.type) {
-    case 'string':
-      return v.pipe(v.string(), v.minLength(1, 'expected non-empty string'));
-    case 'link':
-      // `v.url()` parses via the browser URL constructor; the scheme regex
-      // rejects javascript:, data:, file:, and anything else outside the
-      // http/https allow-list structurally. The credentials check rejects
-      // `https://user:pass@host` style URLs - userinfo in customer-supplied
-      // links is almost always a leak (auth credentials embedded in a
-      // shared brand link), so reject by default and force authors to use
-      // the safe form.
-      return v.pipe(
-        v.string(),
-        v.url('expected an http or https URL'),
-        v.regex(/^https?:/i, 'expected an http or https URL'),
-        v.check((value) => {
-          try {
-            const u = new URL(value);
-            return u.username === '' && u.password === '';
-          } catch { return false; }
-        }, 'URL must not embed credentials (user:pass@)'),
-      );
-    case 'boolean':
-      return v.boolean();
-    case 'number':
-      // `v.finite` rejects NaN + Infinity. `v.number()` alone accepts them.
-      return v.pipe(v.number(), v.finite());
-    case 'range':
-      return v.pipe(v.number(), v.finite(), v.minValue(entry.min), v.maxValue(entry.max));
-    case 'list':
-      if (entry.values.length === 0) {
-        return v.never('list enum is empty');
-      }
-      return v.picklist([...entry.values]);
+/** Validate a `link` value: must parse as a URL, use the http(s) scheme, and
+ *  carry no embedded credentials. Rejects `javascript:`, `data:`, `file:`,
+ *  relative paths, and `user:pass@` forms so a customer-supplied link can
+ *  never carry an executable scheme or leak embedded auth into the iframe. */
+function validateLink(value: unknown): ValidationResult {
+  if (typeof value !== 'string') return { ok: false, reason: 'expected an http or https URL' };
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return { ok: false, reason: 'expected an http or https URL' };
   }
+  // Scheme check on the raw string (the URL constructor accepts javascript:,
+  // data:, file: etc. as valid URLs) keeps the rule the documented http/https
+  // prefix contract.
+  if (!/^https?:/i.test(value)) return { ok: false, reason: 'expected an http or https URL' };
+  // Userinfo in a customer link is almost always a leak (auth embedded in a
+  // shared brand link), so reject by default and force the safe form.
+  if (url.username !== '' || url.password !== '') {
+    return { ok: false, reason: 'URL must not embed credentials (user:pass@)' };
+  }
+  return { ok: true };
 }
 
-/** Validate a configuration value against its normalized schema entry. */
+/** Validate a configuration value against its normalized schema entry.
+ *  Per-type checks are intentionally narrow: no string- or number-coercion;
+ *  the preset author is responsible for typing values correctly in the JSON. */
 export function validateConfigValue(
   entry: NormalizedSchemaEntry,
   value: unknown,
 ): ValidationResult {
-  const schema = buildSchema(entry);
-  const result = v.safeParse(schema, value);
-  if (result.success) return { ok: true };
-  const issue = result.issues[0];
-  return { ok: false, reason: issue?.message ?? 'invalid value' };
+  switch (entry.type) {
+    case 'string':
+      return typeof value === 'string' && value.length >= 1
+        ? { ok: true }
+        : { ok: false, reason: 'expected non-empty string' };
+    case 'link':
+      return validateLink(value);
+    case 'boolean':
+      return typeof value === 'boolean'
+        ? { ok: true }
+        : { ok: false, reason: 'expected a boolean' };
+    case 'number':
+      // Reject NaN + Infinity (a bare typeof check would accept them).
+      return typeof value === 'number' && Number.isFinite(value)
+        ? { ok: true }
+        : { ok: false, reason: 'expected a finite number' };
+    case 'range':
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return { ok: false, reason: 'expected a finite number' };
+      }
+      return value >= entry.min && value <= entry.max
+        ? { ok: true }
+        : { ok: false, reason: `expected a number between ${entry.min} and ${entry.max}` };
+    case 'list':
+      if (entry.values.length === 0) return { ok: false, reason: 'list enum is empty' };
+      return typeof value === 'string' && entry.values.includes(value)
+        ? { ok: true }
+        : { ok: false, reason: `expected one of: ${entry.values.join(', ')}` };
+  }
 }
