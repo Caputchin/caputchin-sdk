@@ -1,6 +1,7 @@
 import { setupCapSession, awaitCapAndEmitPass } from './cap-session.js';
 import { emitStart } from './events.js';
 import type { WidgetState } from './state.js';
+import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
 
 /**
@@ -31,14 +32,14 @@ export function runManual(
     emitStart(el, null);
   };
 
-  if (cfg.sitekey === null) {
-    // Game-only manual: no cap, just an event shell.
+  if (!shouldVerify(cfg)) {
+    // Game-only / no-verify manual: no cap, just an event shell.
     dispatchStart();
     return;
   }
 
   // Cap + manual: armed gate; customer releases via pass() or aborts via fail().
-  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey);
+  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!);
   dispatchStart();
   void awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null);
 }

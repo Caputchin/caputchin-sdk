@@ -86,6 +86,17 @@ describe('installGameMethods — pass()', () => {
     el.pass({ score: 9 });
     expect(cap.releaseGate).toHaveBeenCalledTimes(1);
   });
+
+  it('no-verify manual (sitekey + no-verify, no cap gate) emits pass token:null — NOT invalid-call', () => {
+    const el = gameEl();
+    const errs = errors(el);
+    const ps = passes(el);
+    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }), API);
+    el.pass({ score: 5 });
+    expect(errs.some((e) => e.code === 'invalid-call')).toBe(false);
+    expect(ps.length).toBe(1);
+    expect(ps[0]!.detail).toMatchObject({ token: null, score: 5 });
+  });
 });
 
 describe('installGameMethods — fail()', () => {
@@ -127,6 +138,17 @@ describe('installGameMethods — fail()', () => {
     el.fail();
     // defaults: originalCode 'game-failed', default relay message
     expect(errs.some((e) => e.code === 'game-error-relayed' && (e as { originalCode?: string }).originalCode === 'game-failed')).toBe(true);
+  });
+
+  it('no-verify manual (sitekey + no-verify, no cap gate) relays fail() straight through — NOT invalid-call', () => {
+    // The bug: with sitekey present the old guard demanded an armed gate, but
+    // no-verify never arms one. fail() must relay like game-only does.
+    const el = gameEl();
+    const errs = errors(el);
+    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }), API);
+    el.fail({ code: 'boom' });
+    expect(errs.some((e) => e.code === 'invalid-call')).toBe(false);
+    expect(errs.some((e) => e.code === 'game-error-relayed' && (e as { originalCode?: string }).originalCode === 'boom')).toBe(true);
   });
 });
 

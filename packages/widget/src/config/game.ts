@@ -9,13 +9,22 @@ import { isLayoutAttr } from '../layout.js';
  *  their own DOM and slots it into the layout shell. */
 export type GameTrigger = 'manual' | null;
 
-/** Game widget config. `sitekey === null` means "no verification" (game-only).
- *  With a sitekey the cap verification runs alongside the game.
+/** Game widget config. Verification (the cap gate) runs when a sitekey is
+ *  present AND `no-verify` is not set — see {@link shouldVerify}. The two
+ *  concerns are orthogonal: the sitekey is the tenant key that unlocks the
+ *  bootstrap fetch (overrides + marketplace bundle resolution), while
+ *  `no-verify` opts out of the gate. So a game-only widget can still supply a
+ *  sitekey to receive overrides — it just skips the cap solve. With no sitekey
+ *  there is nothing to verify against, so `no-verify` is implied.
  *  When `trigger === 'manual'`, no iframe mounts; customer slots custom
  *  game DOM via the default `<slot>` inside the layout shell and drives
  *  completion via `pass()` / `fail()`. */
 export interface GameConfig {
   sitekey: string | null;
+  /** Boolean `no-verify` attribute: skip the cap gate but keep everything
+   *  else (bootstrap overrides, marketplace resolve, the game itself).
+   *  Implied true when there's no sitekey. */
+  noVerify: boolean;
   trigger: GameTrigger;
   width: WidgetWidth;
   height: WidgetHeight;
@@ -51,6 +60,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   const issues: ConfigIssue[] = [];
   const rawSitekey = el.getAttribute('sitekey');
   const sitekey = rawSitekey && rawSitekey.length > 0 ? rawSitekey : null;
+  const noVerify = el.hasAttribute('no-verify');
   let game = el.getAttribute('game');
   let games = el.getAttribute('games');
   let gameSrc = el.getAttribute('game-src');
@@ -112,6 +122,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   return {
     config: {
       sitekey,
+      noVerify,
       trigger,
       width: common.width,
       height: common.height,
@@ -126,4 +137,13 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
     issues,
     inert: false,
   };
+}
+
+/** Whether the cap verification gate runs for this game mount. True only when
+ *  a sitekey is present and `no-verify` is not set. No sitekey ⇒ nothing to
+ *  verify against ⇒ false (game-only). This is orthogonal to the bootstrap
+ *  fetch, which is gated on the sitekey alone — a `no-verify` widget WITH a
+ *  sitekey still fetches overrides + resolves marketplace bundles. */
+export function shouldVerify(cfg: GameConfig): boolean {
+  return cfg.sitekey !== null && !cfg.noVerify;
 }
