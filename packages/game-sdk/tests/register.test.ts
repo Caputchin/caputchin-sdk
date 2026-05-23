@@ -78,9 +78,7 @@ describe('register()', () => {
     setCapGlobal({ games: {}, manifests: {} });
     installDataGameIdScript('caputchin/games/leaf-memory');
     const manifest = makeManifest({
-      preferredLayout: 'modal',
-      preferredWidth: 600,
-      preferredHeight: 400,
+      preferred: { width: 600, height: 400 },
     });
     register(manifest, makeFactory());
     expect(capGlobal().manifests['caputchin/games/leaf-memory']).toBe(manifest);

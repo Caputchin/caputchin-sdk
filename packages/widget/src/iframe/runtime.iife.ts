@@ -116,9 +116,13 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
       kind: 'manifest',
       seq: 0,
       gameId: embeddedGameId,
-      preferredLayout: manifest?.preferredLayout ?? null,
-      preferredWidth: typeof manifest?.preferredWidth === 'number' ? manifest.preferredWidth : null,
-      preferredHeight: typeof manifest?.preferredHeight === 'number' ? manifest.preferredHeight : null,
+      // preferredLayout is a reserved wire field. Honoring a game's preferred
+      // layout needs a pre-mount channel the widget lacks today, so the SDK
+      // manifest no longer carries it (MVP = width/height only). Always null
+      // until that capability lands — see docs/adr/0062-defer-preferred-layout.md.
+      preferredLayout: null,
+      preferredWidth: typeof manifest?.preferred?.width === 'number' ? manifest.preferred.width : null,
+      preferredHeight: typeof manifest?.preferred?.height === 'number' ? manifest.preferred.height : null,
       locales: manifest?.locales ?? null,
       skins: manifest?.skins ?? null,
       configurations: manifest?.configurations ?? null,

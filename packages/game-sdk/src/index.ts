@@ -164,10 +164,26 @@ export interface MarketplaceMetadata {
   };
 }
 
+/** The game's preferred presentation footprint, declared under `preferred`
+ *  in `caputchin.json`. Both keys are hints the host MAY honor, not hard
+ *  requirements: the widget sizes the iframe to `width` / `height` when the
+ *  customer leaves the embed's `width` / `height` unset (a `full` customer
+ *  value stretches that axis instead). Omit to fall back to the widget's
+ *  built-in default footprint.
+ *
+ *  NOTE: a preferred *layout* (inline / modal / fullscreen) is intentionally
+ *  NOT part of this MVP surface — honoring it needs a pre-mount channel the
+ *  widget does not have today. That capability is designed and deferred; see
+ *  docs/adr/0062-defer-preferred-layout.md. */
+export interface PreferredPresentation {
+  width?: number;
+  height?: number;
+}
+
 /** The full package manifest the game ships in `caputchin.json`. Authors
  *  import this file and pass the parsed object to `register`. The widget
- *  reads runtime hints (preferred layout / size, locale presets) directly
- *  off the manifest.
+ *  reads runtime hints (preferred size, locale presets) directly off the
+ *  manifest.
  *
  *  Manifest shape and the rationale for the nested `marketplace` block,
  *  the `entry`/`npm` distribution fields at the root, and the dropped
@@ -185,9 +201,9 @@ export interface GameManifest {
    *  manifests carrying a legacy `id` field continue to type-check during
    *  the transition recorded in ADR-0058. */
   id?: string;
-  preferredLayout?: Layout;
-  preferredWidth?: number;
-  preferredHeight?: number;
+  /** Preferred presentation footprint (width / height). See
+   *  {@link PreferredPresentation}. */
+  preferred?: PreferredPresentation;
   locales?: {
     /** Optional per-key documentation. Drives translator tooling and the
      *  future dashboard override editor. Not read at runtime. */
