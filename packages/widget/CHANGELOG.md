@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.2.0...widget-v2.3.0) (2026-05-24)
+
+
+### Features
+
+* **widget:** localize widget shell to the 11 official languages ([0269eb1](https://github.com/Caputchin/caputchin-sdk/commit/0269eb195a177ed91a54cd017e2ab49b9eefaa70))
+
+
+### Bug Fixes
+
+* **widget:** set the cap.js wasm override before cap.js inits so the bundled wasm is used, not jsDelivr ([7757593](https://github.com/Caputchin/caputchin-sdk/commit/7757593ca8ad9bcee3df4fe9551510dd4cb5a01e))
+
 ## [2.2.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.1.0...widget-v2.2.0) (2026-05-24)
 
 
