@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { resolveApiHost } from './api.js';
+
 /**
  * Local-only tools that need no Management API access. These run offline:
  * pure functions returning copy-paste snippets that help developers wire
@@ -55,10 +57,14 @@ export function renderWidgetSnippet(args: z.infer<typeof WidgetSnippetInput>): s
 
 export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleInput>): string {
   const lang = args.language;
+  // Single source for the endpoint URL across every language snippet, derived
+  // from the env-overridable platform host (CAPUTCHIN_API_HOST), so a staging
+  // or self-hosted MCP emits matching examples instead of the public default.
+  const siteverifyUrl = `${resolveApiHost()}/api/v1/siteverify`;
   if (lang === 'node' || lang === 'javascript' || lang === 'typescript') {
     return [
       '// Node 18+ (built-in fetch)',
-      'const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {',
+      `const res = await fetch("${siteverifyUrl}", {`,
       '  method: "POST",',
       '  headers: { "content-type": "application/json" },',
       '  body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),',
@@ -71,7 +77,7 @@ export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleIn
     return [
       'import os, requests',
       'res = requests.post(',
-      '    "https://api.caputchin.com/api/v1/siteverify",',
+      `    "${siteverifyUrl}",`,
       '    json={"secret": os.environ["CAPUTCHIN_SECRET"], "response": token},',
       '    timeout=10,',
       ')',
@@ -87,7 +93,7 @@ export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleIn
       '    "response": token,',
       '})',
       'res, err := http.Post(',
-      '    "https://api.caputchin.com/api/v1/siteverify",',
+      `    "${siteverifyUrl}",`,
       '    "application/json",',
       '    bytes.NewReader(body),',
       ')',
@@ -100,7 +106,7 @@ export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleIn
   }
   if (lang === 'php') {
     return [
-      "$res = file_get_contents('https://api.caputchin.com/api/v1/siteverify', false, stream_context_create([",
+      `$res = file_get_contents('${siteverifyUrl}', false, stream_context_create([`,
       "    'http' => [",
       "        'method'  => 'POST',",
       "        'header'  => 'content-type: application/json',",
@@ -118,7 +124,7 @@ export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleIn
   }
   // curl
   return [
-    'curl -sS -X POST https://api.caputchin.com/api/v1/siteverify \\',
+    `curl -sS -X POST ${siteverifyUrl} \\`,
     '  -H "content-type: application/json" \\',
     '  -d "{\\"secret\\":\\"$CAPUTCHIN_SECRET\\",\\"response\\":\\"$TOKEN\\"}"',
   ].join('\n');

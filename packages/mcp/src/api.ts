@@ -6,7 +6,7 @@
  * holds the network + JSON-RPC plumbing the proxy needs.
  *
  * Auth: management token (`cpt_pat_*`) via the `CAPUTCHIN_TOKEN` env
- * var. Base URL: `CAPUTCHIN_API_HOST` (default https://api.caputchin.com).
+ * var. Base URL: `CAPUTCHIN_API_HOST` (default https://caputchin.com).
  * The MCP endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`.
  */
 export type ManagementApiConfig = {
@@ -14,8 +14,17 @@ export type ManagementApiConfig = {
   token: string;
 };
 
+/**
+ * Resolve the platform host: `CAPUTCHIN_API_HOST` env override, else the public
+ * apex. Trailing slashes stripped. Shared by the API client and the offline
+ * snippet tools so a staging / self-hosted MCP points everything at one host.
+ */
+export function resolveApiHost(env: NodeJS.ProcessEnv = process.env): string {
+  return (env.CAPUTCHIN_API_HOST ?? 'https://caputchin.com').replace(/\/+$/, '');
+}
+
 export function readManagementConfig(env: NodeJS.ProcessEnv = process.env): ManagementApiConfig {
-  const baseUrl = (env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com').replace(/\/+$/, '');
+  const baseUrl = resolveApiHost(env);
   const token = env.CAPUTCHIN_TOKEN;
   if (!token) {
     throw new Error('CAPUTCHIN_TOKEN env var is required (management token starting with `cpt_pat_`).');
