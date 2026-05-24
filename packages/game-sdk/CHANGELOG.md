@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v2.0.0...game-sdk-v2.1.0) (2026-05-24)
+
+
+### Features
+
+* **sdk:** publish the renamed _lang locale metadata key ([3d7eac2](https://github.com/Caputchin/caputchin-sdk/commit/3d7eac24586079ff5580cb940bf5069d7174910f))
+
 ## [2.0.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v1.0.0...game-sdk-v2.0.0) (2026-05-23)
 
 
