@@ -1,4 +1,4 @@
-import { installCustomFetch } from './cap/custom-fetch.js';
+import { defineCaputchinElements } from './register.js';
 import { CaputchinWidget } from './elements/widget.js';
 import { CaputchinGame } from './elements/game.js';
 
@@ -11,24 +11,15 @@ import { CaputchinGame } from './elements/game.js';
 // consumer CSP change (the assets sit under the consumer's own origin). `??=`
 // so a host that sets its own override still wins; window-guarded for SSR.
 //
-// ESM entry only (builds to widget.mjs). The IIFE entries (src/entries/*) set
-// the same globals from document.currentScript.src via cap/asset-urls.ts,
+// ESM entry only (builds to widget.mjs). The IIFE entry (src/entries/widget.ts)
+// sets the same globals from document.currentScript.src via cap/asset-urls.ts,
 // since a script-tag consumer has no bundler to emit the assets.
 if (typeof window !== 'undefined') {
   window.CAP_CUSTOM_WASM_URL ??= new URL('./cap_wasm_bg.wasm', import.meta.url).href;
   window.CAP_PAKO_URL ??= new URL('./pako_inflate.min.js', import.meta.url).href;
 }
 
-installCustomFetch();
-
-if (typeof customElements !== 'undefined') {
-  if (!customElements.get('caputchin-widget')) {
-    customElements.define('caputchin-widget', CaputchinWidget);
-  }
-  if (!customElements.get('caputchin-game')) {
-    customElements.define('caputchin-game', CaputchinGame);
-  }
-}
+defineCaputchinElements();
 
 export { CaputchinWidget, CaputchinGame };
 export type {

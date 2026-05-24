@@ -38,11 +38,12 @@ const sharedDefine = {
 // instead of 30KB strings in caputchin.json.
 const sharedLoader = { '.svg': 'dataurl' } as const;
 
-// Two builds:
-//   1. ESM single entry (`widget.mjs`) — npm consumers import {CaputchinWidget,
-//      CaputchinGame} from '@caputchin/widget'. Tree-shakable.
-//   2. IIFE three entries — `widget.js` (cap only), `game.js` (game only),
-//      `all.js` (both). jsDelivr / script-tag picks per use case.
+// Two builds, same basename, each registering both elements:
+//   1. ESM single entry (`widget.mjs`) — npm consumers
+//      `import '@caputchin/widget'` (registers on import) or
+//      `import { CaputchinWidget, CaputchinGame }`.
+//   2. IIFE single entry (`widget.js`) — jsDelivr / script-tag consumers drop
+//      one <script> tag. Registers both custom elements.
 export default defineConfig([
   {
     entry: { widget: 'src/index.ts' },
@@ -57,18 +58,14 @@ export default defineConfig([
     // Copy cap.js's wasm + pako fallback (from the @cap.js/wasm + pako build
     // deps) next to the bundle so the package ships them. The ESM entry points
     // cap.js at them via `new URL('./cap_wasm_bg.wasm', import.meta.url)` (the
-    // consumer's bundler re-emits same-origin) and the IIFE entries via
+    // consumer's bundler re-emits same-origin) and the IIFE entry via
     // document.currentScript.src. esbuild leaves those `new URL` literals
     // untouched, so no loader/external needed. Runs on build + every watch
     // rebuild.
     onSuccess: 'node scripts/copy-cap-assets.mjs',
   },
   {
-    entry: {
-      widget: 'src/entries/widget.ts',
-      game: 'src/entries/game.ts',
-      all: 'src/entries/all.ts',
-    },
+    entry: { widget: 'src/entries/widget.ts' },
     format: ['iife'],
     globalName: 'Caputchin',
     dts: false,
