@@ -11,7 +11,7 @@ export interface FetchBootstrapInput {
   apiHost: string;
   sitekey: string;
   game?: string | null;
-  localeIso?: string | null;
+  localeLang?: string | null;
   localePreset?: string | null;
   skinTheme?: string | null;
   skinPreset?: string | null;
@@ -58,7 +58,7 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   const params = new URLSearchParams();
   params.set('sitekey', input.sitekey);
   if (input.game) params.set('game', input.game);
-  if (input.localeIso) params.set('locale_iso', input.localeIso);
+  if (input.localeLang) params.set('locale_lang', input.localeLang);
   if (input.localePreset) params.set('locale_preset', input.localePreset);
   if (input.skinTheme) params.set('skin_theme', input.skinTheme);
   if (input.skinPreset) params.set('skin_preset', input.skinPreset);

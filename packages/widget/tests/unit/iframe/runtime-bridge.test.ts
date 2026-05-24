@@ -151,7 +151,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     registerGame('ctx-1', (_root, _bridge, ctx) => {
       capturedCtx = ctx;
     });
-    const lang = { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' };
+    const lang = { _direction: 'rtl', _lang: 'ar', hello: 'مرحبا' };
     dispatchKickoff('ctx-1', 200, lang);
     expect(capturedCtx).toEqual({ locale: lang, skin: null, config: null });
   });

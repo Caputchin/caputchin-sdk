@@ -20,7 +20,7 @@ export interface ShellStrings {
 
 export interface WidgetShell {
   direction: 'ltr' | 'rtl';
-  iso: string;
+  lang: string;
   strings: ShellStrings;
   /** Human-readable issues raised during resolution (unknown preset name,
    *  unsupported inline JSON, etc.). The element layer translates each into
@@ -85,7 +85,7 @@ export function resolveWidgetShell(
   );
   return {
     direction: resolved?._direction ?? 'ltr',
-    iso: resolved?._iso ?? 'en',
+    lang: resolved?._lang ?? 'en',
     strings: toStrings(resolved),
     issues,
   };

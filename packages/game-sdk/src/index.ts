@@ -17,12 +17,12 @@ export interface Bridge {
 
 /** One locale preset declared in `caputchin.json` under `locales.presets`.
  *  Underscore-prefixed keys are metadata; every other key is a translatable
- *  text token. A locale carries an `_iso` language tag; multiple presets may
- *  share an `_iso` (e.g. two English copy variants). Direction can be omitted
- *  and is auto-derived from `_iso` when the language is in the RTL set (ar,
- *  he, fa, ur, yi, ps, sd). */
+ *  text token. A locale carries a `_lang` BCP-47 language tag; multiple
+ *  presets may share a `_lang` (e.g. two English copy variants). Direction
+ *  can be omitted and is auto-derived from `_lang` when the language is in
+ *  the RTL set (ar, he, fa, ur, yi, ps, sd). */
 export interface LocalePreset {
-  _iso?: string;
+  _lang?: string;
   _direction?: 'ltr' | 'rtl';
   _default?: boolean;
   _extends?: string;
@@ -30,11 +30,11 @@ export interface LocalePreset {
 }
 
 /** Final locale object the widget hands the game. `_extends` and
- *  `_default` are stripped during resolution; only metadata (`_iso`,
+ *  `_default` are stripped during resolution; only metadata (`_lang`,
  *  `_direction`) and text tokens survive. */
 export interface ResolvedLocale {
   _direction: 'ltr' | 'rtl';
-  _iso: string;
+  _lang: string;
   [key: string]: string;
 }
 

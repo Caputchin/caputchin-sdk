@@ -14,7 +14,7 @@
 // ITERATION ORDER (ADR-0059 amendment, default-selection is override-first):
 // the merged map is built override-entries-first, then bundled-only
 // presets, then aliased bundled at the tail. The downstream default scan
-// (`findByIso` / `findByMode` / `findDefault`) returns the FIRST
+// (`findByLang` / `findByMode` / `findDefault`) returns the FIRST
 // `_default: true` it meets, so override-first ordering makes a customer's
 // marked default win its group over a bundled default of the same group —
 // even when the customer's preset has a NEW name (not a same-name collision).

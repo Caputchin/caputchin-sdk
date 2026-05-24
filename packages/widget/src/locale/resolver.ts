@@ -10,7 +10,7 @@ const RTL_LANGS: ReadonlySet<string> = new Set(['ar', 'he', 'fa', 'ur', 'yi', 'p
  *  pathological linear chains. */
 const MAX_EXTENDS_DEPTH = 8;
 
-const ISO_FALLBACK = 'en';
+const LANG_FALLBACK = 'en';
 
 export interface ResolveResult {
   resolved: ResolvedLocale | null;
@@ -28,12 +28,12 @@ export interface ResolveOptions {
 
 type PresetMap = Record<string, LocalePreset>;
 
-function normalizeIso(iso: string): string {
-  return iso.toLowerCase().split(/[-_]/)[0] ?? '';
+function normalizeLang(lang: string): string {
+  return lang.toLowerCase().split(/[-_]/)[0] ?? '';
 }
 
-function isRtl(iso: string): boolean {
-  return RTL_LANGS.has(normalizeIso(iso));
+function isRtl(lang: string): boolean {
+  return RTL_LANGS.has(normalizeLang(lang));
 }
 
 function findByName(presets: PresetMap, name: string): { name: string; preset: LocalePreset } | null {
@@ -43,13 +43,13 @@ function findByName(presets: PresetMap, name: string): { name: string; preset: L
   return null;
 }
 
-function findByIso(presets: PresetMap, iso: string): { name: string; preset: LocalePreset } | null {
-  const target = normalizeIso(iso);
+function findByLang(presets: PresetMap, lang: string): { name: string; preset: LocalePreset } | null {
+  const target = normalizeLang(lang);
   if (!target) return null;
   let firstMatch: { name: string; preset: LocalePreset } | null = null;
   for (const [name, preset] of Object.entries(presets)) {
-    const presetIso = preset._iso ? normalizeIso(preset._iso) : null;
-    if (presetIso !== target) continue;
+    const presetLang = preset._lang ? normalizeLang(preset._lang) : null;
+    if (presetLang !== target) continue;
     if (preset._default === true) return { name, preset };
     if (!firstMatch) firstMatch = { name, preset };
   }
@@ -57,7 +57,7 @@ function findByIso(presets: PresetMap, iso: string): { name: string; preset: Loc
 }
 
 function lookupExtends(presets: PresetMap, target: string): { name: string; preset: LocalePreset } | null {
-  return findByName(presets, target) ?? findByIso(presets, target);
+  return findByName(presets, target) ?? findByLang(presets, target);
 }
 
 /** Walk the `_extends` chain from leaf to root, building an ordered list
@@ -101,17 +101,17 @@ function buildChain(
 }
 
 /** Flatten a chain (deepest ancestor first) into a single resolved object.
- *  Metadata (`_iso`, `_direction`) inherits; text keys merge with each
+ *  Metadata (`_lang`, `_direction`) inherits; text keys merge with each
  *  later (more specific) preset winning. `_extends` and `_default` are
  *  stripped from the output. */
 function flattenChain(chain: LocalePreset[]): ResolvedLocale {
   const text: Record<string, string> = {};
-  let inheritedIso: string | undefined;
+  let inheritedLang: string | undefined;
   let inheritedDirection: 'ltr' | 'rtl' | undefined;
 
   for (const preset of chain) {
-    if (typeof preset._iso === 'string' && preset._iso.length > 0) {
-      inheritedIso = preset._iso;
+    if (typeof preset._lang === 'string' && preset._lang.length > 0) {
+      inheritedLang = preset._lang;
     }
     if (preset._direction === 'ltr' || preset._direction === 'rtl') {
       inheritedDirection = preset._direction;
@@ -124,11 +124,11 @@ function flattenChain(chain: LocalePreset[]): ResolvedLocale {
     }
   }
 
-  const iso = (inheritedIso ?? ISO_FALLBACK).toLowerCase();
-  const direction = inheritedDirection ?? (isRtl(iso) ? 'rtl' : 'ltr');
+  const lang = (inheritedLang ?? LANG_FALLBACK).toLowerCase();
+  const direction = inheritedDirection ?? (isRtl(lang) ? 'rtl' : 'ltr');
 
   return {
-    _iso: iso,
+    _lang: lang,
     _direction: direction,
     ...text,
   };
@@ -153,11 +153,11 @@ function resolveAuto(
   // Primary-subtag match against the first navigator language; "en-GB" → "en".
   const primary = navigatorLanguages[0];
   if (primary) {
-    const isoHit = findByIso(presets, primary);
-    if (isoHit) return resolveLeaf(presets, isoHit.name, isoHit.preset, issues);
+    const langHit = findByLang(presets, primary);
+    if (langHit) return resolveLeaf(presets, langHit.name, langHit.preset, issues);
   }
-  // ISO=en fallback.
-  const enHit = findByIso(presets, ISO_FALLBACK);
+  // lang=en fallback.
+  const enHit = findByLang(presets, LANG_FALLBACK);
   if (enHit) return resolveLeaf(presets, enHit.name, enHit.preset, issues);
   // First declared preset.
   const firstName = Object.keys(presets)[0];
@@ -209,14 +209,14 @@ export function resolveLocale(
     const inline = tryParseInlineJson(trimmed, issues);
     if (inline) {
       // If inline declares `_extends`, resolve via that chain. If inline
-      // omits `_extends` but declares `_iso`, treat the iso as an implicit
+      // omits `_extends` but declares `_lang`, treat the lang as an implicit
       // `_extends` so the resolved object inherits the matching preset's
       // text strings by default; the customer's inline keys still win
       // during chain flattening. Inline with neither falls through to the
       // layer-atop-auto path further down.
       const hasExtends = typeof inline._extends === 'string' && inline._extends.length > 0;
-      const implicitExtends = !hasExtends && typeof inline._iso === 'string' && inline._iso.length > 0
-        ? inline._iso
+      const implicitExtends = !hasExtends && typeof inline._lang === 'string' && inline._lang.length > 0
+        ? inline._lang
         : null;
       if (hasExtends || implicitExtends !== null) {
         const effective: LocalePreset = implicitExtends !== null
@@ -224,7 +224,7 @@ export function resolveLocale(
           : inline;
         const resolved = resolveLeaf(presetsMap, null, effective, issues);
         if (resolved) return { resolved, issues };
-        // _extends / iso target missing → fall through to layer-atop-auto so
+        // _extends / lang target missing → fall through to layer-atop-auto so
         // the customer still gets *something* visible (auto base + their
         // inline overrides). The missing-target issue is already on the
         // issues list from buildChain.
@@ -241,14 +241,14 @@ export function resolveLocale(
         if (k === '_extends' || k === '_default') continue;
         if (typeof v === 'string') merged[k] = v;
       }
-      const inlineIso = typeof inline._iso === 'string' ? inline._iso : merged['_iso'];
-      const iso = (inlineIso ?? ISO_FALLBACK).toLowerCase();
+      const inlineLang = typeof inline._lang === 'string' ? inline._lang : merged['_lang'];
+      const lang = (inlineLang ?? LANG_FALLBACK).toLowerCase();
       const direction = inline._direction === 'ltr' || inline._direction === 'rtl'
         ? inline._direction
-        : (isRtl(iso) ? 'rtl' : 'ltr');
+        : (isRtl(lang) ? 'rtl' : 'ltr');
       const resolved: ResolvedLocale = {
         ...merged,
-        _iso: iso,
+        _lang: lang,
         _direction: direction,
       };
       return { resolved, issues };
@@ -270,10 +270,10 @@ export function resolveLocale(
     return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };
   }
 
-  // ISO code lookup (case-insensitive).
-  const byIso = findByIso(presetsMap, trimmed);
-  if (byIso) {
-    const resolved = resolveLeaf(presetsMap, byIso.name, byIso.preset, issues);
+  // Language tag lookup (case-insensitive).
+  const byLang = findByLang(presetsMap, trimmed);
+  if (byLang) {
+    const resolved = resolveLeaf(presetsMap, byLang.name, byLang.preset, issues);
     if (resolved) return { resolved, issues };
     return { resolved: resolveAuto(presetsMap, navigatorLanguages, issues), issues };
   }

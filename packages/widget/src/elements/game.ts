@@ -81,13 +81,13 @@ export class CaputchinGame extends HTMLElement {
       apiHost,
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
-      localeIso: hintShell.iso,
+      localeLang: hintShell.lang,
       skinTheme: hintSkin.theme,
     }).then((bootstrap) => {
       if (!this.state.connected || !this.state.config) return;
       // Game-scope override banks ride to the iframe via state; the shell
       // around the game still consumes only the widget block (its _theme /
-      // _iso signals), same as before.
+      // _lang signals), same as before.
       this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
       // The same bootstrap response already carries the marketplace bundle
       // url + integrity for state.config.game — stash it (tagged with that
@@ -231,7 +231,7 @@ interface ShellSignals {
 
 /** Pull shell-relevant signals out of the customer's `lang` attribute.
  *  Non-JSON values pass through verbatim as the hint (no direction
- *  override). Inline JSON contributes `_iso` / `_extends` as the hint AND
+ *  override). Inline JSON contributes `_lang` / `_extends` as the hint AND
  *  `_direction` as an explicit override. Malformed JSON yields no signals
  *  (shell falls back to browser auto; the game-side resolver emits the
  *  parse issue). */
@@ -245,7 +245,7 @@ function deriveShellSignals(raw: string): ShellSignals {
   }
   const obj = parsed as Record<string, unknown>;
   let hint: string | null = null;
-  if (typeof obj._iso === 'string' && obj._iso.length > 0) hint = obj._iso;
+  if (typeof obj._lang === 'string' && obj._lang.length > 0) hint = obj._lang;
   else if (typeof obj._extends === 'string' && obj._extends.length > 0) hint = obj._extends;
   const direction = obj._direction === 'rtl' || obj._direction === 'ltr' ? obj._direction : null;
   return { hint, direction };

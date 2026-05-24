@@ -33,7 +33,7 @@ function overrides(parts: Partial<OverridesPerAxis>): OverridesPerAxis {
 
 describe('resolveLocaleForGame — override merge', () => {
   const baseManifest = manifest({
-    locales: { presets: { en: { _iso: 'en', _default: true, hello: 'Hi' } } },
+    locales: { presets: { en: { _lang: 'en', _default: true, hello: 'Hi' } } },
   });
 
   it('override of a same-name preset wins on the collided key, inherits the rest', () => {
@@ -41,7 +41,7 @@ describe('resolveLocaleForGame — override merge', () => {
     const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), baseManifest, ov);
     expect(resolved).not.toBeNull();
     expect(resolved!.hello).toBe('Hola'); // override leaf wins
-    expect(resolved!._iso).toBe('en'); // metadata inherited from bundled twin
+    expect(resolved!._lang).toBe('en'); // metadata inherited from bundled twin
   });
 
   it('no overrides → resolves straight from the manifest', () => {
@@ -50,7 +50,7 @@ describe('resolveLocaleForGame — override merge', () => {
   });
 
   it('override-only preset resolves even when the manifest ships no languages', () => {
-    const ov = overrides({ locale: { presets: { en: { _iso: 'en', _default: true, hello: 'Hola' } } } });
+    const ov = overrides({ locale: { presets: { en: { _lang: 'en', _default: true, hello: 'Hola' } } } });
     const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), manifest({ locales: null }), ov);
     expect(resolved!.hello).toBe('Hola');
   });
@@ -62,13 +62,13 @@ describe('resolveLocaleForGame — override merge', () => {
 
   it('a NEW-NAME override default wins its group over the bundled default (override-first at the seam)', () => {
     // Not a same-name collision: the override preset has a distinct name but
-    // the same _iso group + _default:true. The bundled preset is named
+    // the same _lang group + _default:true. The bundled preset is named
     // "english" (not its ISO) so `locale="en"` resolves by ISO-GROUP default
     // scan rather than exact-name match — that scan is where override-first
     // iteration must make the override win. This is the case the original
     // (bundled-first) bug got wrong.
-    const m = manifest({ locales: { presets: { english: { _iso: 'en', _default: true, hello: 'Hi' } } } });
-    const ov = overrides({ locale: { presets: { house_en: { _iso: 'en', _default: true, hello: 'Yo' } } } });
+    const m = manifest({ locales: { presets: { english: { _lang: 'en', _default: true, hello: 'Hi' } } } });
+    const ov = overrides({ locale: { presets: { house_en: { _lang: 'en', _default: true, hello: 'Yo' } } } });
     const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), m, ov);
     expect(resolved).not.toBeNull();
     expect(resolved!.hello).toBe('Yo'); // override default wins, not bundled 'Hi'
