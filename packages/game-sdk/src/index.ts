@@ -31,7 +31,8 @@ export interface LocalePreset {
 
 /** Final locale object the widget hands the game. `_extends` and
  *  `_default` are stripped during resolution; only metadata (`_lang`,
- *  `_direction`) and text tokens survive. */
+ *  `_direction`) and text tokens survive. The language-tag key was renamed
+ *  from `_iso` to `_lang` after v2.0.0; read `_lang`. */
 export interface ResolvedLocale {
   _direction: 'ltr' | 'rtl';
   _lang: string;
