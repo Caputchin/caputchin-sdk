@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.1.0...widget-v2.2.0) (2026-05-24)
+
+
+### Features
+
+* **widget:** resolve marketplace game bundles without a sitekey ([a581727](https://github.com/Caputchin/caputchin-sdk/commit/a581727a69bb5c4f29b17b760ae5fb2e2ba66860))
+
 ## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.0.0...widget-v2.1.0) (2026-05-24)
 
 
