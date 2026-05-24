@@ -33,7 +33,9 @@
   ],
   "sideEffects": [
     "./dist/widget.mjs",
-    "./dist/widget.js"
+    "./dist/widget.js",
+    "./src/cap/wasm-host-esm.ts",
+    "./src/cap/wasm-host-iife.ts"
   ],
   "scripts": {
     "prebuild": "node scripts/build-iframe-runtime.mjs",
