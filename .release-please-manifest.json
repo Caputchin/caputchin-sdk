@@ -1,5 +1,5 @@
 {
-  "packages/game-sdk": "2.0.0",
+  "packages/game-sdk": "2.1.0",
   "packages/widget": "2.3.0",
   "packages/mcp": "2.0.1"
 }
