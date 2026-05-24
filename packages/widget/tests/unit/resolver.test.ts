@@ -24,15 +24,21 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap per ADR-005
     }
   });
 
-  it('returns ok:false on missing sitekey (marketplace requires sitekey post-ADR-0059)', async () => {
+  it('resolves keyless: no sitekey still hits bootstrap with game only', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({
+        widget: { overrides: { locale: null, skin: null, configuration: null } },
+        game: { url: 'https://cdn.example.com/game.js', integrity: 'sha384-abc', overrides: null },
+      }),
+      { status: 200 }
+    ));
     const r = await fetchMarketplaceResolution('@org/game', API_HOST, null);
-    expect(r.ok).toBe(false);
-    if (!r.ok) {
-      expect(r.code).toBe('resolve-failed');
-      expect(r.message).toContain('requires a sitekey');
-    }
-    // No network call attempted.
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.url).toBe('https://cdn.example.com/game.js');
+    // Network call made; sitekey omitted from the query string.
+    const calledUrl = vi.mocked(fetch).mock.calls[0]![0] as string;
+    expect(calledUrl).toContain('game=%40org%2Fgame');
+    expect(calledUrl).not.toContain('sitekey=');
   });
 
   it('returns ok:false on 401 (invalid sitekey)', async () => {
@@ -82,7 +88,7 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap per ADR-005
     await fetchMarketplaceResolution('caputchin/games/leaf-memory', API_HOST, SITE_KEY);
     const calledUrl = vi.mocked(fetch).mock.calls[0]![0] as string;
     expect(calledUrl).toBe(
-      'https://api.example.com/api/v1/widget/bootstrap?sitekey=cpt_pub_test&game=caputchin%2Fgames%2Fleaf-memory'
+      'https://api.example.com/api/v1/widget/bootstrap?game=caputchin%2Fgames%2Fleaf-memory&sitekey=cpt_pub_test'
     );
   });
 });
