@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/widget",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Customer-facing CAPTCHA + game widgets for the Caputchin platform",
   "keywords": [
     "captcha",
