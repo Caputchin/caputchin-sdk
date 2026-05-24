@@ -24,19 +24,13 @@ export async function fetchMarketplaceResolution(
   apiHost: string,
   sitekey: string | null,
 ): Promise<ResolutionResult> {
-  if (!sitekey) {
-    // Bootstrap (/api/v1/widget/bootstrap) requires a sitekey because the
-    // response is cached per-tenant and gated per plan tier. Marketplace
-    // lookups now share that endpoint, so the game-only-no-sitekey path
-    // can no longer resolve marketplace ids. Customer must provision a
-    // sitekey (free under Solo) to embed marketplace games.
-    return {
-      ok: false,
-      code: 'resolve-failed',
-      message: `Marketplace lookup for "${id}" requires a sitekey on <caputchin-game>; configure one and retry`,
-    };
-  }
-  const params = new URLSearchParams({ sitekey, game: id });
+  // Game-bundle resolution is keyless: /api/v1/widget/bootstrap resolves the
+  // marketplace `game` bundle (url + integrity) for any caller. The sitekey is
+  // sent only when present, so a keyed call additionally carries the tenant's
+  // overrides (unused here, consumed at mount); a game-only widget with no
+  // sitekey still resolves the bundle.
+  const params = new URLSearchParams({ game: id });
+  if (sitekey) params.set('sitekey', sitekey);
   const url = `${apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
   try {
     const res = await fetch(url);
