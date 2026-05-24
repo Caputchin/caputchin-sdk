@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.0.0...widget-v2.1.0) (2026-05-24)
+
+
+### Features
+
+* **widget:** ship cap.js wasm + pako in dist, point cap.js at them same-origin (no jsDelivr) ([3a73559](https://github.com/Caputchin/caputchin-sdk/commit/3a7355916ad57a9b39cb3a5b26e5c7fdaf0c438f))
+
 ## [2.0.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v1.0.0...widget-v2.0.0) (2026-05-23)
 
 
