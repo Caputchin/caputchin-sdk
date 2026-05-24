@@ -203,7 +203,7 @@ describe('IframeHost', () => {
     const host = makeHost();
     mountHost(host);
 
-    const lang = { _direction: 'rtl' as const, _iso: 'ar', hello: 'مرحبا' };
+    const lang = { _direction: 'rtl' as const, _lang: 'ar', hello: 'مرحبا' };
     host.kickoff(1, lang);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),

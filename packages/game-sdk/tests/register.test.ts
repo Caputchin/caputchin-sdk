@@ -126,8 +126,8 @@ describe('register()', () => {
       id: 'locale-game',
       locales: {
         presets: {
-          en: { _iso: 'en', _default: true, hello: 'Hi' },
-          ar: { _iso: 'ar', _default: true, hello: 'مرحبا' },
+          en: { _lang: 'en', _default: true, hello: 'Hi' },
+          ar: { _lang: 'ar', _default: true, hello: 'مرحبا' },
         },
       },
     });
@@ -203,7 +203,7 @@ describe('register()', () => {
     const factory = makeFactory();
     register(makeManifest({ id: 'ctx-game' }), factory);
     const ctx: GameContext = {
-      locale: { _direction: 'rtl', _iso: 'ar', hello: 'مرحبا' },
+      locale: { _direction: 'rtl', _lang: 'ar', hello: 'مرحبا' },
       skin: { _theme: 'dark', main_color: '#0F1810' },
       config: { show_high_score: true, max_level: 4, policy_link: 'https://example.com/policy' },
     };

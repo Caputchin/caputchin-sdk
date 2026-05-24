@@ -56,7 +56,7 @@ export class CaputchinWidget extends HTMLElement {
     void fetchBootstrap({
       apiHost,
       sitekey: state.config.sitekey,
-      localeIso: hintShell.iso,
+      localeLang: hintShell.lang,
       skinTheme: hintSkin.theme,
     }).then((bootstrap) => {
       // Disconnect race: element removed from DOM during the bootstrap

@@ -87,7 +87,7 @@ describe('widget lang attribute', () => {
   });
 
   it('inline JSON fires invalid-config + falls back to auto (no dir flip)', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: '{"_iso":"ar"}' });
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: '{"_lang":"ar"}' });
     const messages: string[] = [];
     el.addEventListener('error', (e) => {
       const detail = (e as CustomEvent).detail as { message?: string };

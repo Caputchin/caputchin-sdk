@@ -17,13 +17,13 @@ describe('buildBootstrapUrl', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      localeIso: 'en',
+      localeLang: 'en',
       localePreset: 'en-us',
       skinTheme: 'dark',
       skinPreset: 'midnight',
       configPreset: 'custom',
     });
-    expect(url).toContain('locale_iso=en');
+    expect(url).toContain('locale_lang=en');
     expect(url).toContain('locale_preset=en-us');
     expect(url).toContain('skin_theme=dark');
     expect(url).toContain('skin_preset=midnight');
@@ -34,11 +34,11 @@ describe('buildBootstrapUrl', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      localeIso: null,
+      localeLang: null,
       localePreset: undefined,
       skinTheme: '',
     });
-    expect(url).not.toContain('locale_iso');
+    expect(url).not.toContain('locale_lang');
     expect(url).not.toContain('locale_preset');
     expect(url).not.toContain('skin_theme');
   });

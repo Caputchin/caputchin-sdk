@@ -177,8 +177,8 @@ describe('inspectGameConfig — lang attr', () => {
   });
 
   it('reads inline JSON unchanged', () => {
-    const r = inspectGameConfig(el({ game: '@x/y', locale: '{"_iso":"ar"}' }));
-    expect(r.config.locale).toBe('{"_iso":"ar"}');
+    const r = inspectGameConfig(el({ game: '@x/y', locale: '{"_lang":"ar"}' }));
+    expect(r.config.locale).toBe('{"_lang":"ar"}');
   });
 
   it('treats whitespace-only value as null', () => {

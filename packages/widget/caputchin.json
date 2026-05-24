@@ -40,7 +40,7 @@
     },
     "presets": {
       "English": {
-        "_iso": "en",
+        "_lang": "en",
         "_default": true,
         "simpleVerify": "Verify",
         "simpleVerifying": "Verifying…",
@@ -53,7 +53,7 @@
         "overlayClose": "Close"
       },
       "Arabic": {
-        "_iso": "ar",
+        "_lang": "ar",
         "_default": true,
         "simpleVerify": "تحقق",
         "simpleVerifying": "جاري التحقق…",
