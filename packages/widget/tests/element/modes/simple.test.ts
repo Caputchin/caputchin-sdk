@@ -73,7 +73,7 @@ describe('widget lang attribute', () => {
     expect(el.getAttribute('dir')).toBe('rtl');
     const text = el.shadowRoot!.textContent ?? '';
     expect(text).toContain('تحقق'); // Verify
-    expect(text).toContain('كابوتشين'); // Caputchin brand
+    expect(text).toContain('كابوتشن'); // Caputchin brand
     el.remove();
   });
 
