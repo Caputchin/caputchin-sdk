@@ -3,14 +3,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setCapAssetUrlsFrom } from '../../../src/cap/asset-urls.js';
 
 // The widget ships cap.js's wasm + pako next to its bundle and points cap.js at
-// them by setting window.CAP_CUSTOM_WASM_URL / CAP_PAKO_URL. Two delivery
-// paths: the ESM entry (src/index.ts) sets them via
-// `new URL('./cap_wasm_bg.wasm', import.meta.url)` so a bundler re-emits the
-// assets same-origin; the IIFE entry calls setCapAssetUrlsFrom with
-// document.currentScript.src. These assert the behavioural contract (globals
-// populated, relative to the right base, host override preserved). The actual
-// same-origin emission is a property of the consumer's bundler, verified at
-// integration time, not here.
+// them by setting window.CAP_CUSTOM_WASM_URL / CAP_PAKO_URL BEFORE @cap.js/widget
+// loads (it eagerly loads its wasm at module-init). Two delivery paths, each a
+// side-effect module imported FIRST by its entry: the ESM entry imports
+// cap/wasm-host-esm.ts (sets them via `new URL('./cap_wasm_bg.wasm',
+// import.meta.url)` so a bundler re-emits same-origin); the IIFE entry imports
+// cap/wasm-host-iife.ts (setCapAssetUrlsFrom with document.currentScript.src).
+// These assert the behavioural contract (globals populated, relative to the
+// right base, host override preserved). The before-cap.js ordering + same-origin
+// emission are bundle-level properties, verified at build/integration, not here.
 
 describe('ESM entry cap asset self-set', () => {
   beforeEach(() => {

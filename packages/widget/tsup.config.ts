@@ -55,13 +55,18 @@ export default defineConfig([
     outExtension: () => ({ js: '.mjs' }),
     define: sharedDefine,
     loader: sharedLoader,
-    // Copy cap.js's wasm + pako fallback (from the @cap.js/wasm + pako build
-    // deps) next to the bundle so the package ships them. The ESM entry points
-    // cap.js at them via `new URL('./cap_wasm_bg.wasm', import.meta.url)` (the
-    // consumer's bundler re-emits same-origin) and the IIFE entry via
-    // document.currentScript.src. esbuild leaves those `new URL` literals
-    // untouched, so no loader/external needed. Runs on build + every watch
-    // rebuild.
+    // Bundle @cap.js/widget instead of leaving it an external import. cap.js
+    // eagerly warms its wasm at module-init, reading window.CAP_CUSTOM_WASM_URL
+    // once. As an EXTERNAL static import it is HOISTED above widget.mjs's body,
+    // so it ran before wasm-host-esm could set the override -> cap.js fell back
+    // to its jsDelivr default (broken under a strict-CSP consumer). Bundling it
+    // makes cap a lazy require (same as the IIFE build, which is already
+    // correct), invoked at element mount -- long after the body override runs.
+    noExternal: ['@cap.js/widget'],
+    // Copy cap.js's wasm + pako (from the @cap.js/wasm + pako build deps) next
+    // to the bundle so the package ships them; the entries point cap.js at them
+    // same-origin (ESM: new URL(import.meta.url); IIFE: currentScript.src).
+    // Runs on build + every watch rebuild.
     onSuccess: 'node scripts/copy-cap-assets.mjs',
   },
   {
