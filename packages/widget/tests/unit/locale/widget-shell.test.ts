@@ -17,7 +17,7 @@ describe('resolveWidgetShell — browser-auto path', () => {
     expect(shell.lang).toBe('ar');
     expect(shell.direction).toBe('rtl');
     expect(shell.strings.simpleVerify).toBe('تحقق');
-    expect(shell.strings.brandName).toBe('كابوتشين');
+    expect(shell.strings.brandName).toBe('كابوتشن');
     expect(shell.strings.overlayClose).toBe('إغلاق');
   });
 
@@ -28,7 +28,9 @@ describe('resolveWidgetShell — browser-auto path', () => {
   });
 
   it('falls back to en when navigator language has no matching preset', () => {
-    const shell = resolveWidgetShell(null, ['ja']);
+    // 'th' (Thai) is deliberately outside the official supported set; keep it
+    // a non-preset language so this exercises the en fallback path.
+    const shell = resolveWidgetShell(null, ['th']);
     expect(shell.lang).toBe('en');
     expect(shell.direction).toBe('ltr');
   });
