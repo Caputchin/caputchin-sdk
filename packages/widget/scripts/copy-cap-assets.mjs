@@ -4,7 +4,7 @@
 // jsDelivr by default. We copy both next to the built widget bundle so they
 // load from the same origin the widget code loaded from: the ESM entry points
 // cap.js at them via `new URL('./cap_wasm_bg.wasm', import.meta.url)` (the
-// consumer's bundler re-emits them same-origin), and the IIFE entries point at
+// consumer's bundler re-emits them same-origin), and the IIFE entry points at
 // them via `document.currentScript.src`. No third-party CDN reach, no consumer
 // CSP change, no consumer install.
 //

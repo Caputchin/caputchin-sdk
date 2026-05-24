@@ -33,9 +33,7 @@
   ],
   "sideEffects": [
     "./dist/widget.mjs",
-    "./dist/widget.js",
-    "./dist/game.js",
-    "./dist/all.js"
+    "./dist/widget.js"
   ],
   "scripts": {
     "prebuild": "node scripts/build-iframe-runtime.mjs",

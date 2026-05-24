@@ -4,7 +4,7 @@
 // scripts/copy-cap-assets.mjs). This points cap.js at them relative to the
 // running script's URL, so they load from the same origin the script itself
 // loaded from (a jsDelivr <script>, or a self-hosted copy). Used by the IIFE
-// entries, which have no import.meta and so derive their base from
+// entry, which has no import.meta and so derives its base from
 // document.currentScript.src. The ESM entry (src/index.ts) does the equivalent
 // via `new URL('./cap_wasm_bg.wasm', import.meta.url)` so a bundler re-emits
 // the assets same-origin.

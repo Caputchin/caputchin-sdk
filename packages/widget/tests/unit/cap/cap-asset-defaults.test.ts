@@ -6,7 +6,7 @@ import { setCapAssetUrlsFrom } from '../../../src/cap/asset-urls.js';
 // them by setting window.CAP_CUSTOM_WASM_URL / CAP_PAKO_URL. Two delivery
 // paths: the ESM entry (src/index.ts) sets them via
 // `new URL('./cap_wasm_bg.wasm', import.meta.url)` so a bundler re-emits the
-// assets same-origin; the IIFE entries call setCapAssetUrlsFrom with
+// assets same-origin; the IIFE entry calls setCapAssetUrlsFrom with
 // document.currentScript.src. These assert the behavioural contract (globals
 // populated, relative to the right base, host override preserved). The actual
 // same-origin emission is a property of the consumer's bundler, verified at
@@ -41,7 +41,7 @@ describe('setCapAssetUrlsFrom (IIFE script-relative)', () => {
   });
 
   it('resolves both assets relative to the script URL', () => {
-    setCapAssetUrlsFrom('https://cdn.example.com/npm/@caputchin/widget/dist/all.js');
+    setCapAssetUrlsFrom('https://cdn.example.com/npm/@caputchin/widget/dist/widget.js');
     expect(window.CAP_CUSTOM_WASM_URL).toBe(
       'https://cdn.example.com/npm/@caputchin/widget/dist/cap_wasm_bg.wasm',
     );
@@ -59,7 +59,7 @@ describe('setCapAssetUrlsFrom (IIFE script-relative)', () => {
 
   it('preserves a host-provided override', () => {
     window.CAP_CUSTOM_WASM_URL = 'https://example.test/custom.wasm';
-    setCapAssetUrlsFrom('https://cdn.example.com/dist/all.js');
+    setCapAssetUrlsFrom('https://cdn.example.com/dist/widget.js');
     expect(window.CAP_CUSTOM_WASM_URL).toBe('https://example.test/custom.wasm');
     // the unset one still gets the script-relative default
     expect(window.CAP_PAKO_URL).toBe('https://cdn.example.com/dist/pako_inflate.min.js');
