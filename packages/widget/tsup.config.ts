@@ -54,6 +54,14 @@ export default defineConfig([
     outExtension: () => ({ js: '.mjs' }),
     define: sharedDefine,
     loader: sharedLoader,
+    // Copy cap.js's wasm + pako fallback (from the @cap.js/wasm + pako build
+    // deps) next to the bundle so the package ships them. The ESM entry points
+    // cap.js at them via `new URL('./cap_wasm_bg.wasm', import.meta.url)` (the
+    // consumer's bundler re-emits same-origin) and the IIFE entries via
+    // document.currentScript.src. esbuild leaves those `new URL` literals
+    // untouched, so no loader/external needed. Runs on build + every watch
+    // rebuild.
+    onSuccess: 'node scripts/copy-cap-assets.mjs',
   },
   {
     entry: {
