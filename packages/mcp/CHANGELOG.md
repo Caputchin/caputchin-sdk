@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.0...mcp-v2.0.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* **mcp:** default to the apex host and derive siteverify snippets from one env-overridable host ([b9148f3](https://github.com/Caputchin/caputchin-sdk/commit/b9148f3a9825031ab5841f8d05e510348dd4a87c))
+
 ## [2.0.0](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v1.0.0...mcp-v2.0.0) (2026-05-23)
 
 
