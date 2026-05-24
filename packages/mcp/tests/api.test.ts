@@ -4,12 +4,24 @@ import {
   mcpToolsCall,
   mcpToolsList,
   readManagementConfig,
+  resolveApiHost,
 } from '../src/api.js';
 
+describe('resolveApiHost', () => {
+  it('defaults to the public apex when env is unset', () => {
+    expect(resolveApiHost({} as NodeJS.ProcessEnv)).toBe('https://caputchin.com');
+  });
+  it('honors CAPUTCHIN_API_HOST and strips trailing slashes', () => {
+    expect(
+      resolveApiHost({ CAPUTCHIN_API_HOST: 'https://staging.example.com//' } as NodeJS.ProcessEnv),
+    ).toBe('https://staging.example.com');
+  });
+});
+
 describe('readManagementConfig', () => {
-  it('defaults base URL to https://api.caputchin.com when env is unset', () => {
+  it('defaults base URL to https://caputchin.com when env is unset', () => {
     const cfg = readManagementConfig({ CAPUTCHIN_TOKEN: 'cpt_pat_test' } as NodeJS.ProcessEnv);
-    expect(cfg.baseUrl).toBe('https://api.caputchin.com');
+    expect(cfg.baseUrl).toBe('https://caputchin.com');
     expect(cfg.token).toBe('cpt_pat_test');
   });
 
@@ -28,7 +40,7 @@ describe('readManagementConfig', () => {
 
 describe('mcpInitialize', () => {
   const fetchSpy = vi.spyOn(globalThis, 'fetch');
-  const cfg = { baseUrl: 'https://api.caputchin.com', token: 'cpt_pat_xyz' };
+  const cfg = { baseUrl: 'https://caputchin.com', token: 'cpt_pat_xyz' };
 
   beforeEach(() => fetchSpy.mockReset());
   afterEach(() => fetchSpy.mockReset());
@@ -50,7 +62,7 @@ describe('mcpInitialize', () => {
     );
     await expect(mcpInitialize(cfg)).resolves.toBeUndefined();
     const [url, init] = fetchSpy.mock.calls[0]!;
-    expect(url).toBe('https://api.caputchin.com/api/mcp');
+    expect(url).toBe('https://caputchin.com/api/mcp');
     const headers = init?.headers as Record<string, string>;
     expect(headers.authorization).toBe('Bearer cpt_pat_xyz');
     const body = JSON.parse(init?.body as string);
@@ -99,7 +111,7 @@ describe('mcpInitialize', () => {
 
 describe('mcpToolsList', () => {
   const fetchSpy = vi.spyOn(globalThis, 'fetch');
-  const cfg = { baseUrl: 'https://api.caputchin.com', token: 'cpt_pat_xyz' };
+  const cfg = { baseUrl: 'https://caputchin.com', token: 'cpt_pat_xyz' };
 
   beforeEach(() => fetchSpy.mockReset());
   afterEach(() => fetchSpy.mockReset());
@@ -152,7 +164,7 @@ describe('mcpToolsList', () => {
 
 describe('mcpToolsCall', () => {
   const fetchSpy = vi.spyOn(globalThis, 'fetch');
-  const cfg = { baseUrl: 'https://api.caputchin.com', token: 'cpt_pat_xyz' };
+  const cfg = { baseUrl: 'https://caputchin.com', token: 'cpt_pat_xyz' };
 
   beforeEach(() => fetchSpy.mockReset());
   afterEach(() => fetchSpy.mockReset());

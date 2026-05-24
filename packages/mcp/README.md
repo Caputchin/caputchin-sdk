@@ -23,7 +23,7 @@ Set the management token before launching:
 | Env var | Required | Default | Notes |
 |---|---|---|---|
 | `CAPUTCHIN_TOKEN` | yes (default mode) | — | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
-| `CAPUTCHIN_API_HOST` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`. |
+| `CAPUTCHIN_API_HOST` | no | `https://caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`. |
 
 Run in local-only mode (no token; only the offline snippet generators load):
 
