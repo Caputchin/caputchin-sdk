@@ -1,0 +1,54 @@
+{
+  "name": "@caputchin/engine-runtime",
+  "version": "0.1.0",
+  "description": "Deterministic execution environment and engine contract for Caputchin server-validated game replay",
+  "keywords": [
+    "caputchin",
+    "engine",
+    "deterministic",
+    "replay",
+    "captcha"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./shim": {
+      "types": "./dist/shim.d.ts",
+      "import": "./dist/shim.js",
+      "require": "./dist/shim.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}
