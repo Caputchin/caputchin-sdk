@@ -1,4 +1,4 @@
-// Client for /api/v1/widget/bootstrap per ADR-0059. The widget calls this
+// Client for /api/v1/widget/bootstrap. The widget calls this
 // once at connectedCallback to fetch customer override preset banks (gated
 // per plan tier) and marketplace game URL + integrity (when in game mode).
 // First paint blocks on this call up to a 2 second hard timeout; on

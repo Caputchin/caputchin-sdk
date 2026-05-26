@@ -1,9 +1,8 @@
 // Marketplace bundle URL + integrity hash for a game id. Hits the
-// /api/v1/widget/bootstrap endpoint per ADR-0059 (which replaced the
-// dedicated /api/v1/games/resolve endpoint from ADR-0058). The same
-// response shape powers the widget's white-label override fetch at mount
-// time; for marketplace lookups specifically we only consume `game.url` +
-// `game.integrity`.
+// /api/v1/widget/bootstrap endpoint (which replaced the dedicated
+// /api/v1/games/resolve endpoint). The same response shape powers the
+// widget's white-label override fetch at mount time; for marketplace lookups
+// specifically we only consume `game.url` + `game.integrity`.
 
 export interface ResolvedGame {
   url: string;

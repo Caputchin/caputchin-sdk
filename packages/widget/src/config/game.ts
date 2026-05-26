@@ -42,8 +42,8 @@ export interface GameConfig {
    *  Resolved against the game's manifest skins after the manifest
    *  postMessage arrives. Null when omitted or empty. */
   skin: string | null;
-  // No `config` attribute: gameplay config is server-authoritative (ADR-0069).
-  // A client-authored config can't be reproduced at replay (→ false-reject) and
+  // No `config` attribute: gameplay config is server-authoritative. A
+  // client-authored config can't be reproduced at replay (→ false-reject) and
   // is tamperable, so the game's config comes only from the server (the bootstrap
   // override bank, empty at MVP → the game's own defaults; per-site config is a
   // deferred phase). skin + locale stay client attributes (render-only).

@@ -82,7 +82,7 @@ describe('cap.math determinism', () => {
     }
   });
 
-  // The permanent audit line (ADR-0068): cap.math must never call a native
+  // The permanent audit line: cap.math must never call a native
   // transcendental, or it reintroduces architecture-dependent divergence.
   it('source uses no banned native transcendental', () => {
     const src = readFileSync(fileURLToPath(new URL('./math.ts', import.meta.url)), 'utf8');

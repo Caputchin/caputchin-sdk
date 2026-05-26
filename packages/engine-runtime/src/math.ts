@@ -1,4 +1,4 @@
-// Deterministic transcendental math (ADR-0068).
+// Deterministic transcendental math.
 //
 // PURITY RULE (the permanent audit line): every function here is built ONLY
 // from operations that are bit-identical across V8 / JSC / SpiderMonkey and

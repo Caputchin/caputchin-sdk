@@ -65,11 +65,10 @@ function readNavigatorLanguages(): readonly string[] {
  *  per-string overrides go through manifest authoring, not the element
  *  attribute). Unknown preset / ISO ⇒ issue + browser-auto fallback.
  *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
- *  ADR-0059), the override bank is injected as a second layer atop the
- *  bundled bank before resolution; name-collision presets implicitly
- *  extend their bundled twin so the override only needs to declare the
- *  leaf keys it changes. */
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
+ *  the override bank is injected as a second layer atop the bundled bank
+ *  before resolution; name-collision presets implicitly extend their bundled
+ *  twin so the override only needs to declare the leaf keys it changes. */
 export function resolveWidgetShell(
   attrValue?: string | null,
   navLangs?: readonly string[],

@@ -4,8 +4,8 @@ import widgetManifest from '../../../caputchin.json';
 
 const DEFAULT_PRESET = widgetManifest.configurations.presets.default as Record<string, string | boolean | number>;
 
-// There is no client `config` attribute (removed under ADR-0069 — shell config is
-// server-authoritative). The resolver always targets the bundled `default`
+// There is no client `config` attribute (shell config is server-authoritative).
+// The resolver always targets the bundled `default`
 // preset, optionally overlaid by the server's override bank (from bootstrap).
 describe('resolveWidgetShellConfig', () => {
   it('no override returns the bundled default preset values', () => {

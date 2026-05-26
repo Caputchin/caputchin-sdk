@@ -23,9 +23,9 @@ export interface SrcdocOptions {
   integrity?: string | null;
   runtimeJs: string;
   runtimeSha256: string;
-  // Customer-configured skin asset origins (ADR-0059) to allow in the
-  // frame's img-src / media-src so a customer's own-CDN asset renders
-  // inside the sandbox. Empty / omitted keeps the data:-only default.
+  // Customer-configured skin asset origins to allow in the frame's img-src /
+  // media-src so a customer's own-CDN asset renders inside the sandbox. Empty
+  // / omitted keeps the data:-only default.
   assetOrigins?: string[];
 }
 

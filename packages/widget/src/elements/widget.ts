@@ -20,7 +20,7 @@ import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk
  * attribute to mount no UI (verification still runs per trigger). For
  * games, use `<caputchin-game>` instead.
  *
- * Mount is two-phase per ADR-0059: synchronous prep (config inspection,
+ * Mount is two-phase: synchronous prep (config inspection,
  * shadow attach, bundled cascade for hint extraction) followed by an
  * async bootstrap fetch (with a 2s hard timeout). First paint blocks until
  * bootstrap resolves; bundled fallback applies on timeout / network error.

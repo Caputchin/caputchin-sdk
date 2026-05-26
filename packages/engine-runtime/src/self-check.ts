@@ -1,4 +1,4 @@
-// The self-check — the OPTIONAL pre-publish determinism prober (ADR-0069). Since
+// The self-check — the OPTIONAL pre-publish determinism prober. Since
 // the platform sets no index-time determinism gate (a submitted reference trace
 // is an attack surface) and runs no server-side mismatch backstop at MVP, a
 // non-deterministic `run` would silently false-reject its own players on the

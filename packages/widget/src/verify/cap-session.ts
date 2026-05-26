@@ -36,8 +36,8 @@ export interface CapSessionHandle {
 /** Build a cap session and wire it onto `state.capClient` (+ triggerCtx if
  *  present). Returns the client + a closure for the wrapped token + the seed.
  *  `gameId` is sent in the /verify/start platform so the SERVER stores it on the
- *  session — that stored gameId is what gates replay at /verify/pass (ADR-0069;
- *  making it server-authoritative is the deferred Phase 11). */
+ *  session — that stored gameId is what gates replay at /verify/pass (making it
+ *  server-authoritative is the deferred Phase 11). */
 export function setupCapSession(
   state: WidgetState,
   apiHost: string,

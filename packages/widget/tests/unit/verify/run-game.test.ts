@@ -4,8 +4,8 @@ import { resolveGameUrl } from '../../../src/verify/run-game.js';
 import type { GameConfig } from '../../../src/config/game.js';
 
 // resolveGameUrl is the seam where the game-load path either reuses the
-// mount-time bootstrap's bundle (single round trip, ADR-0059) or falls back
-// to a dedicated /widget/bootstrap resolve. These tests pin: reuse only when
+// mount-time bootstrap's bundle (single round trip) or falls back to a
+// dedicated /widget/bootstrap resolve. These tests pin: reuse only when
 // the prefetched bundle's id matches the resolved id (a `games` pool pick
 // differs from the mount-time `game`), and identical fail-closed behavior.
 

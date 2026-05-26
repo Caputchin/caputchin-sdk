@@ -25,9 +25,9 @@ export interface WidgetConfig {
    *  (honors `prefers-color-scheme`). */
   skin: string | null;
   // No `config` attribute: shell configuration (brand-strip links, etc.) is
-  // server-authoritative (ADR-0069) — it comes from the bootstrap override bank,
-  // falling back to the widget's bundled `default` preset. Client config
-  // authoring is removed (parity with the game widget; see config/game.ts).
+  // server-authoritative — it comes from the bootstrap override bank, falling
+  // back to the widget's bundled `default` preset. Client config authoring is
+  // removed (parity with the game widget; see config/game.ts).
 }
 
 /**

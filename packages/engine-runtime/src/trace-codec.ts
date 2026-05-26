@@ -1,4 +1,4 @@
-// The kit's DEFAULT trace codec (ADR-0069). The trace is opaque to the platform
+// The kit's DEFAULT trace codec. The trace is opaque to the platform
 // — the kit may serialize its recorded inputs however it likes, and an author is
 // free to bring their own format. This JSON codec is the batteries-included
 // default: the live driver records `TickInput`s and `encodeTrace`s them; `toRun`

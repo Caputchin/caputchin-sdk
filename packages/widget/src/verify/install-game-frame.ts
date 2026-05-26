@@ -55,21 +55,21 @@ export async function installGameFrame(
   host.setLayoutContext(layout);
   const locale = resolveLocaleForGame(el, config, manifest, gameOverrides);
   const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl(), gameOverrides);
-  // Gameplay config is server-authoritative (ADR-0069) — there is no client
-  // `config` attribute. `ctx.config` is null, so the game runs its own internal
-  // defaults (matching the run's `defaultConfig`, so live == replay); per-site
-  // server config injection is a deferred phase.
+  // Gameplay config is server-authoritative — there is no client `config`
+  // attribute. `ctx.config` is null, so the game runs its own internal defaults
+  // (matching the run's `defaultConfig`, so live == replay); per-site server
+  // config injection is a deferred phase.
   const cfg = null;
   // Wait for the per-round seed before kickoff so the game's live run is
-  // deterministic under it (ADR-0069). awaitSeed resolves null on a /verify/start
-  // failure or a no-verify mount, so kickoff never deadlocks.
+  // deterministic under it. awaitSeed resolves null on a /verify/start failure
+  // or a no-verify mount, so kickoff never deadlocks.
   const seed = awaitSeed ? await awaitSeed() : null;
   host.kickoff(1, seed, locale, skin, cfg);
 }
 
 /** Resolve the customer's `locale` attribute against the game's manifest
  *  presets, with any dashboard-authored override bank (from the bootstrap
- *  `game` block per ADR-0059) injected as a second layer on top — a
+ *  `game` block) injected as a second layer on top — a
  *  name-collision override implicitly extends its bundled twin, same rule
  *  the widget shell uses. Issues fire as `invalid-config` events. Returns
  *  null when neither the manifest nor the overrides ship any preset, which

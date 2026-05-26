@@ -31,9 +31,8 @@ export class IframeHost {
     gameId: string | null,
     hostEl: HTMLElement,
     onMessage: (msg: IframeToWidget) => void,
-    // Customer-configured skin asset origins (ADR-0059) allowed in the
-    // frame's img-src / media-src. Defaults to none for game-only mounts
-    // with no override bank.
+    // Customer-configured skin asset origins allowed in the frame's img-src /
+    // media-src. Defaults to none for game-only mounts with no override bank.
     assetOrigins: string[] = []
   ) {
     this.gameUrl = gameUrl;

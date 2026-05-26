@@ -1,4 +1,4 @@
-// The replay verdict: the only shape we read out of an untrusted `run` (ADR-0069).
+// The replay verdict: the only shape we read out of an untrusted `run`.
 
 /**
  * The output of a replay `run`, and the only thing we read from it. `passed`

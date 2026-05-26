@@ -12,7 +12,7 @@ export interface SessionContext {
 // settle within this window even if the thing it waits for never arrives.
 const GATE_TIMEOUT_MS = 5 * 60 * 1000;
 
-// Per-widget seed gate (ADR-0069). /verify/start returns the per-round seed;
+// Per-widget seed gate. /verify/start returns the per-round seed;
 // `awaitSeed` lets the iframe-kickoff path wait for it (resolving to null on a
 // start failure / missing seed so kickoff never deadlocks). Armed at session
 // registration; settled in the challenge branch (success), via resolveSeedGate
@@ -194,7 +194,7 @@ export function installCustomFetch(): void {
       });
       // Stash sessionId for this widget so the redeem branch can forward it,
       // and resolve the seed gate so the iframe kickoff can run the game under
-      // the per-round seed (ADR-0069).
+      // the per-round seed.
       if (startResponse.ok) {
         try {
           const data = await startResponse.clone().json() as {
@@ -245,9 +245,9 @@ export function installCustomFetch(): void {
         const data = await response.clone().json() as { platform?: { wrappedToken?: unknown } };
         const wrapped = data?.platform?.wrappedToken;
         if (typeof wrapped === 'string') {
-          // The widget surfaces pass/fail only (ADR-0069): the authoritative
-          // score/durationMs are the server replay's, read by the customer's
-          // backend at /siteverify — not relayed through the client pass event.
+          // The widget surfaces pass/fail only: the authoritative score/durationMs
+          // are the server replay's, read by the customer's backend at /siteverify
+          // — not relayed through the client pass event.
           ctx.onWrappedToken(assembleWrappedToken({ token: wrapped }));
         }
       } catch {

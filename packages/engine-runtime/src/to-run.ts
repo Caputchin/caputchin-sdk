@@ -1,4 +1,4 @@
-// `toRun` — the reducer→contract adapter (ADR-0069). It turns a `defineEngine`
+// `toRun` — the reducer→contract adapter. It turns a `defineEngine`
 // reducer into the one mandatory `run(seed, config, trace) -> verdict` the
 // artifact exports. This is the kit's whole reason to exist: the author writes
 // pure game logic, the kit produces the conforming `run`. Using it is OPTIONAL —
@@ -11,8 +11,8 @@ import type { Seed, Verdict } from '@caputchin/replay-contract';
 
 export interface ToRunOptions<A, C> {
   /**
-   * The config the run falls back to when invoked with `null` config (ADR-0069):
-   * the server passes `null` until per-site config injection lands, so the run
+   * The config the run falls back to when invoked with `null` config: the
+   * server passes `null` until per-site config injection lands, so the run
    * uses these defaults. When the server DOES supply a config it is used as-is —
    * config is a run INPUT, never baked, so the same artifact serves every preset.
    */

@@ -3,7 +3,7 @@ import type { EngineDef } from './types';
 /**
  * Identity helper a game uses to declare its reducer, purely for type inference
  * — `defineEngine` does not wrap or transform it. Pair it with `toRun` to
- * produce the conforming `run(seed, trace)` the artifact exports (ADR-0069);
+ * produce the conforming `run(seed, trace)` the artifact exports;
  * `defineEngine` is one OPTIONAL authoring lane, not the mandatory contract.
  *
  * ```ts

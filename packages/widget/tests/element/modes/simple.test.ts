@@ -6,8 +6,8 @@ declare global {
 }
 (globalThis as unknown as { __CAPUTCHIN_API_HOST__: string }).__CAPUTCHIN_API_HOST__ = 'https://api.test.com';
 
-// Per ADR-0059 the widget calls /api/v1/widget/bootstrap before paint. In
-// jsdom/happy-dom the real network is unreachable; stub fetch to return an
+// The widget calls /api/v1/widget/bootstrap before paint. In jsdom/happy-dom
+// the real network is unreachable; stub fetch to return an
 // empty 200 so the bootstrap promise resolves synchronously-ish (one
 // microtask hop) and `flushMount` lets the .then handler run before the
 // test asserts.
@@ -15,8 +15,8 @@ beforeAll(() => {
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
 });
 
-// Per ADR-0059, the widget element defers paint until /api/v1/widget/bootstrap
-// resolves or times out (max 2s). In jsdom with no real backend, fetch
+// The widget element defers paint until /api/v1/widget/bootstrap resolves or
+// times out (max 2s). In jsdom with no real backend, fetch
 // rejects almost immediately and the bootstrap client returns null → mount
 // runs with bundled-only. The microtask queue still needs a tick to flush;
 // `flushMount` waits one macrotask which guarantees all chained microtasks
@@ -165,9 +165,8 @@ describe('widget skin attribute', () => {
 });
 
 // Shell brand links come from the bundled `default` preset (+ a server override
-// bank at bootstrap). There is no client `config` attribute (removed under
-// ADR-0069 — config is server-authoritative), so there is nothing client-side
-// to select or reject here.
+// bank at bootstrap). There is no client `config` attribute (config is
+// server-authoritative), so there is nothing client-side to select or reject here.
 describe('widget brand link wiring', () => {
   it('default brand strip points at caputchin.com + /legal', async () => {
     const el = getWidget({ sitekey: 'k', trigger: 'click' });

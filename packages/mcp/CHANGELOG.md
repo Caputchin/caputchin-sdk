@@ -12,7 +12,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler per ADR-0052
+* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler
 * **mcp:** rename plan tiers free→solo, paid→alpha (BREAKING)
 * **mcp:** drop ratelimit_duration_ms from cap-config tool (platform-locked at 1 minute)
 
@@ -21,7 +21,7 @@
 * **mcp:** drop allowed_domains from create/update site tools (cap-side cors_origins is SoT) ([4e0971d](https://github.com/Caputchin/caputchin-sdk/commit/4e0971d9d74b111fe4e6d4520644b3cb5089e486))
 * **mcp:** drop ratelimit_duration_ms from cap-config tool (platform-locked at 1 minute) ([7520566](https://github.com/Caputchin/caputchin-sdk/commit/75205664787b023f99d68f33b8cd714e468d0903))
 * **mcp:** drop webhook secret from hosted-verification, add test delivery tool ([5c162b6](https://github.com/Caputchin/caputchin-sdk/commit/5c162b67f38b30e6cb5c3a39310ffe82d2bc3a6f))
-* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler per ADR-0052 ([4ce8b18](https://github.com/Caputchin/caputchin-sdk/commit/4ce8b18659b73599b9f73dddbb863ab508064e7c))
+* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler ([4ce8b18](https://github.com/Caputchin/caputchin-sdk/commit/4ce8b18659b73599b9f73dddbb863ab508064e7c))
 * **mcp:** refresh ratelimit_max description (per-second window, plan-capped) ([afb342d](https://github.com/Caputchin/caputchin-sdk/commit/afb342d0f15bdb80b278c42d6e8386bb096cc13e))
 * **mcp:** rename plan tiers free→solo, paid→alpha (BREAKING) ([a6b8f9d](https://github.com/Caputchin/caputchin-sdk/commit/a6b8f9d66fa928670bfec597f17441bafda9ad8c))
 

@@ -15,9 +15,9 @@ export interface KickoffMessage {
   kind: 'kickoff';
   seq: number;
   gameId: string | null;
-  /** Per-round replay seed (ADR-0069) handed to the game so its live run is
-   *  deterministic under the same seed the server re-derives at replay. Null
-   *  for a gameless/no-verify mount. */
+  /** Per-round replay seed handed to the game so its live run is deterministic
+   *  under the same seed the server re-derives at replay. Null for a
+   *  gameless/no-verify mount. */
   seed: Seed | null;
   locale: ResolvedLocale | null;
   skin: ResolvedSkin | null;
@@ -51,8 +51,8 @@ export interface GameStartedMessage {
 export interface GamePassMessage {
   kind: 'game-pass';
   seq: number;
-  /** The opaque trace of the completed play (ADR-0069). The widget forwards it
-   *  to /verify/pass; the server replays it for the authoritative verdict. The
+  /** The opaque trace of the completed play. The widget forwards it to
+   *  /verify/pass; the server replays it for the authoritative verdict. The
    *  game reports no score here — the gate is the server replay. */
   trace: string;
 }
