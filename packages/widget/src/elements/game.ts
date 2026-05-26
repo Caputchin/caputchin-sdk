@@ -51,7 +51,7 @@ export class CaputchinGame extends HTMLElement {
     state.config = inspection.config;
     const apiHost = __CAPUTCHIN_API_HOST__;
     // Shadow attaches synchronously so the host keeps its layout box during
-    // the bootstrap wait. Empty shadow until bootstrap completes per ADR-0059.
+    // the bootstrap wait. Empty shadow until bootstrap completes.
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
     // Warn (but keep widget running) if non-manual mode receives slotted

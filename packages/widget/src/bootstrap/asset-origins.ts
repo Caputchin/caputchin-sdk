@@ -10,7 +10,7 @@ const ASSET_ORIGIN_RE = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i;
 
 /**
  * Collect the distinct http(s) origins the customer referenced from their
- * dashboard-authored **skin** override bank (ADR-0059). Assets are a
+ * dashboard-authored **skin** override bank. Assets are a
  * skin-axis concept only (`resolveAssetUrl` runs solely in the skin
  * resolver), so locale/configuration banks are not scanned.
  *

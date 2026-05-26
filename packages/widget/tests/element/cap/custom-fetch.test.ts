@@ -101,7 +101,7 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
   });
 });
 
-describe('CAP_CUSTOM_FETCH — seed gate (ADR-0069)', () => {
+describe('CAP_CUSTOM_FETCH — seed gate', () => {
   it('challenge with a valid 4-number seed resolves awaitSeed to that seed', async () => {
     const id = 'cpt_seed_ok';
     registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });

@@ -87,9 +87,9 @@ describe('injectOverrideLayer', () => {
     expect(overrideOrig).toEqual(overrideSnap);
   });
 
-  // ADR-0059 default-selection is override-first: the merged map iterates
-  // override entries before bundled, so a downstream first-`_default` scan
-  // picks the customer's preset over a bundled one in the same group.
+  // Default-selection is override-first: the merged map iterates override
+  // entries before bundled, so a downstream first-`_default` scan picks the
+  // customer's preset over a bundled one in the same group.
   it('iterates override presets before bundled (override-first selection order)', () => {
     const bundled = {
       en: { _lang: 'en', primary: '#bundled' },

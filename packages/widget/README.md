@@ -35,7 +35,7 @@ The widget injects `<input name="caputchin-token">` into the enclosing form on c
 
 Modes — `auto` (default), `form-submit`, `manual`, `game-only`. The first three run Cap and produce a token; `game-only` skips Cap entirely and just hosts the game. Omitting `sitekey` is shorthand for `game-only`.
 
-The game iframe is sandboxed (`allow-scripts` only, opaque origin) — no third-party game script touches the host page. See [ADR-0015](../../docs/adr/0015-sandbox-game-iframe.md).
+The game iframe is sandboxed (`allow-scripts` only, opaque origin) — no third-party game script touches the host page.
 
 ## Full reference
 

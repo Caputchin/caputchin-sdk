@@ -1,5 +1,5 @@
 // Inject a customer-authored override preset bank on top of the bundled
-// bank per ADR-0059's two-layer cascade rule. When an override preset name
+// bank using the two-layer cascade rule. When an override preset name
 // `X` collides with a bundled preset of the same name, the bundled preset
 // is preserved under a namespaced alias and the override gets an implicit
 // `_extends` to that alias unless it declares one. The downstream resolver
@@ -11,7 +11,7 @@
 // resolved first, falling through to bundled on miss (the merged map
 // contains both layers).
 //
-// ITERATION ORDER (ADR-0059 amendment, default-selection is override-first):
+// ITERATION ORDER (default-selection is override-first):
 // the merged map is built override-entries-first, then bundled-only
 // presets, then aliased bundled at the tail. The downstream default scan
 // (`findByLang` / `findByMode` / `findDefault`) returns the FIRST

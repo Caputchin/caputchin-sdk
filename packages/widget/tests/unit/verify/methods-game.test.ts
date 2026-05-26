@@ -61,7 +61,7 @@ describe('installGameMethods — pass()', () => {
     el.pass({ trace: 'tr-a' });
     el.pass(); // no payload → empty trace; still a pass/fail-only event
     expect(pass).toHaveLength(2);
-    // Pass/fail only — no score/durationMs surfaced (ADR-0069).
+    // Pass/fail only — no score/durationMs surfaced to the client.
     expect(pass[0].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(pass[1].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(presentation.setState).toHaveBeenCalledWith('verified');

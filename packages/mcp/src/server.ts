@@ -62,7 +62,7 @@ type CatalogueCache = {
 /**
  * Compose the MCP server.
  *
- * Per ADR-0052, the SDK no longer holds its own tool catalogue. At
+ * The SDK no longer holds its own tool catalogue. At
  * server creation it captures the env config and registers two
  * top-level handlers (`tools/list`, `tools/call`); both merge:
  *

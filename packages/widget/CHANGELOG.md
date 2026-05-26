@@ -34,10 +34,10 @@
 * **game-sdk:** nest manifest preferred footprint as {width,height}, drop flat fields
 * **widget:** adopt locale axis and skin theme rename across resolver, elements, protocol
 * **game-sdk:** rename language axis to locale and skin _mode to _theme
-* **widget:** override-first default-selection — customer marked default wins its group over bundled (ADR-0059)
-* **widget:** marketplace lookup goes through /widget/bootstrap (ADR-0059, sitekey required)
-* **widget:** call /games/resolve with game query param (ADR-0058)
-* **sdk:** derive registry key from data-game-id; drop required manifest.id (ADR-0058)
+* **widget:** override-first default-selection — customer marked default wins its group over bundled
+* **widget:** marketplace lookup goes through /widget/bootstrap (sitekey required)
+* **widget:** call /games/resolve with game query param
+* **sdk:** derive registry key from data-game-id; drop required manifest.id
 * **sdk:** languages presets pipeline (game-sdk 2.0 + widget 2.0)
 * **widget:** drop mode attribute on <caputchin-widget>; invisible becomes a boolean HTML attribute (was mode="invisible"|"simple")
 * **widget:** drop start() from <caputchin-game>; default build to localhost api host; pass()/fail() guard premature calls
@@ -51,22 +51,22 @@
 * **game-sdk:** nest manifest preferred footprint as {width,height}, drop flat fields ([9c692b6](https://github.com/Caputchin/caputchin-sdk/commit/9c692b65a8165f9b17c03fe0bb8ca8354482143e))
 * **game-sdk:** rename language axis to locale and skin _mode to _theme ([7bb356a](https://github.com/Caputchin/caputchin-sdk/commit/7bb356a54baa5290ee84945f0c7b09f10e6aa13b))
 * **sdk:** add optional languages.schema for per-key docs + tokens ([a3650c2](https://github.com/Caputchin/caputchin-sdk/commit/a3650c226c8194a1fe3ea5c36f47011520a77c4e))
-* **sdk:** derive registry key from data-game-id; drop required manifest.id (ADR-0058) ([7c5e6d0](https://github.com/Caputchin/caputchin-sdk/commit/7c5e6d03632983cfc029da67b24c8736b2262554))
+* **sdk:** derive registry key from data-game-id; drop required manifest.id ([7c5e6d0](https://github.com/Caputchin/caputchin-sdk/commit/7c5e6d03632983cfc029da67b24c8736b2262554))
 * **sdk:** languages presets pipeline (game-sdk 2.0 + widget 2.0) ([e5b91b4](https://github.com/Caputchin/caputchin-sdk/commit/e5b91b4a8b73101f0fe0a590fc5426932b29b062))
 * **widget,game-sdk:** auto-measure game's first-rendered child via ResizeObserver + bridge.setSize(w,h) escape hatch; widget re-applies iframe size from dimensions-measured message ([f0bb3fb](https://github.com/Caputchin/caputchin-sdk/commit/f0bb3fb0a6784ac46619e9dcd35452791bcffce0))
 * **widget:** "see no data" tagline (three-wise-monkeys riff on the Caputchin brand) ([ff63e01](https://github.com/Caputchin/caputchin-sdk/commit/ff63e01027d45401e9a2452da6459dd1b8f13647))
 * **widget:** &lt;caputchin-widget&gt; lang attr; chrome→shell; inline JSON shell signals; height=full ([1c6ba21](https://github.com/Caputchin/caputchin-sdk/commit/1c6ba21125e46c7beede4c670c76cc3dff40e732))
 * **widget:** add 3-layout system (inline/modal/fullscreen) with auto resolution and trigger checkbox ([07ae0e5](https://github.com/Caputchin/caputchin-sdk/commit/07ae0e526838682fb91b7a1c4073cd0fd0df7c16))
-* **widget:** add no-verify attribute decoupling game-only from sitekey absence (ADR-0049) ([37e4a3a](https://github.com/Caputchin/caputchin-sdk/commit/37e4a3ab9442d85aa31a3954807b8371031ae592))
+* **widget:** add no-verify attribute decoupling game-only from sitekey absence ([37e4a3a](https://github.com/Caputchin/caputchin-sdk/commit/37e4a3ab9442d85aa31a3954807b8371031ae592))
 * **widget:** add size="normal"|"compact" attribute + ensure every inner element has a `part` ([e15afcf](https://github.com/Caputchin/caputchin-sdk/commit/e15afcfbf09c81058a305c39ab9748f1d8ab2abe))
 * **widget:** add width="auto"|"full" attribute (default auto = fit-content) ([9854829](https://github.com/Caputchin/caputchin-sdk/commit/9854829f1ff710635933cf28fb5c88a1f8213150))
 * **widget:** adopt locale axis and skin theme rename across resolver, elements, protocol ([a9a7026](https://github.com/Caputchin/caputchin-sdk/commit/a9a7026b0b3cbede8841a606508646512d7756a1))
 * **widget:** allow customer-configured skin asset origins in the game frame CSP ([3d0a0c2](https://github.com/Caputchin/caputchin-sdk/commit/3d0a0c2ef9991d63071a9997d39fbd62962c7118))
 * **widget:** animate modal/fullscreen dialog show + hide via [@starting-style](https://github.com/starting-style) + allow-discrete (with reduced-motion fallback) ([db965a6](https://github.com/Caputchin/caputchin-sdk/commit/db965a622297278932fdc8fa947ff4a38eee9b38))
-* **widget:** apply per-game override banks to the game iframe at runtime (ADR-0059) ([64c100a](https://github.com/Caputchin/caputchin-sdk/commit/64c100afebbcc0dde37c0905db0cf6ad2387f299))
-* **widget:** bootstrap client + two-layer cascade override (ADR-0059) ([7e52470](https://github.com/Caputchin/caputchin-sdk/commit/7e52470239c925d1433975b094c0e2490d0ee4c6))
+* **widget:** apply per-game override banks to the game iframe at runtime ([64c100a](https://github.com/Caputchin/caputchin-sdk/commit/64c100afebbcc0dde37c0905db0cf6ad2387f299))
+* **widget:** bootstrap client + two-layer cascade override ([7e52470](https://github.com/Caputchin/caputchin-sdk/commit/7e52470239c925d1433975b094c0e2490d0ee4c6))
 * **widget:** brand link hovers green with underline on the Caputchin wordmark ([f0bd71a](https://github.com/Caputchin/caputchin-sdk/commit/f0bd71a10ccbbfa2dc65be8584485f4a7524db7d))
-* **widget:** call /games/resolve with game query param (ADR-0058) ([f824137](https://github.com/Caputchin/caputchin-sdk/commit/f8241378f459f0c120a45ab6f1c403418865db82))
+* **widget:** call /games/resolve with game query param ([f824137](https://github.com/Caputchin/caputchin-sdk/commit/f8241378f459f0c120a45ab6f1c403418865db82))
 * **widget:** center the game iframe inside modal + fullscreen dialogs (drop iframe stretch in fullscreen) ([5dc62a9](https://github.com/Caputchin/caputchin-sdk/commit/5dc62a98ec68b8fa8f895905f7a222e3a914f17e))
 * **widget:** configurations axis with valibot-backed type validation + brand link wiring ([228e588](https://github.com/Caputchin/caputchin-sdk/commit/228e5889f2daf153d53a38ffa24ba4ab4ac59691))
 * **widget:** drop checkbox; shield is the only indicator (clickable shields get chevron hint + breathing pulse) ([abb52a0](https://github.com/Caputchin/caputchin-sdk/commit/abb52a09c22000e4eb6d04a0a3c1eab8440ed533))
@@ -83,7 +83,7 @@
 * **widget:** isolate simple presentation in shadow DOM; ::part is the sole styling surface ([99336d1](https://github.com/Caputchin/caputchin-sdk/commit/99336d12f9b185d0ef67caff83ea3504e4e902dd))
 * **widget:** isolate widgets via URL-routed custom-fetch — drop solveQueue + _activeSolvingEl ([bae0208](https://github.com/Caputchin/caputchin-sdk/commit/bae02081524568247783147fd7ae25a36218fe72))
 * **widget:** manual mode supports multi-round pass() — first call releases cap gate, subsequent calls fire /verify/pass with locked token ([9c27a6d](https://github.com/Caputchin/caputchin-sdk/commit/9c27a6de2598af671c85175b1e6e11228013b4b7))
-* **widget:** marketplace lookup goes through /widget/bootstrap (ADR-0059, sitekey required) ([fce1f78](https://github.com/Caputchin/caputchin-sdk/commit/fce1f78ca96434a38c511dcc43e333eaf17323ed))
+* **widget:** marketplace lookup goes through /widget/bootstrap (sitekey required) ([fce1f78](https://github.com/Caputchin/caputchin-sdk/commit/fce1f78ca96434a38c511dcc43e333eaf17323ed))
 * **widget:** multi-round — subsequent bridge.pass fires pass event with locked token + new score ([aed12f8](https://github.com/Caputchin/caputchin-sdk/commit/aed12f83030c2928de7a67133aa54698e75963ff))
 * **widget:** pill mode = branded badge with status replacing tag (Turnstile-style) ([e3cd434](https://github.com/Caputchin/caputchin-sdk/commit/e3cd434b433f04cfcce17f31c1d92d0043a7ec24))
 * **widget:** rebuild public API to mode/trigger split with graceful validation ([cfee568](https://github.com/Caputchin/caputchin-sdk/commit/cfee56885870b7cf0675d4611f873796295f7829))
@@ -119,7 +119,7 @@
 * **widget:** move checkbox sizing to shadow stylesheet so compact CSS override applies ([3ed9e87](https://github.com/Caputchin/caputchin-sdk/commit/3ed9e8730ba0da3ae48816e86d07752b8fff861f))
 * **widget:** move compact separator to wordmark::after so it's not part of the tag link ([14ba890](https://github.com/Caputchin/caputchin-sdk/commit/14ba8902f9ed7e6ce7da42d4587c03ad2c758e01))
 * **widget:** only the checkbox itself is clickable, not the whole simple panel ([2005b2f](https://github.com/Caputchin/caputchin-sdk/commit/2005b2f0eedfdb4fbc214d8ea6c8130a7287ad99))
-* **widget:** override-first default-selection — customer marked default wins its group over bundled (ADR-0059) ([f571f2e](https://github.com/Caputchin/caputchin-sdk/commit/f571f2e9162db28449be311be8cc4e0e377c217a))
+* **widget:** override-first default-selection — customer marked default wins its group over bundled ([f571f2e](https://github.com/Caputchin/caputchin-sdk/commit/f571f2e9162db28449be311be8cc4e0e377c217a))
 * **widget:** pass-event score/durationMs read from request payload (server doesn't echo them) ([818f236](https://github.com/Caputchin/caputchin-sdk/commit/818f236f3e71b716ea02476f9c37f139a1d28520))
 * **widget:** postMessage targetOrigin must be "*" — "null" is silently dropped, broke iframe kickoff ([451d190](https://github.com/Caputchin/caputchin-sdk/commit/451d190527b306d3d007278e688707ca916ea7b9))
 * **widget:** redeem reads platform.wrappedToken, not cap's top-level token ([ca3c438](https://github.com/Caputchin/caputchin-sdk/commit/ca3c43887f557d02ce5cf7a72f554e4bfcbccd96))
@@ -133,7 +133,7 @@
 
 ### Performance Improvements
 
-* **widget:** reuse mount-time bootstrap bundle for game load, dropping the second resolve call (ADR-0059) ([565d1e0](https://github.com/Caputchin/caputchin-sdk/commit/565d1e0a3493220928813ead1b0c12c50c545abc))
+* **widget:** reuse mount-time bootstrap bundle for game load, dropping the second resolve call ([565d1e0](https://github.com/Caputchin/caputchin-sdk/commit/565d1e0a3493220928813ead1b0c12c50c545abc))
 
 
 ### Reverts

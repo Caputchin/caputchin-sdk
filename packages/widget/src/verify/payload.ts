@@ -1,5 +1,5 @@
 /** Customer-supplied payload for `<caputchin-game>` manual mode `pass()`.
- *  The customer-hosted game hands its opaque TRACE (ADR-0069); the server
+ *  The customer-hosted game hands its opaque TRACE; the server
  *  replays it for the verdict. (No score — the gate is the server replay.) */
 export interface ManualPassPayload {
   trace: string;

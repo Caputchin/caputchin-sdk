@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// caputchin-selfcheck — the pre-publish determinism CLI (ADR-0069). Points at a
+// caputchin-selfcheck — the pre-publish determinism CLI. Points at a
 // BUILT run artifact (the file the game publishes) and replays it through the
 // `selfCheck` prober under a hostile, isolate-equivalent environment, so an
 // author (and our own first-party games) confirm cross-env determinism before

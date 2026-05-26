@@ -1,11 +1,11 @@
 // The one mandatory contract: the `run` function shape + invocation convention
-// platform, widget, and the optional kit all agree on (ADR-0069).
+// platform, widget, and the optional kit all agree on.
 
 import type { Seed } from './seed';
 import type { Verdict } from './verdict';
 
 /**
- * The server-supplied gameplay config a run executes under (ADR-0069). OPAQUE to
+ * The server-supplied gameplay config a run executes under. OPAQUE to
  * the platform — each game defines its own shape, so we never type or inspect it,
  * exactly like the trace — and NULLABLE: `null` means "use the run's own internal
  * defaults", mirroring the bootstrap config-override's "empty ⇒ game defaults"

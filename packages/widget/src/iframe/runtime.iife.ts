@@ -103,11 +103,11 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
   }
 
   function postManifest(): void {
-    // ADR-0058: register() keys by manifest.id when present, otherwise by
-    // the runtime script's data-game-id (which matches embeddedGameId
-    // here), otherwise by DEFAULT_REGISTRY_KEY. Try the embeddedGameId
-    // slot first, then fall through to the default slot so author-declared
-    // ids and derived ids both reach the same manifest.
+    // register() keys by manifest.id when present, otherwise by the runtime
+    // script's data-game-id (which matches embeddedGameId here), otherwise by
+    // DEFAULT_REGISTRY_KEY. Try the embeddedGameId slot first, then fall
+    // through to the default slot so author-declared ids and derived ids both
+    // reach the same manifest.
     const manifests = (W['Caputchin'] as CaputchinGlobal).manifests;
     const manifest =
       (embeddedGameId !== null ? manifests[embeddedGameId] : undefined) ??
@@ -119,7 +119,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
       // preferredLayout is a reserved wire field. Honoring a game's preferred
       // layout needs a pre-mount channel the widget lacks today, so the SDK
       // manifest no longer carries it (MVP = width/height only). Always null
-      // until that capability lands — see docs/adr/0062-defer-preferred-layout.md.
+      // until that capability lands.
       preferredLayout: null,
       preferredWidth: typeof manifest?.preferred?.width === 'number' ? manifest.preferred.width : null,
       preferredHeight: typeof manifest?.preferred?.height === 'number' ? manifest.preferred.height : null,
@@ -179,9 +179,9 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
       const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
 
-      // ADR-0058: same fallback as postManifest — try the marketplace id
-      // first, then fall through to the default slot so games that
-      // registered without an author-declared id still resolve.
+      // Same fallback as postManifest — try the marketplace id first, then
+      // fall through to the default slot so games that registered without an
+      // author-declared id still resolve.
       const factory = registry[kickoffGameId] ?? registry[DEFAULT_REGISTRY_KEY];
       if (!factory) {
         postError('game-not-registered', `No game registered for id "${kickoffGameId}"`);

@@ -1,4 +1,4 @@
-// Types for the OPTIONAL engine kit (ADR-0069). The one mandatory contract —
+// Types for the OPTIONAL engine kit. The one mandatory contract —
 // `run(seed, trace) -> verdict` plus the Seed and Verdict shapes — lives in
 // `@caputchin/replay-contract`; this kit is one convenient way to PRODUCE a
 // conforming `run` from a pure reducer, never a contract authors must adopt.
@@ -29,9 +29,9 @@ export interface Result {
 /**
  * Setup handed to `init`. `config` is the resolved gameplay configuration the
  * run executed under (e.g. pass_score, lives, gravity) — an engine input,
- * because it changes gameplay. Under ADR-0069 the run is self-contained and the
- * server does not resolve config, so config is baked into the artifact (or
- * carried in the author's own trace) at the author's discretion.
+ * because it changes gameplay. The run is self-contained and the server does
+ * not resolve config, so config is baked into the artifact (or carried in the
+ * author's own trace) at the author's discretion.
  */
 export interface EngineSetup<C> {
   readonly seed: Seed;

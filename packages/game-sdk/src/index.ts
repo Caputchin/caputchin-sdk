@@ -7,7 +7,7 @@ export type Layout = 'inline' | 'modal' | 'fullscreen';
 export interface Bridge {
   /**
    * Signal a completed round by handing the widget the OPAQUE TRACE of the
-   * play (ADR-0069). The trace is a serialized string the game alone defines
+   * play. The trace is a serialized string the game alone defines
    * (the recorded inputs); the server re-runs the game's `run(seed, trace)` to
    * compute the authoritative verdict — the game does NOT report a score here.
    * Seed the run from `ctx.seed` so the live play and the server replay agree.
@@ -134,8 +134,8 @@ export interface ResolvedConfig {
 
 /** Per-session context the widget passes to the game factory as a third arg. */
 export interface GameContext {
-  /** Per-round replay seed (ADR-0069): server-derived, the same value the
-   *  server re-derives at replay. Seed all game randomness from it (e.g.
+  /** Per-round replay seed: server-derived, the same value the server
+   *  re-derives at replay. Seed all game randomness from it (e.g.
    *  `cap.rng(seed)`) so the live play is replayable. Null when the widget runs
    *  the game outside a verified session (no seed issued). */
   seed: Seed | null;
@@ -167,7 +167,7 @@ export interface LocaleKeySchema {
  *  runtime blocks but no `marketplace` object is a valid customer-hosted
  *  game that the marketplace simply ignores. None of these fields are read
  *  at runtime by the widget or the SDK; they drive the marketplace card
- *  + browse filters and the indexer's bundle-URL resolution. See ADR-0058. */
+ *  + browse filters and the indexer's bundle-URL resolution. */
 export interface MarketplaceMetadata {
   name?: string;
   description?: string;
@@ -191,8 +191,7 @@ export interface MarketplaceMetadata {
  *
  *  NOTE: a preferred *layout* (inline / modal / fullscreen) is intentionally
  *  NOT part of this MVP surface — honoring it needs a pre-mount channel the
- *  widget does not have today. That capability is designed and deferred; see
- *  docs/adr/0062-defer-preferred-layout.md. */
+ *  widget does not have today. That capability is designed and deferred. */
 export interface PreferredPresentation {
   width?: number;
   height?: number;
@@ -203,9 +202,9 @@ export interface PreferredPresentation {
  *  reads runtime hints (preferred size, locale presets) directly off the
  *  manifest.
  *
- *  Manifest shape and the rationale for the nested `marketplace` block,
- *  the `entry`/`npm` distribution fields at the root, and the dropped
- *  author-declared `id` field are recorded in ADR-0058. */
+ *  The nested `marketplace` block is optional; games that only run on customer
+ *  sites omit it. The `entry`/`npm` distribution fields support marketplace
+ *  indexing. The `id` field is optional and unused by the SDK (see below). */
 export interface GameManifest {
   /** Marketplace UI metadata. Absent on customer-hosted-only manifests. */
   marketplace?: MarketplaceMetadata;
@@ -216,8 +215,7 @@ export interface GameManifest {
    *  marketplace indexer alongside `npm` to resolve a jsDelivr URL. */
   entry?: string;
   /** Author-declared id. Optional and unused by the SDK; preserved here so
-   *  manifests carrying a legacy `id` field continue to type-check during
-   *  the transition recorded in ADR-0058. */
+   *  manifests carrying a legacy `id` field continue to type-check. */
   id?: string;
   /** Preferred presentation footprint (width / height). See
    *  {@link PreferredPresentation}. */
@@ -265,7 +263,7 @@ type Caputchin = {
 export const DEFAULT_REGISTRY_KEY = '__caputchin_default__';
 
 /** Resolve the registry key the SDK uses to store the factory + manifest.
- *  Resolution order (per ADR-0058):
+ *  Resolution order:
  *
  *   1. `manifest.id` if present and non-empty (legacy manifests).
  *   2. `<script data-game-id="…">` in the current document (the iframe

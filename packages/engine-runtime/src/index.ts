@@ -1,5 +1,5 @@
 // @caputchin/engine-runtime — the OPTIONAL authoring kit for server-validated
-// game replay (ADR-0069). The mandatory contract — `run(seed, trace) -> verdict`
+// game replay. The mandatory contract — `run(seed, trace) -> verdict`
 // plus the Seed and Verdict shapes — lives in `@caputchin/replay-contract`. This
 // kit is one convenient way to PRODUCE a conforming `run` from a pure reducer:
 // deterministic primitives (cap.rng / cap.math), an optional neutralization

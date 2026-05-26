@@ -1,7 +1,7 @@
 /**
  * Thin MCP JSON-RPC client targeting the platform's `/api/mcp` endpoint.
  *
- * Per ADR-0052 the SDK no longer carries its own tool catalogue; it
+ * The SDK no longer carries its own tool catalogue; it
  * proxies `tools/list` and `tools/call` to the platform. This module
  * holds the network + JSON-RPC plumbing the proxy needs.
  *

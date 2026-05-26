@@ -47,7 +47,7 @@ export async function resolveGameUrl(
   let integrity: string | null = null;
   if (gameId && !url) {
     // Reuse the mount-time bootstrap's bundle when it was fetched for THIS
-    // id (ADR-0059 single round trip). A `games` pool pick can differ from
+    // id (single round trip). A `games` pool pick can differ from
     // the mount-time `game`, so the id guard sends that case to a fresh
     // resolve. `prefetched.url === null` means the bootstrap saw no
     // marketplace bundle for the id — the same outcome a fresh resolve
@@ -86,7 +86,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
 
   const { url: gameUrl, integrity, gameId } = resolved;
   // gameId is sent in the /verify/start platform → the SERVER stores it on the
-  // session, and the STORED gameId gates replay at /verify/pass (ADR-0069).
+  // session, and the STORED gameId gates replay at /verify/pass.
   const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId);
   const dispatchStart = (): void => emitStart(el, gameId);
   const presentation = state.gamePresentation ?? null;

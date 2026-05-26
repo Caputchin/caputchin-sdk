@@ -3,8 +3,7 @@
 Model Context Protocol server for Caputchin over stdio. Works with Claude
 Desktop, Cursor, Claude Code, and any other MCP client that speaks stdio.
 
-Per [ADR-0052](https://github.com/Caputchin/caputchin/blob/main/docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md),
-this package is a thin stdio adapter: it proxies the canonical management
+This package is a thin stdio adapter: it proxies the canonical management
 tool catalogue served by Caputchin's `/api/mcp` HTTP endpoint, and adds
 offline developer-onboarding tools (HTML and backend snippet generators)
 that need no Caputchin account. The full tool list is defined in
@@ -88,4 +87,3 @@ implications:
 
 - [docs/management-api.md](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md) — Management API surface
 - [docs/api.md](https://github.com/Caputchin/caputchin/blob/main/docs/api.md) — Runtime endpoints (browser-side + customer backend)
-- [docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md](https://github.com/Caputchin/caputchin/blob/main/docs/adr/0052-mcp-canonical-platform-sdk-is-thin-proxy.md) — architectural decision behind this 2.x shape

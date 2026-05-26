@@ -4,7 +4,7 @@ import { fetchMarketplaceResolution } from '../../src/resolver.js';
 const API_HOST = 'https://api.example.com';
 const SITE_KEY = 'cpt_pub_test';
 
-describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap per ADR-0059)', () => {
+describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap)', () => {
   beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
   afterEach(() => { vi.restoreAllMocks(); });
 

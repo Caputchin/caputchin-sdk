@@ -26,7 +26,7 @@ export async function recordAdditionalRound(
   try {
     // The session is already redeemed (the first round minted the token), so the
     // server records-only (does not re-replay this trace) — one replayable round
-    // per session at MVP (the seed is fixed at roundIndex 0, ADR-0069).
+    // per session at MVP (the seed is fixed at roundIndex 0).
     await window.fetch(`${apiHost}/api/v1/verify/pass`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

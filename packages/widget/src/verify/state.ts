@@ -33,7 +33,7 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
   gameOverrides?: OverridesPerAxis | null;
   /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
    *  `game` block, so the game-load path reuses that one round trip instead
-   *  of a second `/widget/bootstrap` call (ADR-0059 single-round-trip goal).
+   *  of a second `/widget/bootstrap` call.
    *  `gameId` records which id the bootstrap fetched for — the run-time
    *  resolver only reuses it when the resolved id matches (a `games` pool
    *  pick can differ from the mount-time `game`, so that path resolves

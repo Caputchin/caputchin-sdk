@@ -1,5 +1,5 @@
-// The neutralization shim — an OPTIONAL kit helper for the IEEE-754 + JS path
-// (ADR-0069). Run once at the top of the engine's execution scope; applying the
+// The neutralization shim — an OPTIONAL kit helper for the IEEE-754 + JS path.
+// Run once at the top of the engine's execution scope; applying the
 // SAME shim live and on replay keeps those two environments from drifting via a
 // stray non-deterministic global. It is optional: a fixed-point or WASM author
 // never needs it, and a bare conforming `run` may skip it entirely.
@@ -15,7 +15,7 @@
 //      a run un-replayable.
 //
 // This is a runtime safety net, not the trust anchor: determinism is the
-// author's burden (ADR-0069 sets no index-time gate), the optional self-check
+// author's burden (the platform sets no index-time gate), the optional self-check
 // tool catches drift before publish, and the server's per-verify replay is
 // authoritative. The shim makes the failure mode "throws on first use" rather
 // than "passes locally, diverges on the server".

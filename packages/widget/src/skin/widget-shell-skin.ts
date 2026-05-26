@@ -96,9 +96,9 @@ function toPalette(resolved: ResolvedSkin | null, theme: 'light' | 'dark'): Shel
  *  `lang`); the game element pre-derives a theme hint from inline JSON and
  *  passes it as a bare string before reaching this resolver.
  *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
- *  ADR-0059), the override bank is injected atop the bundled bank before
- *  resolution; collisions implicitly extend their bundled twin. */
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
+ *  the override bank is injected atop the bundled bank before resolution;
+ *  collisions implicitly extend their bundled twin. */
 export function resolveWidgetShellSkin(
   attrValue?: string | null,
   prefersDark?: boolean,

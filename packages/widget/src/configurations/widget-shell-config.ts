@@ -44,12 +44,11 @@ function toShellConfig(resolved: ResolvedConfig | null): ShellConfig {
  *  attribute value (omitted/`"auto"` → bundled `default` preset). Inline
  *  JSON is rejected on `<caputchin-widget>` (parity with lang + skin).
  *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
- *  ADR-0059), the override bank is injected atop the bundled bank before
- *  resolution; collisions implicitly extend their bundled twin. There is no
- *  client `config` attribute (removed under ADR-0069 — config is
- *  server-authoritative): resolution always targets the `default` preset,
- *  overlaid by the server's override bank. */
+ *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
+ *  the override bank is injected atop the bundled bank before resolution;
+ *  collisions implicitly extend their bundled twin. There is no client
+ *  `config` attribute (config is server-authoritative): resolution always
+ *  targets the `default` preset, overlaid by the server's override bank. */
 export function resolveWidgetShellConfig(
   overridePresets?: Record<string, ConfigPreset> | null,
 ): WidgetShellConfig {

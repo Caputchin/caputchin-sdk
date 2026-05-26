@@ -1,5 +1,5 @@
-// Minimal headless DOM shim — an OPTIONAL kit helper for the framework path
-// (ADR-0069). A framework-headless sim (Phaser, Pixi, PlayCanvas, …) expects
+// Minimal headless DOM shim — an OPTIONAL kit helper for the framework path.
+// A framework-headless sim (Phaser, Pixi, PlayCanvas, …) expects
 // `document` / `window` / a `<canvas>` to exist even when nothing renders. This
 // installs deterministic no-op stubs so such a sim can instantiate inside a
 // sealed isolate that has no real DOM, WITHOUT pulling in real rendering,

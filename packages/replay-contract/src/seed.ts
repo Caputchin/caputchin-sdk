@@ -1,4 +1,4 @@
-// The per-round replay seed and its canonical derivation (ADR-0069).
+// The per-round replay seed and its canonical derivation.
 
 /**
  * The replay seed: the low 128 bits of `SHA-256(sessionId : gameId : roundIndex)`,
