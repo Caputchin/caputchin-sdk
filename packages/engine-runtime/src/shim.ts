@@ -1,6 +1,8 @@
-// The neutralization shim (ADR-0068). Run once at the top of the engine's
-// execution scope — the browser blob worker and the server Worker-Loader
-// isolate both apply THIS SAME artifact, so the two environments cannot drift.
+// The neutralization shim — an OPTIONAL kit helper for the IEEE-754 + JS path
+// (ADR-0069). Run once at the top of the engine's execution scope; applying the
+// SAME shim live and on replay keeps those two environments from drifting via a
+// stray non-deterministic global. It is optional: a fixed-point or WASM author
+// never needs it, and a bare conforming `run` may skip it entirely.
 //
 // It does two things:
 //   1. Swaps `Math.*` transcendentals to point at `cap.math`, so even engine
@@ -10,12 +12,13 @@
 //   2. Replaces every non-deterministic global (`Date`, `Math.random`,
 //      `crypto`, `fetch`, timers, GC observers, …) with a loud thrower, so any
 //      accidental use fails immediately and visibly instead of silently making
-//      a trace un-replayable.
+//      a run un-replayable.
 //
-// This is a runtime safety net, not the trust anchor: the determinism ESLint
-// plugin catches these at author time, and the index-time differential probe +
-// server replay are authoritative. The shim makes the failure mode "throws on
-// first use" rather than "passes locally, diverges on the server".
+// This is a runtime safety net, not the trust anchor: determinism is the
+// author's burden (ADR-0069 sets no index-time gate), the optional self-check
+// tool catches drift before publish, and the server's per-verify replay is
+// authoritative. The shim makes the failure mode "throws on first use" rather
+// than "passes locally, diverges on the server".
 
 import { capMath } from './math';
 
@@ -84,9 +87,8 @@ const SWAP: ReadonlyArray<keyof typeof capMath & string> = [
 //   - navigator: hardwareConcurrency / language / userAgent differ per device.
 //   - WebAssembly: relaxed-SIMD results are non-deterministic by spec.
 //   - Atomics / SharedArrayBuffer: thread-timing-observable.
-// These last ones would otherwise slip past the author silently and only be
-// caught by the index-time differential probe; the shim's job is to fail loud
-// at author time instead.
+// These last ones would otherwise slip past the author silently and only surface
+// as a replay mismatch; the shim's job is to fail loud at author time instead.
 const NEUTRALIZE: readonly string[] = [
   'Date',
   'performance',

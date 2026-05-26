@@ -3,7 +3,7 @@ import { defineEngine } from './define-engine';
 import { rng, rngFromState, type RngState } from './rng';
 import { replay } from './harness';
 import { FIXED_TIMESTEP_MS } from './constants';
-import type { Seed, TraceAction } from './types';
+import type { Seed, TickInput } from './types';
 
 // A toy engine that exercises the contract: randomness via cap.rng kept in
 // state as a serializable tuple, player actions applied at logical ticks, and a
@@ -49,11 +49,11 @@ const toy = defineEngine<ToyState, ToyAction, ToyConfig>({
 
 const SEED: Seed = [0xabcddcba, 0x10203040, 0x55aa55aa, 0x0badf00d];
 const CONFIG: ToyConfig = { endTick: 64, boostPoints: 50 };
-const ACTIONS: TraceAction[] = [
-  { tick: 3, kind: 'boost' },
-  { tick: 3, kind: 'boost' },
-  { tick: 20, kind: 'boost' },
-  { tick: 50, kind: 'boost' },
+const ACTIONS: TickInput<ToyAction>[] = [
+  { tick: 3, action: { kind: 'boost' } },
+  { tick: 3, action: { kind: 'boost' } },
+  { tick: 20, action: { kind: 'boost' } },
+  { tick: 50, action: { kind: 'boost' } },
 ];
 const INPUT = { seed: SEED, config: CONFIG, actions: ACTIONS, maxTicks: 10000 };
 
@@ -73,7 +73,7 @@ describe('harness.replay', () => {
     const byTick = new Map<number, ToyAction[]>();
     for (const a of ACTIONS) {
       const arr = byTick.get(a.tick) ?? [];
-      arr.push({ kind: 'boost' });
+      arr.push(a.action);
       byTick.set(a.tick, arr);
     }
     let s = toy.init({ seed: SEED, config: CONFIG });

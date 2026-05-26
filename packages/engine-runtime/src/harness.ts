@@ -1,31 +1,31 @@
 import { FIXED_TIMESTEP_MS } from './constants';
 import type { EngineDef, ReplayInput, ReplayOutcome } from './types';
 
-// The engine-run loop. The SAME control flow drives live play (the SDK driver
-// steps the engine frame by frame and records actions) and server replay (this
-// `replay` runs the recorded actions in one pass) — that shared loop is what
-// makes live score == replay score by construction (ADR-0068).
+// The engine-run loop the kit uses to turn recorded inputs into an outcome. The
+// SAME control flow drives live play (the SDK driver steps the engine frame by
+// frame, recording inputs) and replay (this `replay` runs the recorded inputs in
+// one pass) — that shared loop is what makes live score == replay score by
+// construction, the basis of the kit's `toRun` adapter (ADR-0069).
 //
-// Per logical tick: apply the actions stamped at that tick (in recorded order),
+// Per logical tick: apply the inputs stamped at that tick (in recorded order),
 // then advance exactly one fixed timestep. Stop when the engine reports
-// game-over, or at `maxTicks` (a non-terminating engine is a rejectable trace,
+// game-over, or at `maxTicks` (a non-terminating engine is a rejectable run,
 // flagged via `truncated`). Duration is derived from the tick the engine
 // ACTUALLY ended on, not from any client-claimed value.
 
-export function replay<S, A, C>(
-  engine: EngineDef<S, A, C>,
-  input: ReplayInput<C>,
+export function replay<S, A, C, V = S>(
+  engine: EngineDef<S, A, C, V>,
+  input: ReplayInput<A, C>,
 ): ReplayOutcome {
   let state = engine.init({ seed: input.seed, config: input.config });
 
-  // Bucket actions by their logical tick, preserving recorded order within a
-  // tick (multiple actions on one tick apply in the sequence they were recorded).
+  // Bucket inputs by their logical tick, preserving recorded order within a
+  // tick (multiple inputs on one tick apply in the sequence they were recorded).
   const byTick = new Map<number, A[]>();
-  for (const a of input.actions) {
-    const action = { kind: a.kind, data: a.data } as unknown as A;
-    const bucket = byTick.get(a.tick);
-    if (bucket) bucket.push(action);
-    else byTick.set(a.tick, [action]);
+  for (const e of input.actions) {
+    const bucket = byTick.get(e.tick);
+    if (bucket) bucket.push(e.action);
+    else byTick.set(e.tick, [e.action]);
   }
 
   let tick = 0;
