@@ -1,7 +1,19 @@
+import type { Seed } from '@caputchin/replay-contract';
+
+export type { Seed } from '@caputchin/replay-contract';
+
 export type Layout = 'inline' | 'modal' | 'fullscreen';
 
 export interface Bridge {
-  pass(result: { score: number; durationMs?: number }): void;
+  /**
+   * Signal a completed round by handing the widget the OPAQUE TRACE of the
+   * play (ADR-0069). The trace is a serialized string the game alone defines
+   * (the recorded inputs); the server re-runs the game's `run(seed, trace)` to
+   * compute the authoritative verdict — the game does NOT report a score here.
+   * Seed the run from `ctx.seed` so the live play and the server replay agree.
+   * (The score, if any, is the game's own in-iframe UI concern.)
+   */
+  pass(result: { trace: string }): void;
   error(err: { code: string; message?: string }): void;
   /** Tell the widget to resize the iframe to fit the game's content. Use
    *  this when your game can compute its viewport but doesn't use an
@@ -122,6 +134,11 @@ export interface ResolvedConfig {
 
 /** Per-session context the widget passes to the game factory as a third arg. */
 export interface GameContext {
+  /** Per-round replay seed (ADR-0069): server-derived, the same value the
+   *  server re-derives at replay. Seed all game randomness from it (e.g.
+   *  `cap.rng(seed)`) so the live play is replayable. Null when the widget runs
+   *  the game outside a verified session (no seed issued). */
+  seed: Seed | null;
   locale: ResolvedLocale | null;
   skin: ResolvedSkin | null;
   config: ResolvedConfig | null;

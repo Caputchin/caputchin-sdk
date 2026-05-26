@@ -17,21 +17,24 @@ export async function recordAdditionalRound(
   el: HTMLElement,
   state: WidgetState,
   apiHost: string,
-  payload: { score: number | null; durationMs: number | null },
+  payload: { trace: string },
 ): Promise<void> {
   const { widgetId, lockedToken } = state;
   if (!widgetId || !lockedToken) return;
   const sessionId = getSessionId(widgetId);
   if (!sessionId) return;
-  const { score, durationMs } = payload;
   try {
+    // The session is already redeemed (the first round minted the token), so the
+    // server records-only (does not re-replay this trace) — one replayable round
+    // per session at MVP (the seed is fixed at roundIndex 0, ADR-0069).
     await window.fetch(`${apiHost}/api/v1/verify/pass`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ platform: { sessionId, score, durationMs } }),
+      body: JSON.stringify({ platform: { sessionId, trace: payload.trace } }),
     });
   } catch {
     // best-effort scoreboard recording; fire the pass event regardless
   }
-  emitPass(el, { token: lockedToken, score, durationMs });
+  // Pass/fail only — the authoritative score lives server-side (/siteverify).
+  emitPass(el, { token: lockedToken, score: null, durationMs: null });
 }

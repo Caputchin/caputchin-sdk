@@ -85,54 +85,72 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
-  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!);
+  // gameId is sent in the /verify/start platform → the SERVER stores it on the
+  // session, and the STORED gameId gates replay at /verify/pass (ADR-0069).
+  const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId);
   const dispatchStart = (): void => emitStart(el, gameId);
+  const presentation = state.gamePresentation ?? null;
 
   if (gameId === null && gameUrl === null) {
+    // Gameless mount: no iframe, no replay. Release the gate with no trace; the
+    // server (session.gameId null) verifies on cap-PoW alone.
     console.warn('[caputchin] game widget mounted without game configured; verification will run but no iframe will mount');
-    client.releaseGate({ score: null, durationMs: null });
+    client.releaseGate({});
     dispatchStart();
-  } else {
-    let firstClickHappened = false;
-    const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
-      if (msg.kind === 'game-pass') {
-        if (!firstClickHappened) {
-          firstClickHappened = true;
-          client.releaseGate({ score: msg.score, durationMs: msg.durationMs });
-        } else {
-          void recordAdditionalRound(el, state, apiHost, { score: msg.score, durationMs: msg.durationMs });
-        }
-      } else if (msg.kind === 'game-error') {
-        const { code, originalCode } = mapIframeErrorCode(msg.code);
-        fireError(el, code, msg.message, originalCode);
-        state.gameErrored = true;
-        client.abortGate(new Error(`game-error: ${msg.code}`));
-      }
-    }, collectSkinAssetOrigins(state.gameOverrides ?? null));
-    state.iframeHost = host;
-
-    await installGameFrame(
-      el,
-      state.gamePresentation ?? null,
-      cfg,
-      host,
-      (code, message) => {
-        client.releaseGate({ score: null, durationMs: null });
-        fireError(el, 'game-load-failed', message, code);
-        state.gamePresentation?.setState('error');
-        client.dispose();
-        state.iframeHost = null;
-      },
-      () => {
-        if (state.gameStartedEmitted) return;
-        state.gameStartedEmitted = true;
-        dispatchStart();
-      },
-      state.gameOverrides ?? null,
-    );
+    await awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation);
+    return;
   }
 
-  await awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null);
+  let firstClickHappened = false;
+  const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
+    if (msg.kind === 'game-pass') {
+      // The game emits the opaque TRACE; the server replays it for the verdict.
+      if (!firstClickHappened) {
+        firstClickHappened = true;
+        client.releaseGate({ trace: msg.trace });
+      } else {
+        void recordAdditionalRound(el, state, apiHost, { trace: msg.trace });
+      }
+    } else if (msg.kind === 'game-error') {
+      const { code, originalCode } = mapIframeErrorCode(msg.code);
+      fireError(el, code, msg.message, originalCode);
+      state.gameErrored = true;
+      client.abortGate(new Error(`game-error: ${msg.code}`));
+    }
+  }, collectSkinAssetOrigins(state.gameOverrides ?? null));
+  state.iframeHost = host;
+
+  // Start the cap solve NOW (before kickoff) so /verify/start fires and the seed
+  // becomes available; PoW runs in parallel and solve blocks internally on the
+  // redeem gate until the game emits its trace. installGameFrame waits on the
+  // seed before kickoff.
+  const passing = awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation);
+
+  await installGameFrame(
+    el,
+    presentation,
+    cfg,
+    host,
+    (code, message) => {
+      // Load failure: abort the in-flight solve (don't release a trace-less
+      // gate); mark gameErrored so awaitCapAndEmitPass doesn't also fire a
+      // generic verification-failed on top of this specific error.
+      fireError(el, 'game-load-failed', message, code);
+      state.gameErrored = true;
+      client.abortGate(new Error(`game-load-failed: ${code}`));
+      presentation?.setState('error');
+      state.iframeHost = null;
+    },
+    () => {
+      if (state.gameStartedEmitted) return;
+      state.gameStartedEmitted = true;
+      dispatchStart();
+    },
+    state.gameOverrides ?? null,
+    awaitSeed,
+  );
+
+  await passing;
 }
 
 async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
@@ -154,8 +172,10 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
 
   const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
     if (msg.kind === 'game-pass') {
+      // No-verify mount: the game ran (emitted a trace) but there's no session
+      // to replay it against, so the pass event carries no token/score.
       state.gamePresentation?.setState('verified');
-      emitPass(el, { token: null, score: msg.score, durationMs: msg.durationMs });
+      emitPass(el, { token: null, score: null, durationMs: null });
     } else if (msg.kind === 'game-error') {
       const { code, originalCode } = mapIframeErrorCode(msg.code);
       fireError(el, code, msg.message, originalCode);

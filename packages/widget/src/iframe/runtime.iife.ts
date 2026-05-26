@@ -2,7 +2,7 @@
 // the resulting IIFE is injected into the srcdoc as a string literal.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin } from '@caputchin/game-sdk';
+import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
 import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
 (function () {
@@ -161,6 +161,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
     if (data['kind'] === 'kickoff') {
       seq = data['seq'] as number;
       kickoffGameId = (data['gameId'] as string | null) ?? null;
+      const kickoffSeed = (data['seed'] as Seed | null) ?? null;
       const kickoffLocale = (data['locale'] as ResolvedLocale | null) ?? null;
       const kickoffSkin = (data['skin'] as ResolvedSkin | null) ?? null;
       const kickoffConfig = (data['config'] as ResolvedConfig | null) ?? null;
@@ -210,13 +211,8 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
       }
 
       const bridge: Bridge = {
-        pass({ score, durationMs }) {
-          postToParent({
-            kind: 'game-pass',
-            seq,
-            score,
-            durationMs: durationMs ?? null,
-          });
+        pass({ trace }) {
+          postToParent({ kind: 'game-pass', seq, trace });
         },
         error({ code, message }) {
           postError(code, message ?? '');
@@ -229,7 +225,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
         },
       };
 
-      const ctx: GameContext = { locale: kickoffLocale, skin: kickoffSkin, config: kickoffConfig };
+      const ctx: GameContext = { seed: kickoffSeed, locale: kickoffLocale, skin: kickoffSkin, config: kickoffConfig };
 
       try {
         cleanup = factory(root, bridge, ctx);

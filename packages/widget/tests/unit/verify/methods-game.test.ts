@@ -58,10 +58,11 @@ describe('installGameMethods — pass()', () => {
     const pass = passes(el);
     const presentation = { setState: vi.fn() };
     installGameMethods(el, state({ sitekey: null }, { gamePresentation: presentation as never }), API);
-    el.pass({ score: 7, durationMs: 99 });
-    el.pass({ score: 'bad' as unknown as number });
+    el.pass({ trace: 'tr-a' });
+    el.pass(); // no payload → empty trace; still a pass/fail-only event
     expect(pass).toHaveLength(2);
-    expect(pass[0].detail).toEqual({ token: null, score: 7, durationMs: 99 });
+    // Pass/fail only — no score/durationMs surfaced (ADR-0069).
+    expect(pass[0].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(pass[1].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(presentation.setState).toHaveBeenCalledWith('verified');
   });
@@ -79,11 +80,11 @@ describe('installGameMethods — pass()', () => {
     const cap = capClientStub();
     const st = state({ sitekey: 'k' }, { capClient: cap as never, widgetId: 'w1', lockedToken: 'tok' });
     installGameMethods(el, st, API);
-    el.pass({ score: 3, durationMs: 5 });
-    expect(cap.releaseGate).toHaveBeenCalledWith({ score: 3, durationMs: 5 });
+    el.pass({ trace: 'tr-1' });
+    expect(cap.releaseGate).toHaveBeenCalledWith({ trace: 'tr-1' });
     expect(st.firstPassFired).toBe(true);
     // second pass takes the recordAdditionalRound branch (no second release)
-    el.pass({ score: 9 });
+    el.pass({ trace: 'tr-2' });
     expect(cap.releaseGate).toHaveBeenCalledTimes(1);
   });
 
@@ -92,10 +93,10 @@ describe('installGameMethods — pass()', () => {
     const errs = errors(el);
     const ps = passes(el);
     installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }), API);
-    el.pass({ score: 5 });
+    el.pass({ trace: 'tr' });
     expect(errs.some((e) => e.code === 'invalid-call')).toBe(false);
     expect(ps.length).toBe(1);
-    expect(ps[0]!.detail).toMatchObject({ token: null, score: 5 });
+    expect(ps[0]!.detail).toMatchObject({ token: null, score: null });
   });
 });
 

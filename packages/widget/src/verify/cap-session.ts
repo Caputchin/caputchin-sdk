@@ -1,10 +1,12 @@
 import { createCapClient, type CapClient } from '../cap/client.js';
+import { awaitSeed, resolveSeedGate } from '../cap/custom-fetch.js';
 import { fireError } from '../errors.js';
 import { emitPass } from './events.js';
 import { injectTokenIntoEnclosingForm } from './form.js';
 import { makeWidgetId } from './id.js';
 import type { WidgetState } from './state.js';
 import type { WrappedToken } from '../token.js';
+import type { Seed } from '@caputchin/game-sdk';
 
 /**
  * Facade over the cap client lifecycle. Two helpers cover the boilerplate
@@ -26,18 +28,25 @@ import type { WrappedToken } from '../token.js';
 export interface CapSessionHandle {
   client: CapClient;
   getWrappedToken: () => WrappedToken | null;
+  /** Resolves with the per-round seed once /verify/start responds (null on a
+   *  start failure / gameless session) — the game-iframe kickoff waits on it. */
+  awaitSeed: () => Promise<Seed | null>;
 }
 
 /** Build a cap session and wire it onto `state.capClient` (+ triggerCtx if
- *  present). Returns the client + a closure for the wrapped token. */
+ *  present). Returns the client + a closure for the wrapped token + the seed.
+ *  `gameId` is sent in the /verify/start platform so the SERVER stores it on the
+ *  session — that stored gameId is what gates replay at /verify/pass (ADR-0069;
+ *  making it server-authoritative is the deferred Phase 11). */
 export function setupCapSession(
   state: WidgetState,
   apiHost: string,
   sitekey: string,
+  gameId: string | null,
 ): CapSessionHandle {
   let wrappedToken: WrappedToken | null = null;
   const sessionCtx = {
-    platform: { sitekey, score: null, durationMs: null } as Record<string, unknown>,
+    platform: { sitekey, gameId } as Record<string, unknown>,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
@@ -49,7 +58,8 @@ export function setupCapSession(
   state.capClient = client;
   if (state.triggerCtx) state.triggerCtx.capClient = client;
 
-  return { client, getWrappedToken: () => wrappedToken };
+  const widgetId = state.widgetId;
+  return { client, getWrappedToken: () => wrappedToken, awaitSeed: () => awaitSeed(widgetId) };
 }
 
 /** Await cap.solve and complete the verification: inject token into form,
@@ -69,6 +79,13 @@ export async function awaitCapAndEmitPass(
   try {
     await client.solve();
   } catch (err) {
+    // Solve may have thrown before (or without) firing /verify/start, so the
+    // seed gate was never settled by the challenge branch. Settle it null now
+    // so a game-iframe kickoff awaiting the seed unblocks immediately instead
+    // of waiting out the timeout backstop (verification is already dead; the
+    // error fires below). No-op for the cap-only / manual paths (no kickoff
+    // awaits the seed).
+    if (state.widgetId) resolveSeedGate(state.widgetId);
     if (!state.gameErrored) {
       fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
     }

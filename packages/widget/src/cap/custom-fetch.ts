@@ -1,8 +1,65 @@
+import type { Seed } from '@caputchin/game-sdk';
 import { assembleWrappedToken, type WrappedToken } from '../token.js';
 
 export interface SessionContext {
   platform: Record<string, unknown>;
   onWrappedToken: (token: WrappedToken) => void;
+}
+
+// Shared gate timeout. Both the redeem gate and the seed gate use it as a
+// defensive backstop: an awaited gate on the verify path must never wedge the
+// widget forever, so every gate the kickoff/redeem awaits is guaranteed to
+// settle within this window even if the thing it waits for never arrives.
+const GATE_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Per-widget seed gate (ADR-0069). /verify/start returns the per-round seed;
+// `awaitSeed` lets the iframe-kickoff path wait for it (resolving to null on a
+// start failure / missing seed so kickoff never deadlocks). Armed at session
+// registration; settled in the challenge branch (success), via resolveSeedGate
+// (cap solve failed before/without firing the challenge), on the timeout
+// backstop (solve hung internally — neither threw nor challenged), or on
+// unregister.
+interface SeedGate {
+  promise: Promise<Seed | null>;
+  resolve: (seed: Seed | null) => void;
+  timer: ReturnType<typeof setTimeout>;
+}
+const seedGates = new Map<string, SeedGate>();
+
+function armSeedGate(id: string): void {
+  let resolve!: (seed: Seed | null) => void;
+  const promise = new Promise<Seed | null>((res) => { resolve = res; });
+  // Backstop: a solve that neither fires the challenge nor throws (internal
+  // hang) would otherwise leave a kickoff awaiting the seed forever. Mirrors
+  // redeemGate's timeout; never fires on the normal success/failure paths
+  // (both settle the gate first).
+  const timer = setTimeout(() => settleSeedGate(id, null), GATE_TIMEOUT_MS);
+  seedGates.set(id, { promise, resolve, timer });
+}
+
+/** Settle the seed gate once with `seed` (or null), clearing the backstop
+ *  timer. Idempotent: the promise resolve is one-shot, so repeat calls (timeout
+ *  after challenge, unregister after resolve) are harmless no-ops. */
+function settleSeedGate(id: string, seed: Seed | null): void {
+  const gate = seedGates.get(id);
+  if (!gate) return;
+  clearTimeout(gate.timer);
+  gate.resolve(seed);
+}
+
+/** Resolve a still-pending seed gate to null. Called on the cap-solve failure
+ *  path (solve threw before/without firing /verify/start) so a game-iframe
+ *  kickoff awaiting the seed unblocks immediately rather than waiting out the
+ *  timeout. No-op for an already-settled or unknown gate. */
+export function resolveSeedGate(id: string): void {
+  settleSeedGate(id, null);
+}
+
+/** Resolves with the per-round seed once /verify/start responds, or null if it
+ *  failed / carried no seed (a gameless or no-verify session). Null for an
+ *  unknown widget id. */
+export function awaitSeed(id: string): Promise<Seed | null> {
+  return seedGates.get(id)?.promise ?? Promise.resolve(null);
 }
 
 interface GateEntry {
@@ -19,19 +76,22 @@ const sessionContexts = new Map<string, SessionContext>();
 const sessionIds = new Map<string, string>();
 const redeemGates = new Map<string, GateEntry>();
 
-const GATE_TIMEOUT_MS = 5 * 60 * 1000;
-
 /** URL sentinel prefix for widget-routed fetches. Never reaches the server. */
 export const CPT_ROUTE_PREFIX = '__cpt';
 const ROUTE_RE = /\/__cpt\/([^/]+)\/(challenge|redeem)$/;
 
 export function registerSession(id: string, ctx: SessionContext): void {
   sessionContexts.set(id, ctx);
+  armSeedGate(id);
 }
 
 export function unregisterSession(id: string): void {
   const gate = redeemGates.get(id);
   if (gate) clearTimeout(gate.timer);
+  // Settle any unresolved seed gate (null) + clear its backstop timer so a
+  // pending awaitSeed doesn't hang and no stray timer survives the session.
+  settleSeedGate(id, null);
+  seedGates.delete(id);
   redeemGates.delete(id);
   sessionContexts.delete(id);
   sessionIds.delete(id);
@@ -132,16 +192,30 @@ export function installCustomFetch(): void {
         body,
         headers,
       });
-      // Stash sessionId for this widget so the redeem branch can forward it.
+      // Stash sessionId for this widget so the redeem branch can forward it,
+      // and resolve the seed gate so the iframe kickoff can run the game under
+      // the per-round seed (ADR-0069).
       if (startResponse.ok) {
         try {
-          const data = await startResponse.clone().json() as { platform?: { sessionId?: unknown } };
+          const data = await startResponse.clone().json() as {
+            platform?: { sessionId?: unknown; seed?: unknown };
+          };
           if (typeof data?.platform?.sessionId === 'string') {
             sessionIds.set(widgetId, data.platform.sessionId);
           }
+          const seed = data?.platform?.seed;
+          const validSeed =
+            Array.isArray(seed) && seed.length === 4 && seed.every((n) => typeof n === 'number');
+          // Opaque to the widget: shuttle the validated 4-number seed to the
+          // iframe kickoff (cast through unknown after the runtime shape check).
+          settleSeedGate(widgetId, validSeed ? (seed as unknown as Seed) : null);
         } catch {
-          // body parse failure; sessionId won't propagate; pass will fire missing-session-id
+          // body parse failure; sessionId won't propagate (pass fires
+          // missing-session-id); settle the seed gate null so kickoff proceeds.
+          settleSeedGate(widgetId, null);
         }
+      } else {
+        settleSeedGate(widgetId, null);
       }
       return startResponse;
     }
@@ -171,17 +245,10 @@ export function installCustomFetch(): void {
         const data = await response.clone().json() as { platform?: { wrappedToken?: unknown } };
         const wrapped = data?.platform?.wrappedToken;
         if (typeof wrapped === 'string') {
-          // score/durationMs were sent in the request `platform` (from the
-          // gate release payload); the server doesn't echo them. Read from
-          // the local request payload so the customer's pass event detail
-          // surfaces the values we just transmitted.
-          const score = typeof platform['score'] === 'number' ? platform['score'] : null;
-          const durationMs = typeof platform['durationMs'] === 'number' ? platform['durationMs'] : null;
-          ctx.onWrappedToken(assembleWrappedToken({
-            token: wrapped,
-            score,
-            durationMs,
-          }));
+          // The widget surfaces pass/fail only (ADR-0069): the authoritative
+          // score/durationMs are the server replay's, read by the customer's
+          // backend at /siteverify — not relayed through the client pass event.
+          ctx.onWrappedToken(assembleWrappedToken({ token: wrapped }));
         }
       } catch {
         // Body parse failure; token will be absent; element.ts fires verification-failed.

@@ -204,10 +204,10 @@ describe('IframeHost', () => {
     mountHost(host);
 
     const lang = { _direction: 'rtl' as const, _lang: 'ar', hello: 'مرحبا' };
-    host.kickoff(1, lang);
+    host.kickoff(1, [1, 2, 3, 4], lang);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: lang, skin: null, config: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: [1, 2, 3, 4], locale: lang, skin: null, config: null }),
     );
 
     host.dispose();
@@ -218,10 +218,10 @@ describe('IframeHost', () => {
     mountHost(host);
 
     const skin = { _theme: 'dark' as const, primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
-    host.kickoff(1, null, skin);
+    host.kickoff(1, null, null, skin);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null, skin, config: null }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: null, locale: null, skin, config: null }),
     );
 
     host.dispose();
@@ -232,10 +232,10 @@ describe('IframeHost', () => {
     mountHost(host);
 
     const config = { show_high_score: true, difficulty: 'hard' };
-    host.kickoff(1, null, null, config);
+    host.kickoff(1, null, null, null, config);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null, skin: null, config }),
+      expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: null, locale: null, skin: null, config }),
     );
 
     host.dispose();

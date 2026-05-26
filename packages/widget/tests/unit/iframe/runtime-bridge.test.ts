@@ -21,9 +21,16 @@ beforeEach(() => {
   posted.length = 0;
 });
 
-function dispatchKickoff(gameId: string | null, seq = 1, locale: unknown = null, skin: unknown = null, config: unknown = null): void {
+function dispatchKickoff(
+  gameId: string | null,
+  seq = 1,
+  locale: unknown = null,
+  skin: unknown = null,
+  config: unknown = null,
+  seed: unknown = null,
+): void {
   const event = new MessageEvent('message', {
-    data: { kind: 'kickoff', seq, gameId, locale, skin, config },
+    data: { kind: 'kickoff', seq, gameId, seed, locale, skin, config },
     source: window,
   });
   window.dispatchEvent(event);
@@ -84,37 +91,31 @@ describe('iframe runtime — bridge.error contract', () => {
 });
 
 describe('iframe runtime — bridge.pass contract', () => {
-  it('pass({score, durationMs}) posts both fields', () => {
+  it('pass({trace}) posts the trace', () => {
     let captured: unknown = null;
     registerGame('c-1', (_root, bridge) => {
       captured = bridge;
     });
     dispatchKickoff('c-1', 3);
 
-    (captured as { pass: (p: { score: number; durationMs?: number }) => void }).pass({
-      score: 0.5,
-      durationMs: 4200,
-    });
+    (captured as { pass: (p: { trace: string }) => void }).pass({ trace: 'tr-3' });
 
     const done = posted.find((m) => m['kind'] === 'game-pass');
-    expect(done).toEqual({ kind: 'game-pass', seq: 3, score: 0.5, durationMs: 4200 });
+    expect(done).toEqual({ kind: 'game-pass', seq: 3, trace: 'tr-3' });
   });
 
-  it('pass({score}) with omitted durationMs posts null (not undefined)', () => {
+  it('pass({trace}) posts the opaque trace, no score/durationMs', () => {
     let captured: unknown = null;
     registerGame('c-2', (_root, bridge) => {
       captured = bridge;
     });
     dispatchKickoff('c-2', 4);
 
-    (captured as { pass: (p: { score: number; durationMs?: number }) => void }).pass({
-      score: 1.0,
-    });
+    (captured as { pass: (p: { trace: string }) => void }).pass({ trace: 'tr-4' });
 
     const done = posted.find((m) => m['kind'] === 'game-pass');
-    expect(done).toEqual({ kind: 'game-pass', seq: 4, score: 1.0, durationMs: null });
-    expect(Object.prototype.hasOwnProperty.call(done, 'durationMs')).toBe(true);
-    expect(done!['durationMs']).toBeNull();
+    expect(done).toEqual({ kind: 'game-pass', seq: 4, trace: 'tr-4' });
+    expect(Object.prototype.hasOwnProperty.call(done, 'score')).toBe(false);
   });
 });
 
@@ -153,7 +154,16 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     });
     const lang = { _direction: 'rtl', _lang: 'ar', hello: 'مرحبا' };
     dispatchKickoff('ctx-1', 200, lang);
-    expect(capturedCtx).toEqual({ locale: lang, skin: null, config: null });
+    expect(capturedCtx).toEqual({ seed: null, locale: lang, skin: null, config: null });
+  });
+
+  it('kickoff with a seed forwards ctx.seed to the factory', () => {
+    let capturedCtx: unknown = null;
+    registerGame('ctx-seed', (_root, _bridge, ctx) => {
+      capturedCtx = ctx;
+    });
+    dispatchKickoff('ctx-seed', 210, null, null, null, [1, 2, 3, 4]);
+    expect(capturedCtx).toEqual({ seed: [1, 2, 3, 4], locale: null, skin: null, config: null });
   });
 
   it('kickoff with no lang forwards ctx.locale=null', () => {
@@ -162,7 +172,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
       capturedCtx = ctx;
     });
     dispatchKickoff('ctx-2', 201);
-    expect(capturedCtx).toEqual({ locale: null, skin: null, config: null });
+    expect(capturedCtx).toEqual({ seed: null, locale: null, skin: null, config: null });
   });
 
   it('kickoff with skin payload forwards ctx.skin to the factory', () => {
@@ -172,7 +182,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     });
     const skin = { _theme: 'dark', primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
     dispatchKickoff('ctx-3', 202, null, skin);
-    expect(capturedCtx).toEqual({ locale: null, skin, config: null });
+    expect(capturedCtx).toEqual({ seed: null, locale: null, skin, config: null });
   });
 
   it('kickoff with config payload forwards ctx.config to the factory', () => {
@@ -182,7 +192,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
     });
     const config = { show_high_score: true, difficulty: 'hard', peek_seconds: 1.5 };
     dispatchKickoff('ctx-4', 203, null, null, config);
-    expect(capturedCtx).toEqual({ locale: null, skin: null, config });
+    expect(capturedCtx).toEqual({ seed: null, locale: null, skin: null, config });
   });
 });
 

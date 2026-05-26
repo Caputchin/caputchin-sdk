@@ -1,6 +1,6 @@
 import { fireError } from '../errors.js';
 import { emitPass } from './events.js';
-import { normalizeOptionalNumber, type ManualPassPayload, type ManualFailPayload } from './payload.js';
+import type { ManualPassPayload, ManualFailPayload } from './payload.js';
 import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
 import { shouldVerify } from '../config/game.js';
@@ -25,13 +25,12 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
         fireError(el, 'invalid-call', 'pass() only callable when trigger="manual"');
         return;
       }
-      const score = normalizeOptionalNumber(payload?.score);
-      const durationMs = normalizeOptionalNumber(payload?.durationMs);
+      const trace = typeof payload?.trace === 'string' ? payload.trace : '';
 
       if (!shouldVerify(state.config)) {
-        // Game-only / no-verify manual: no cap to release. Every pass fires a
-        // fresh event; multi-round works out of the box.
-        emitPass(el, { token: null, score, durationMs });
+        // Game-only / no-verify manual: no cap to release, no replay. Pass/fail
+        // only (the authoritative score lives server-side at /siteverify).
+        emitPass(el, { token: null, score: null, durationMs: null });
         state.gamePresentation?.setState('verified');
         return;
       }
@@ -48,12 +47,12 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
         // First pass: release the cap gate. runManual's cap.solve().then will
         // emit the pass event once the wrapped token comes back from redeem.
         state.firstPassFired = true;
-        state.capClient.releaseGate({ score, durationMs });
+        state.capClient.releaseGate({ trace });
       } else {
         // Subsequent pass: record an additional round + emit the pass event
         // with the locked token. recordAdditionalRound silently no-ops if
         // lockedToken isn't set yet (race against cap.solve completion).
-        void recordAdditionalRound(el, state, apiHost, { score, durationMs });
+        void recordAdditionalRound(el, state, apiHost, { trace });
       }
     },
     configurable: true,
