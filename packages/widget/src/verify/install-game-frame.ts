@@ -8,7 +8,7 @@ import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
 import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk';
+import type { ConfigPreset, LocalePreset, Seed, SkinPreset } from '@caputchin/game-sdk';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DEFAULT_W = 400;
@@ -28,6 +28,9 @@ export async function installGameFrame(
   onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
   onGameStarted: () => void,
   gameOverrides: OverridesPerAxis | null,
+  // Resolves with the per-round seed (from /verify/start, fired by the cap solve
+  // the caller starts in parallel). Absent → no-verify mount, seed stays null.
+  awaitSeed?: () => Promise<Seed | null>,
 ): Promise<void> {
   if (!gp) {
     fireError(el, 'game-load-failed', 'game presentation not built', 'iframe-load-failed');
@@ -54,7 +57,11 @@ export async function installGameFrame(
   const locale = resolveLocaleForGame(el, config, manifest, gameOverrides);
   const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl(), gameOverrides);
   const cfg = resolveConfigForGame(el, config, manifest, gameOverrides);
-  host.kickoff(1, locale, skin, cfg);
+  // Wait for the per-round seed before kickoff so the game's live run is
+  // deterministic under it (ADR-0069). awaitSeed resolves null on a /verify/start
+  // failure or a no-verify mount, so kickoff never deadlocks.
+  const seed = awaitSeed ? await awaitSeed() : null;
+  host.kickoff(1, seed, locale, skin, cfg);
 }
 
 /** Resolve the customer's `locale` attribute against the game's manifest

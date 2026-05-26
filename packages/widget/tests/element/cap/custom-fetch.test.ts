@@ -5,6 +5,8 @@ import {
   releaseRedeemGate,
   registerSession,
   unregisterSession,
+  awaitSeed,
+  resolveSeedGate,
 } from '../../../src/cap/custom-fetch';
 
 declare global {
@@ -40,7 +42,7 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     const onWrappedToken = vi.fn();
     registerSession(id, { platform: {}, onWrappedToken });
     armRedeemGate(id);
-    releaseRedeemGate(id, { score: 0.5, durationMs: 100 });
+    releaseRedeemGate(id, { trace: 'tr-xyz' });
 
     // Real verify/pass shape: cap's own token spread at the top level PLUS the
     // platform wrapped token at platform.wrappedToken. The widget must inject
@@ -55,9 +57,10 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     expect(fetchSpy).toHaveBeenCalled();
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/verify/pass');
     const sentBody = JSON.parse((fetchSpy.mock.calls[0]![1] as RequestInit).body as string);
-    expect(sentBody.platform.score).toBe(0.5);
+    expect(sentBody.platform.trace).toBe('tr-xyz');
+    // Pass/fail only — the widget surfaces no score (server-authoritative).
     expect(onWrappedToken).toHaveBeenCalledWith(
-      expect.objectContaining({ token: 'wrapped-xyz', score: 0.5, durationMs: 100 })
+      expect.objectContaining({ token: 'wrapped-xyz', score: null, durationMs: null })
     );
     fetchSpy.mockRestore();
     unregisterSession(id);
@@ -95,5 +98,78 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     await window.CAP_CUSTOM_FETCH!('https://example.com/other', { method: 'GET' });
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://example.com/other');
     fetchSpy.mockRestore();
+  });
+});
+
+describe('CAP_CUSTOM_FETCH — seed gate (ADR-0069)', () => {
+  it('challenge with a valid 4-number seed resolves awaitSeed to that seed', async () => {
+    const id = 'cpt_seed_ok';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('{"platform":{"sessionId":"s1","seed":[1,2,3,4]}}', { headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+    await expect(awaitSeed(id)).resolves.toEqual([1, 2, 3, 4]);
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('challenge with a malformed seed (wrong arity) resolves awaitSeed null', async () => {
+    const id = 'cpt_seed_bad';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('{"platform":{"sessionId":"s1","seed":[1,2,3]}}', { headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+    await expect(awaitSeed(id)).resolves.toBeNull();
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('challenge with an unparseable body resolves awaitSeed null', async () => {
+    const id = 'cpt_seed_parsefail';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('not json', { headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+    await expect(awaitSeed(id)).resolves.toBeNull();
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('challenge that returns !ok resolves awaitSeed null', async () => {
+    const id = 'cpt_seed_notok';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+    await expect(awaitSeed(id)).resolves.toBeNull();
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('resolveSeedGate unblocks awaitSeed null with no challenge (solve-failure path)', async () => {
+    const id = 'cpt_seed_solvefail';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    resolveSeedGate(id);
+    await expect(awaitSeed(id)).resolves.toBeNull();
+    unregisterSession(id);
+  });
+
+  it('seed gate times out to null when no challenge ever fires (internal-hang backstop)', async () => {
+    vi.useFakeTimers();
+    const id = 'cpt_seed_timeout';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
+    const seedPromise = awaitSeed(id);
+    vi.advanceTimersByTime(5 * 60 * 1000);
+    await expect(seedPromise).resolves.toBeNull();
+    unregisterSession(id);
+    vi.useRealTimers();
+  });
+
+  it('awaitSeed for an unknown widget id resolves null', async () => {
+    await expect(awaitSeed('cpt_never_registered')).resolves.toBeNull();
   });
 });

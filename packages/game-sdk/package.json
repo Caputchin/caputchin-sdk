@@ -33,6 +33,9 @@
     "dist"
   ],
   "sideEffects": false,
+  "dependencies": {
+    "@caputchin/replay-contract": "workspace:*"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",

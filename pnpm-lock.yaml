@@ -32,6 +32,10 @@ importers:
         version: 2.1.9(@types/node@22.19.18)(happy-dom@15.11.7)
 
   packages/game-sdk:
+    dependencies:
+      '@caputchin/replay-contract':
+        specifier: workspace:*
+        version: link:../replay-contract
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^2.0.0

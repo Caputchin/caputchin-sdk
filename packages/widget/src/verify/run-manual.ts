@@ -1,5 +1,6 @@
 import { setupCapSession, awaitCapAndEmitPass } from './cap-session.js';
 import { emitStart } from './events.js';
+import { resolveGameId } from './id.js';
 import type { WidgetState } from './state.js';
 import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
@@ -38,8 +39,12 @@ export function runManual(
     return;
   }
 
-  // Cap + manual: armed gate; customer releases via pass() or aborts via fail().
-  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!);
+  // Cap + manual: armed gate; customer releases via pass({trace}) or aborts via
+  // fail(). gameId → /verify/start so the server stores it + gates replay. NOTE:
+  // the customer-hosted game must run under the issued seed for its trace to
+  // replay — exposing the seed to the manual game is a follow-up (the iframe
+  // path is the supported replay path at MVP).
+  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!, resolveGameId(cfg));
   dispatchStart();
   void awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null);
 }
