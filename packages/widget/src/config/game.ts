@@ -42,12 +42,11 @@ export interface GameConfig {
    *  Resolved against the game's manifest skins after the manifest
    *  postMessage arrives. Null when omitted or empty. */
   skin: string | null;
-  /** Raw `config` attribute value (un-resolved). Drives the game's
-   *  configuration context. Does NOT propagate to widget shell config
-   *  (no shared dimension across the two surfaces). Resolved against the
-   *  game's manifest configurations after the manifest postMessage
-   *  arrives. Null when omitted or empty. */
-  config: string | null;
+  // No `config` attribute: gameplay config is server-authoritative (ADR-0069).
+  // A client-authored config can't be reproduced at replay (→ false-reject) and
+  // is tamperable, so the game's config comes only from the server (the bootstrap
+  // override bank, empty at MVP → the game's own defaults; per-site config is a
+  // deferred phase). skin + locale stay client attributes (render-only).
 }
 
 /**
@@ -116,8 +115,6 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   const locale = rawLocale !== null && rawLocale.trim().length > 0 ? rawLocale : null;
   const rawSkin = el.getAttribute('skin');
   const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
-  const rawConfig = el.getAttribute('config');
-  const configAttr = rawConfig !== null && rawConfig.trim().length > 0 ? rawConfig : null;
 
   return {
     config: {
@@ -132,7 +129,6 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       layout,
       locale,
       skin,
-      config: configAttr,
     },
     issues,
     inert: false,

@@ -4,36 +4,37 @@ import widgetManifest from '../../../caputchin.json';
 
 const DEFAULT_PRESET = widgetManifest.configurations.presets.default as Record<string, string | boolean | number>;
 
+// There is no client `config` attribute (removed under ADR-0069 — shell config is
+// server-authoritative). The resolver always targets the bundled `default`
+// preset, optionally overlaid by the server's override bank (from bootstrap).
 describe('resolveWidgetShellConfig', () => {
-  it('attr=null returns the bundled default preset values', () => {
-    const r = resolveWidgetShellConfig(null);
+  it('no override returns the bundled default preset values', () => {
+    const r = resolveWidgetShellConfig();
     expect(r.values.home_link).toBe(DEFAULT_PRESET['home_link']);
     expect(r.values.legal_link).toBe(DEFAULT_PRESET['legal_link']);
     expect(r.issues).toHaveLength(0);
   });
 
-  it('attr="auto" returns the same default', () => {
-    const r = resolveWidgetShellConfig('auto');
+  it('null override returns the bundled default', () => {
+    const r = resolveWidgetShellConfig(null);
     expect(r.values.home_link).toBe('https://caputchin.com');
     expect(r.values.legal_link).toBe('https://caputchin.com/legal');
+    expect(r.issues).toHaveLength(0);
   });
 
-  it('inline JSON is rejected, emits issue, cascades to auto', () => {
-    const r = resolveWidgetShellConfig('{"home_link":"https://attacker.example"}');
-    expect(r.issues.some((m) => m.includes('does not accept inline JSON'))).toBe(true);
-    expect(r.values.home_link).toBe('https://caputchin.com');
-  });
-
-  it('unknown preset name emits issue + cascades to auto', () => {
-    const r = resolveWidgetShellConfig('not-a-preset');
-    expect(r.issues.length).toBeGreaterThan(0);
-    expect(r.values.home_link).toBe('https://caputchin.com');
+  it('a server override bank overlays the bundled default', () => {
+    const r = resolveWidgetShellConfig({
+      default: { _default: true, home_link: 'https://override.example', legal_link: 'https://override.example/legal' },
+    });
+    expect(r.values.home_link).toBe('https://override.example');
+    expect(r.values.legal_link).toBe('https://override.example/legal');
+    expect(r.issues).toHaveLength(0);
   });
 
   // Drift guard mirroring the skin/lang pattern: the in-code
   // HARDCODED_DEFAULT mirrors the bundled JSON's `default` preset.
   it('every key in the bundled default JSON preset matches the resolved values', () => {
-    const r = resolveWidgetShellConfig('default');
+    const r = resolveWidgetShellConfig();
     for (const [key, jsonValue] of Object.entries(DEFAULT_PRESET)) {
       if (key.startsWith('_')) continue;
       expect(r.values[key as keyof typeof r.values], `default preset key "${key}"`).toBe(jsonValue);

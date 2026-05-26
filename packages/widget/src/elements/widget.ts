@@ -26,7 +26,7 @@ import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk
  * bootstrap resolves; bundled fallback applies on timeout / network error.
  */
 export class CaputchinWidget extends HTMLElement {
-  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'locale', 'skin', 'config'];
+  static observedAttributes = ['sitekey', 'invisible', 'trigger', 'width', 'height', 'size', 'locale', 'skin'];
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
@@ -90,7 +90,7 @@ export class CaputchinWidget extends HTMLElement {
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
-    const shellConfig = resolveWidgetShellConfig(state.config.config, configOverride);
+    const shellConfig = resolveWidgetShellConfig(configOverride);
     for (const message of shellConfig.issues) {
       fireError(this, 'invalid-config', message);
     }

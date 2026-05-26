@@ -24,10 +24,10 @@ export interface WidgetConfig {
    *  `auto` / `<skin-name>` are accepted. Omitted/empty means auto
    *  (honors `prefers-color-scheme`). */
   skin: string | null;
-  /** Raw `config` attribute value. Resolved against the widget's bundled
-   *  configurations presets at mount. Inline JSON is rejected; only
-   *  `auto` / `<preset-name>` are accepted. */
-  config: string | null;
+  // No `config` attribute: shell configuration (brand-strip links, etc.) is
+  // server-authoritative (ADR-0069) — it comes from the bootstrap override bank,
+  // falling back to the widget's bundled `default` preset. Client config
+  // authoring is removed (parity with the game widget; see config/game.ts).
 }
 
 /**
@@ -59,11 +59,9 @@ export function inspectWidgetConfig(el: HTMLElement): ConfigInspection<WidgetCon
   const locale = rawLocale !== null && rawLocale.trim().length > 0 ? rawLocale : null;
   const rawSkin = el.getAttribute('skin');
   const skin = rawSkin !== null && rawSkin.trim().length > 0 ? rawSkin : null;
-  const rawConfig = el.getAttribute('config');
-  const configAttr = rawConfig !== null && rawConfig.trim().length > 0 ? rawConfig : null;
 
   return {
-    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, locale, skin, config: configAttr },
+    config: { sitekey, invisible, trigger, width: common.width, height: common.height, size: common.size, locale, skin },
     issues,
     inert,
   };

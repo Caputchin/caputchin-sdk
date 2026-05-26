@@ -3,12 +3,11 @@ import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
 import { resolveLocale } from '../locale/resolver.js';
 import { resolveSkin } from '../skin/resolver.js';
-import { resolveConfig } from '../configurations/resolver.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { ManifestMessage } from '../protocol/messages.js';
 import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
 import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { ConfigPreset, LocalePreset, Seed, SkinPreset } from '@caputchin/game-sdk';
+import type { LocalePreset, Seed, SkinPreset } from '@caputchin/game-sdk';
 
 const MANIFEST_TIMEOUT_MS = 2000;
 const DEFAULT_W = 400;
@@ -56,7 +55,11 @@ export async function installGameFrame(
   host.setLayoutContext(layout);
   const locale = resolveLocaleForGame(el, config, manifest, gameOverrides);
   const skin = resolveSkinForGame(el, config, manifest, host.getGameUrl(), gameOverrides);
-  const cfg = resolveConfigForGame(el, config, manifest, gameOverrides);
+  // Gameplay config is server-authoritative (ADR-0069) — there is no client
+  // `config` attribute. `ctx.config` is null, so the game runs its own internal
+  // defaults (matching the run's `defaultConfig`, so live == replay); per-site
+  // server config injection is a deferred phase.
+  const cfg = null;
   // Wait for the per-round seed before kickoff so the game's live run is
   // deterministic under it (ADR-0069). awaitSeed resolves null on a /verify/start
   // failure or a no-verify mount, so kickoff never deadlocks.
@@ -84,37 +87,6 @@ export function resolveLocaleForGame(
     ? navigator.languages
     : (typeof navigator !== 'undefined' && navigator.language ? [navigator.language] : []);
   const { resolved, issues } = resolveLocale(presets, config.locale, navLangs);
-  for (const message of issues) {
-    fireError(el, 'invalid-config', message);
-  }
-  return resolved;
-}
-
-/** Resolve the customer's `config` attribute against the game's manifest
- *  configurations block. Returns null when the game ships no
- *  configurations presets, which the iframe runtime forwards as
- *  `ctx.config = null`. Mirrors `resolveSkinForGame` minus the bundle
- *  base URL (configurations carry typed scalars, not asset paths). */
-export function resolveConfigForGame(
-  el: HTMLElement,
-  config: GameConfig,
-  manifest: ManifestMessage | null,
-  gameOverrides: OverridesPerAxis | null,
-): ReturnType<typeof resolveConfig>['resolved'] {
-  const block = manifest?.configurations;
-  // Skin/config carry typed values validated against the schema, and the
-  // schema is authoritative from the game manifest (override banks carry
-  // values only, never schema). So a game that declares no configurations
-  // block has nothing to validate overrides against — keep returning null.
-  if (!block) return null;
-  const overrideBank = (gameOverrides?.configuration?.presets ?? null) as Record<string, ConfigPreset> | null;
-  const presets = injectOverrideLayer(block.presets, overrideBank);
-  const { resolved, issues } = resolveConfig({
-    presets,
-    schema: block.schema ?? null,
-    attrValue: config.config,
-    rejectInlineJson: false,
-  });
   for (const message of issues) {
     fireError(el, 'invalid-config', message);
   }

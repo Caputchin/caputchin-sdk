@@ -46,16 +46,18 @@ function toShellConfig(resolved: ResolvedConfig | null): ShellConfig {
  *
  *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap per
  *  ADR-0059), the override bank is injected atop the bundled bank before
- *  resolution; collisions implicitly extend their bundled twin. */
+ *  resolution; collisions implicitly extend their bundled twin. There is no
+ *  client `config` attribute (removed under ADR-0069 — config is
+ *  server-authoritative): resolution always targets the `default` preset,
+ *  overlaid by the server's override bank. */
 export function resolveWidgetShellConfig(
-  attrValue?: string | null,
   overridePresets?: Record<string, ConfigPreset> | null,
 ): WidgetShellConfig {
   const merged = injectOverrideLayer(PRESETS, overridePresets);
   const { resolved, issues } = resolveConfig({
     presets: merged,
     schema: SCHEMA,
-    attrValue: attrValue ?? 'auto',
+    attrValue: 'auto',
     rejectInlineJson: true,
   });
   return {

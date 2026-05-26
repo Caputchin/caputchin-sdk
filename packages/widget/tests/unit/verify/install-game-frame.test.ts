@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveLocaleForGame,
   resolveSkinForGame,
-  resolveConfigForGame,
 } from '../../../src/verify/install-game-frame.js';
 import type { GameConfig } from '../../../src/config/game.js';
 import type { ManifestMessage } from '../../../src/protocol/messages.js';
@@ -20,7 +19,7 @@ import type { OverridesPerAxis } from '../../../src/bootstrap/types.js';
 const el = (): HTMLElement => document.createElement('div');
 
 function cfg(overrides: Partial<GameConfig>): GameConfig {
-  return { locale: null, skin: null, config: null, ...overrides } as unknown as GameConfig;
+  return { locale: null, skin: null, ...overrides } as unknown as GameConfig;
 }
 
 function manifest(parts: Partial<ManifestMessage>): ManifestMessage {
@@ -98,30 +97,6 @@ describe('resolveSkinForGame — override merge', () => {
   it('no manifest skin block → null even when overrides are present (schema is manifest-authoritative)', () => {
     const ov = overrides({ skin: { presets: { light: { primary: '#FF0000' } } } });
     const resolved = resolveSkinForGame(el(), cfg({ skin: 'light' }), manifest({ skins: undefined }), null, ov);
-    expect(resolved).toBeNull();
-  });
-});
-
-describe('resolveConfigForGame — override merge', () => {
-  const baseManifest = manifest({
-    configurations: {
-      schema: { home: 'link' },
-      presets: { default: { _default: true, home: 'https://bundled.test/' } },
-    },
-  });
-
-  it('override merges over the manifest configuration preset', () => {
-    // _default:true on the override makes it win the default scan (override-
-    // first ordering) over the bundled twin it implicitly extends.
-    const ov = overrides({ configuration: { presets: { default: { _default: true, home: 'https://override.test/' } } } });
-    const resolved = resolveConfigForGame(el(), cfg({ config: null }), baseManifest, ov);
-    expect(resolved).not.toBeNull();
-    expect(resolved!.home).toBe('https://override.test/');
-  });
-
-  it('no manifest configurations block → null even with overrides', () => {
-    const ov = overrides({ configuration: { presets: { default: { home: 'https://override.test/' } } } });
-    const resolved = resolveConfigForGame(el(), cfg({ config: null }), manifest({ configurations: undefined }), ov);
     expect(resolved).toBeNull();
   });
 });

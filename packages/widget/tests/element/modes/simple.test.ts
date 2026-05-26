@@ -164,7 +164,11 @@ describe('widget skin attribute', () => {
   });
 });
 
-describe('widget config attribute (brand link wiring)', () => {
+// Shell brand links come from the bundled `default` preset (+ a server override
+// bank at bootstrap). There is no client `config` attribute (removed under
+// ADR-0069 — config is server-authoritative), so there is nothing client-side
+// to select or reject here.
+describe('widget brand link wiring', () => {
   it('default brand strip points at caputchin.com + /legal', async () => {
     const el = getWidget({ sitekey: 'k', trigger: 'click' });
     document.body.appendChild(el);
@@ -173,43 +177,6 @@ describe('widget config attribute (brand link wiring)', () => {
     const tag = el.shadowRoot!.querySelector('[part="simple-brand-tag"]') as HTMLAnchorElement;
     expect(home.href).toBe('https://caputchin.com/');
     expect(tag.href).toBe('https://caputchin.com/legal');
-    el.remove();
-  });
-
-  it('config="default" resolves the same brand links as auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', config: 'default' });
-    document.body.appendChild(el);
-    await flushMount();
-    const home = el.shadowRoot!.querySelector('[part="simple-brand-home"]') as HTMLAnchorElement;
-    expect(home.href).toBe('https://caputchin.com/');
-    el.remove();
-  });
-
-  it('inline JSON config fires invalid-config + falls back to default', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', config: '{"home_link":"https://attacker.example"}' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
-    document.body.appendChild(el);
-    await flushMount();
-    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
-    const home = el.shadowRoot!.querySelector('[part="simple-brand-home"]') as HTMLAnchorElement;
-    expect(home.href).toBe('https://caputchin.com/');
-    el.remove();
-  });
-
-  it('unknown config name fires invalid-config + falls back to default', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', config: 'not-a-preset' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
-    document.body.appendChild(el);
-    await flushMount();
-    expect(messages.some((m) => /not-a-preset/.test(m))).toBe(true);
     el.remove();
   });
 });
