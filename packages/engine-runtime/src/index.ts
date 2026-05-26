@@ -24,6 +24,15 @@ export { replay } from './harness';
 export { toRun } from './to-run';
 export type { ToRunOptions } from './to-run';
 export { encodeTrace, decodeTrace } from './trace-codec';
+export { selfCheck } from './self-check';
+export type {
+  SelfCheckCase,
+  SelfCheckOptions,
+  SelfCheckReport,
+  CaseReport,
+  Violation,
+  ViolationKind,
+} from './self-check';
 export type {
   Result,
   EngineSetup,

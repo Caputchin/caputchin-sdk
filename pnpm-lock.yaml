@@ -18,6 +18,9 @@ importers:
         specifier: workspace:*
         version: link:../replay-contract
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.18
       '@vitest/coverage-v8':
         specifier: ^2.0.0
         version: 2.1.9(vitest@2.1.9(@types/node@22.19.18)(happy-dom@15.11.7))
