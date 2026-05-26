@@ -38,18 +38,18 @@ const INPUTS: TickInput<A>[] = [
 const TRACE = encodeTrace(INPUTS);
 
 const run = toRun(engine, {
-  config: CONFIG,
+  defaultConfig: CONFIG,
   maxTicks: 1000,
-  passed: (o) => o.score >= CONFIG.passScore,
+  passed: (o, c) => o.score >= c.passScore,
 });
 
 describe('toRun', () => {
   it('produces an identical verdict across runs (deterministic)', () => {
-    expect(run(SEED, TRACE)).toEqual(run(SEED, TRACE));
+    expect(run(SEED, null, TRACE)).toEqual(run(SEED, null, TRACE));
   });
 
   it('returns a Verdict shape with the engine-derived duration', () => {
-    const v = run(SEED, TRACE);
+    const v = run(SEED, null, TRACE);
     expect(typeof v.passed).toBe('boolean');
     expect(typeof v.score).toBe('number');
     // ends at tick 32; FIXED_TIMESTEP_MS = 16 -> 512ms, engine-derived not claimed.
@@ -58,20 +58,33 @@ describe('toRun', () => {
 
   it('applies the pass predicate over the outcome', () => {
     // two boosts add 100, rng adds >=0 -> score >= passScore (100) -> passes.
-    expect(run(SEED, TRACE).passed).toBe(true);
+    expect(run(SEED, null, TRACE).passed).toBe(true);
     const strict = toRun(engine, {
-      config: CONFIG,
+      defaultConfig: CONFIG,
       maxTicks: 1000,
       passed: (o) => o.score >= 100_000,
     });
-    expect(strict(SEED, TRACE).passed).toBe(false);
+    expect(strict(SEED, null, TRACE).passed).toBe(false);
+  });
+
+  it('null config falls back to defaultConfig; a supplied config overrides it', () => {
+    // defaultConfig.passScore = 100 (score ~100 -> passes). A stricter supplied
+    // config raises the bar so the SAME (seed, trace) fails — proving config is a
+    // run input, not baked, and that the gate reads from the server config.
+    expect(run(SEED, null, TRACE).passed).toBe(true);
+    expect(run(SEED, { passScore: 100_000 }, TRACE).passed).toBe(false);
+    // Score + duration are identical regardless of config (config only moves the gate).
+    const a = run(SEED, null, TRACE);
+    const b = run(SEED, { passScore: 100_000 }, TRACE);
+    expect(b.score).toBe(a.score);
+    expect(b.durationMs).toBe(a.durationMs);
   });
 
   it('yields a failing verdict on a malformed or empty trace (never crashes)', () => {
     const fail = { passed: false, score: 0, durationMs: 0 };
-    expect(run(SEED, '')).toEqual(fail);
-    expect(run(SEED, 'not json')).toEqual(fail);
-    expect(run(SEED, new Uint8Array(0))).toEqual(fail);
+    expect(run(SEED, null, '')).toEqual(fail);
+    expect(run(SEED, null, 'not json')).toEqual(fail);
+    expect(run(SEED, null, new Uint8Array(0))).toEqual(fail);
   });
 
   it('fails a truncated (non-terminating) run regardless of the predicate', () => {
@@ -82,7 +95,7 @@ describe('toRun', () => {
       isOver: () => false,
       result: (s) => ({ score: s.n }),
     });
-    const r = toRun(never, { config: CONFIG, maxTicks: 50, passed: () => true });
-    expect(r(SEED, encodeTrace([])).passed).toBe(false);
+    const r = toRun(never, { defaultConfig: CONFIG, maxTicks: 50, passed: () => true });
+    expect(r(SEED, null, encodeTrace([])).passed).toBe(false);
   });
 });

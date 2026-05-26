@@ -45,8 +45,9 @@ describe('selfCheck — passes a clean deterministic run', () => {
       isOver: (s) => s.ticks >= 20,
       result: (s) => ({ score: s.acc }),
     });
-    const run = toRun(engine, { config: { goal: 0 }, maxTicks: 100, passed: (o) => o.score > 0 });
-    const report = await selfCheck(run, CASES);
+    const run = toRun(engine, { defaultConfig: { goal: 0 }, maxTicks: 100, passed: (o) => o.score > 0 });
+    // Inline cases so C infers from the typed run (the shared CASES is unknown-typed).
+    const report = await selfCheck(run, [{ seed: SEED, trace: encodeTrace([]), label: 'kit' }]);
     expect(report.ok).toBe(true);
   });
 });

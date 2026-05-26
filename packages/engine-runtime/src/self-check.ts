@@ -20,13 +20,19 @@
 // top of the artifact) is not visible here — the `applyShim` runtime ban and the
 // Phase 9 real-isolate diff cover that residual.
 
-import { parseVerdict, type RunFn, type Seed, type Verdict } from '@caputchin/replay-contract';
+import { parseVerdict, type ReplayConfig, type RunFn, type Seed, type Verdict } from '@caputchin/replay-contract';
 import { capMath } from './math';
 
-/** One determinism probe: a seed + the opaque trace recorded under it. */
-export interface SelfCheckCase {
+/** One determinism probe: a seed + the opaque trace recorded under it, optionally
+ *  under a specific server config (defaults to `null` → the run's own defaults).
+ *  Generic over the run's config shape so a typed `RunFn<C>` self-checks without
+ *  a cast; defaults to the opaque {@link ReplayConfig}. */
+export interface SelfCheckCase<C = ReplayConfig> {
   readonly seed: Seed;
   readonly trace: Uint8Array | string;
+  /** Server config the run executes under; `null`/omitted exercises the run's
+   *  internal defaults (the MVP server behavior). */
+  readonly config?: C | null;
   /** Optional human label for the report (defaults to `case #n`). */
   readonly label?: string;
 }
@@ -203,7 +209,7 @@ async function invoke(
   patches: readonly Patch[],
 ): Promise<{ verdict: Verdict | null } | { error: unknown }> {
   try {
-    const raw = await withPatches(patches, () => run(c.seed, c.trace));
+    const raw = await withPatches(patches, () => run(c.seed, c.config ?? null, c.trace));
     return { verdict: parseVerdict(raw) };
   } catch (error) {
     return { error };
@@ -275,16 +281,20 @@ function axisFor(surface: string): ViolationKind {
  * NOT run other code concurrently with `selfCheck` (a dev/CI invocation is the
  * intended context). Cases are probed sequentially for the same reason.
  */
-export async function selfCheck(
-  run: RunFn,
-  cases: readonly SelfCheckCase[],
+export async function selfCheck<C = ReplayConfig>(
+  run: RunFn<C>,
+  cases: readonly SelfCheckCase<C>[],
   opts: SelfCheckOptions = {},
 ): Promise<SelfCheckReport> {
   const repeats = Math.max(2, opts.repeats ?? 8);
+  // Probe the run opaquely: internally we only feed it `c.config ?? null`, so the
+  // config shape is irrelevant to the prober — the public generic is purely for
+  // the caller's ergonomics (a typed RunFn<C> + SelfCheckCase<C> need no cast).
+  const opaqueRun = run as RunFn;
   const reports: CaseReport[] = [];
   for (let i = 0; i < cases.length; i++) {
     const c = cases[i]!;
-    reports.push(await checkCase(run, { ...c, label: c.label ?? `case #${i + 1}` }, repeats));
+    reports.push(await checkCase(opaqueRun, { ...c, label: c.label ?? `case #${i + 1}` }, repeats));
   }
   return { ok: reports.every((r) => r.deterministic), cases: reports };
 }

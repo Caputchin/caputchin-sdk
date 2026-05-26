@@ -10,5 +10,5 @@ export { SEED_WORDS, SEED_BYTES, deriveSeed } from './seed';
 export type { Verdict } from './verdict';
 export { parseVerdict } from './verdict';
 
-export type { RunFn } from './run';
+export type { RunFn, ReplayConfig } from './run';
 export { RUN_EXPORT_NAME, RUN_RPC_METHOD } from './run';
