@@ -32,7 +32,7 @@ import type { LocalePreset, SkinPreset } from '@caputchin/game-sdk';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
-  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'config'];
+  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -139,8 +139,8 @@ export class CaputchinGame extends HTMLElement {
     // game configurations and widget shell configurations. Widget shell
     // configurations CAN still be overridden via the bootstrap response's
     // widget.overrides.configuration block — same as on `<caputchin-widget>`.
-    const widgetConfigOverride = (overrides?.configuration?.presets ?? null) as Parameters<typeof resolveWidgetShellConfig>[1];
-    const shellConfig = resolveWidgetShellConfig(null, widgetConfigOverride);
+    const widgetConfigOverride = (overrides?.configuration?.presets ?? null) as Parameters<typeof resolveWidgetShellConfig>[0];
+    const shellConfig = resolveWidgetShellConfig(widgetConfigOverride);
     for (const message of shellConfig.issues) {
       fireError(this, 'invalid-config', message);
     }
