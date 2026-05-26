@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      replay_contract_released: ${{ steps.release.outputs['packages/replay-contract--release_created'] }}
+      engine_runtime_released: ${{ steps.release.outputs['packages/engine-runtime--release_created'] }}
       game_sdk_released: ${{ steps.release.outputs['packages/game-sdk--release_created'] }}
       widget_released: ${{ steps.release.outputs['packages/widget--release_created'] }}
       mcp_released: ${{ steps.release.outputs['packages/mcp--release_created'] }}
@@ -54,6 +56,16 @@ jobs:
       # `pnpm install` (no --frozen-lockfile) reconciles before publish.
       - run: pnpm install
       - run: pnpm build
+
+      # Publish in dependency order: replay-contract (the mandatory contract) is
+      # depended on by engine-runtime + game-sdk, so it goes first.
+      - name: Publish @caputchin/replay-contract
+        if: ${{ needs.release-please.outputs.replay_contract_released == 'true' }}
+        run: pnpm --filter @caputchin/replay-contract publish --access public --no-git-checks
+
+      - name: Publish @caputchin/engine-runtime
+        if: ${{ needs.release-please.outputs.engine_runtime_released == 'true' }}
+        run: pnpm --filter @caputchin/engine-runtime publish --access public --no-git-checks
 
       - name: Publish @caputchin/game-sdk
         if: ${{ needs.release-please.outputs.game_sdk_released == 'true' }}
