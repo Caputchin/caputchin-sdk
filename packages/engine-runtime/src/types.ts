@@ -85,12 +85,22 @@ export interface EngineSetup<C> {
  * / DOM / async. Use `cap.rng` for randomness and `cap.math` for transcendental
  * math (the shim also swaps `Math.*`, but importing `cap.math` is clearer).
  */
-export interface EngineDef<S, A = unknown, C = unknown> {
+export interface EngineDef<S, A = unknown, C = unknown, V = S> {
   init(setup: EngineSetup<C>): S;
   step(state: S, action: A): S;
   tick(state: S): S;
   isOver(state: S): boolean;
   result(state: S): Result;
+  /**
+   * OPTIONAL render projection. The live driver hands the factory's `onState`
+   * the result of `view(state)` each tick if defined, otherwise the full state
+   * `S`. Provide it to keep engine internals (the PRNG state, AI bookkeeping,
+   * spatial indexes) out of what crosses the worker boundary and reaches the
+   * DOM layer; omit it and the renderer simply receives the whole state. Pure
+   * and synchronous like the rest of the contract; it never feeds replay (the
+   * server runs `init/step/tick/result` only), so it cannot affect the verdict.
+   */
+  view?(state: S): V;
 }
 
 /** Inputs to a single replay run. */

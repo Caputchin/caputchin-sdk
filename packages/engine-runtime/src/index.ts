@@ -6,6 +6,7 @@
 export { SHIM_VERSION } from './version';
 export { FIXED_TIMESTEP_MS, TRACE_V } from './constants';
 export { defineEngine } from './define-engine';
+export { project } from './project';
 export { rng, rngFromState } from './rng';
 export type { Rng, RngState } from './rng';
 export { capMath } from './math';

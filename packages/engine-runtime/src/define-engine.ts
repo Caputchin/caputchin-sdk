@@ -15,8 +15,8 @@ import type { EngineDef } from './types';
  * });
  * ```
  */
-export function defineEngine<S, A = unknown, C = unknown>(
-  def: EngineDef<S, A, C>,
-): EngineDef<S, A, C> {
+export function defineEngine<S, A = unknown, C = unknown, V = S>(
+  def: EngineDef<S, A, C, V>,
+): EngineDef<S, A, C, V> {
   return def;
 }
