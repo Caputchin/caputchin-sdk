@@ -7,6 +7,8 @@ Monorepo for the `@caputchin` JavaScript and TypeScript client libraries. Contai
 | [`@caputchin/widget`](packages/widget) | Customer-facing web component (`<caputchin-widget>`) |
 | [`@caputchin/game-sdk`](packages/game-sdk) | `register()` helper and types for game authors |
 | [`@caputchin/mcp`](packages/mcp) | MCP server for managing Caputchin resources via AI agents |
+| [`@caputchin/replay-contract`](packages/replay-contract) | The mandatory `run(seed, config, trace)` contract for server-validated game replay |
+| [`@caputchin/engine-runtime`](packages/engine-runtime) | Optional authoring kit (deterministic primitives, shims, `toRun` adapter) for replay-conforming games |
 
 Full documentation lives in [`docs/`](../docs/) — not inside this monorepo.
 

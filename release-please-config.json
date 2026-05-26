@@ -6,6 +6,14 @@
   "bump-patch-for-minor-pre-major": false,
   "separate-pull-requests": false,
   "packages": {
+    "packages/replay-contract": {
+      "component": "replay-contract",
+      "package-name": "@caputchin/replay-contract"
+    },
+    "packages/engine-runtime": {
+      "component": "engine-runtime",
+      "package-name": "@caputchin/engine-runtime"
+    },
     "packages/game-sdk": {
       "component": "game-sdk",
       "package-name": "@caputchin/game-sdk"
