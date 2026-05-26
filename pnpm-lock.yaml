@@ -13,6 +13,10 @@ importers:
         version: 9.1.7
 
   packages/engine-runtime:
+    dependencies:
+      '@caputchin/replay-contract':
+        specifier: workspace:*
+        version: link:../replay-contract
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^2.0.0
