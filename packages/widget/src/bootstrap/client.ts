@@ -11,6 +11,9 @@ export interface FetchBootstrapInput {
   apiHost: string;
   sitekey: string;
   game?: string | null;
+  /** Client sub-pool hint for a gated key (comma-joined game ids). The server
+   *  picks one from `games ∩ pool`; ignored on an ungated key. */
+  games?: string | null;
   localeLang?: string | null;
   localePreset?: string | null;
   skinTheme?: string | null;
@@ -58,6 +61,7 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   const params = new URLSearchParams();
   params.set('sitekey', input.sitekey);
   if (input.game) params.set('game', input.game);
+  if (input.games) params.set('games', input.games);
   if (input.localeLang) params.set('locale_lang', input.localeLang);
   if (input.localePreset) params.set('locale_preset', input.localePreset);
   if (input.skinTheme) params.set('skin_theme', input.skinTheme);
@@ -88,5 +92,11 @@ export function validateBootstrapResponse(raw: unknown): BootstrapResponse | nul
   return {
     widget: (widget as BootstrapResponse['widget']) ?? null,
     game: (game as BootstrapResponse['game']) ?? null,
+    // Phase 11 gate fields. requiresGame coerced to a strict boolean; gameId /
+    // ticket are opaque strings the widget echoes back (the server re-validates
+    // the ticket signature), so a loose pass-through is safe here.
+    requiresGame: obj['requiresGame'] === true,
+    gameId: typeof obj['gameId'] === 'string' ? (obj['gameId'] as string) : undefined,
+    ticket: typeof obj['ticket'] === 'string' ? (obj['ticket'] as string) : undefined,
   };
 }

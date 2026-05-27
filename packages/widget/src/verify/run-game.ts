@@ -84,9 +84,9 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
-  // gameId is sent in the /verify/start platform → the SERVER stores it on the
-  // session, and the STORED gameId gates replay at /verify/pass.
-  const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId);
+  // On a gated key the server sets the session game from the signed ticket
+  // (Phase 11), not from the client gameId. Echo the ticket here.
+  const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId, state.gateTicket ?? null);
   const dispatchStart = (): void => emitStart(el, gameId);
   const presentation = state.gamePresentation ?? null;
 

@@ -39,6 +39,12 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  pick can differ from the mount-time `game`, so that path resolves
    *  fresh). Null when no bootstrap ran (no sitekey) or it timed out. */
   gameBundle?: { gameId: string | null; url: string | null; integrity: string | null } | null;
+  /** Server game gate (Phase 11). `requiresGame` is true when the site key is
+   *  gated: the server picked the game + signed `gateTicket` at bootstrap. The
+   *  ticket is echoed to /verify/start (which sets the session's game from it,
+   *  server-authoritative). Both null/false on an ungated key. */
+  requiresGame?: boolean;
+  gateTicket?: string | null;
 }
 
 export function createInitialState<C extends WidgetConfig | GameConfig>(): WidgetState<C> {
@@ -58,5 +64,7 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     firstPassFired: false,
     gameOverrides: null,
     gameBundle: null,
+    requiresGame: false,
+    gateTicket: null,
   };
 }
