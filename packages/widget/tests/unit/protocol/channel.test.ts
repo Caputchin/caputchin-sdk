@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { send, listen } from '../../../src/protocol/channel.js';
 
 describe('channel.send', () => {
-  it('posts with targetOrigin="*" — sandbox iframe opaque origin requires it (M5)', () => {
+  it('posts with targetOrigin="*" - sandbox iframe opaque origin requires it (M5)', () => {
     const postMessageSpy = vi.fn();
     const iframe = {
       contentWindow: { postMessage: postMessageSpy },
@@ -112,7 +112,7 @@ describe('channel.listen', () => {
     expect(cb).not.toHaveBeenCalled();
   });
 
-  it('unlisten removes handler — subsequent messages ignored', () => {
+  it('unlisten removes handler - subsequent messages ignored', () => {
     const cb = vi.fn();
     unlisten = listen(iframe, el, cb);
     unlisten();

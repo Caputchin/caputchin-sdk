@@ -12,7 +12,7 @@
 //   1. Builds the iframe runtime once up-front.
 //   2. Watches `src/iframe/**` and re-runs the iframe build on change.
 //   3. Spawns `tsup --watch` with `dist/.iframe-runtime-meta.json` as an
-//      extra watched path — when the meta JSON is rewritten, tsup
+//      extra watched path - when the meta JSON is rewritten, tsup
 //      reloads the config and re-emits the widget bundle with the fresh
 //      runtime string.
 

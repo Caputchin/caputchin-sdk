@@ -2,7 +2,7 @@
  * number is an explicit pixel value that overrides both (and any game
  * preferredWidth). */
 export type WidgetWidth = 'auto' | 'full' | number;
-/** `null` means "auto" — defer to the game's preferredHeight (if any) or
+/** `null` means "auto" - defer to the game's preferredHeight (if any) or
  *  the widget default. `'full'` spans the parent (and, for game widgets in
  *  overlay layouts, stretches the iframe vertically inside the dialog).
  *  A positive number is an explicit pixel value. */

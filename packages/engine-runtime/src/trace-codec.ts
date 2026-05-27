@@ -1,5 +1,5 @@
 // The kit's DEFAULT trace codec. The trace is opaque to the platform
-// — the kit may serialize its recorded inputs however it likes, and an author is
+// - the kit may serialize its recorded inputs however it likes, and an author is
 // free to bring their own format. This JSON codec is the batteries-included
 // default: the live driver records `TickInput`s and `encodeTrace`s them; `toRun`
 // `decodeTrace`s the blob to replay it. It is NOT a wire contract; the platform
@@ -27,7 +27,7 @@ export function encodeTrace<A>(inputs: readonly TickInput<A>[]): string {
 
 /**
  * Parse a trace produced by {@link encodeTrace} back into recorded inputs.
- * Throws on a malformed blob — `toRun` catches that and yields a failing verdict
+ * Throws on a malformed blob - `toRun` catches that and yields a failing verdict
  * (a garbage trace is a failed round, never a crash). Accepts the trace as a
  * string or UTF-8 bytes.
  */

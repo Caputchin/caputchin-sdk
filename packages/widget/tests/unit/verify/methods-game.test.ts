@@ -36,7 +36,7 @@ function passes(el: HTMLElement): CustomEvent[] {
 
 beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 }))); });
 
-describe('installGameMethods — pass()', () => {
+describe('installGameMethods - pass()', () => {
   it('no-ops silently when there is no config', () => {
     const el = gameEl();
     installGameMethods(el, state(null));
@@ -59,7 +59,7 @@ describe('installGameMethods — pass()', () => {
     el.pass({ trace: 'tr-a' });
     el.pass(); // no payload → empty trace; still a pass/fail-only event
     expect(pass).toHaveLength(2);
-    // Pass/fail only — no score/durationMs surfaced to the client.
+    // Pass/fail only - no score/durationMs surfaced to the client.
     expect(pass[0].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(pass[1].detail).toEqual({ token: null, score: null, durationMs: null });
     expect(presentation.setState).toHaveBeenCalledWith('verified');
@@ -89,7 +89,7 @@ describe('installGameMethods — pass()', () => {
     expect(ps).toHaveLength(0); // the verify-path pass event comes from cap.solve, not pass()
   });
 
-  it('no-verify manual (sitekey + no-verify, no cap gate) emits pass token:null — NOT invalid-call', () => {
+  it('no-verify manual (sitekey + no-verify, no cap gate) emits pass token:null - NOT invalid-call', () => {
     const el = gameEl();
     const errs = errors(el);
     const ps = passes(el);
@@ -101,7 +101,7 @@ describe('installGameMethods — pass()', () => {
   });
 });
 
-describe('installGameMethods — fail()', () => {
+describe('installGameMethods - fail()', () => {
   it('fires invalid-call when trigger is not manual', () => {
     const el = gameEl();
     const errs = errors(el);
@@ -142,7 +142,7 @@ describe('installGameMethods — fail()', () => {
     expect(errs.some((e) => e.code === 'game-error-relayed' && (e as { originalCode?: string }).originalCode === 'game-failed')).toBe(true);
   });
 
-  it('no-verify manual (sitekey + no-verify, no cap gate) relays fail() straight through — NOT invalid-call', () => {
+  it('no-verify manual (sitekey + no-verify, no cap gate) relays fail() straight through - NOT invalid-call', () => {
     // The bug: with sitekey present the old guard demanded an armed gate, but
     // no-verify never arms one. fail() must relay like game-only does.
     const el = gameEl();
@@ -154,7 +154,7 @@ describe('installGameMethods — fail()', () => {
   });
 });
 
-describe('installGameMethods — setNickname()', () => {
+describe('installGameMethods - setNickname()', () => {
   it('throws not-implemented (Post-MVP)', () => {
     const el = gameEl();
     installGameMethods(el, state({}));

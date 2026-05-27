@@ -195,7 +195,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 // ---------------- shield indicator ----------------
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-// Shield path tuned to fill the viewBox (1–23 vertical, 2–22 horizontal)
+// Shield path tuned to fill the viewBox (1-23 vertical, 2-22 horizontal)
 // so the rendered shield reads as a glyph, not a small mark on a big canvas.
 const SHIELD_PATH = 'M12 1 L22 4 V12 C22 18 17.5 22.5 12 23.5 C6.5 22.5 2 18 2 12 V4 Z';
 

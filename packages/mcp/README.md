@@ -8,7 +8,7 @@ tool catalogue served by Caputchin's `/api/mcp` HTTP endpoint, and adds
 offline developer-onboarding tools (HTML and backend snippet generators)
 that need no Caputchin account. The full tool list is defined in
 [caputchin-platform/apps/web/src/lib/mcp-tools.ts](https://github.com/Caputchin/caputchin-platform/blob/main/apps/web/src/lib/mcp-tools.ts)
-and updates the moment a new platform version deploys — no SDK release
+and updates the moment a new platform version deploys, no SDK release
 needed to pick up new tools.
 
 ## Install + run
@@ -21,7 +21,7 @@ Set the management token before launching:
 
 | Env var | Required | Default | Notes |
 |---|---|---|---|
-| `CAPUTCHIN_TOKEN` | yes (default mode) | — | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
+| `CAPUTCHIN_TOKEN` | yes (default mode) | (none) | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
 | `CAPUTCHIN_API_HOST` | no | `https://caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`. |
 
 Run in local-only mode (no token; only the offline snippet generators load):
@@ -51,7 +51,7 @@ npx @caputchin/mcp --local-only
 ### Remote tools (proxied from `/api/mcp`)
 
 Fetched live from the platform on first `tools/list`; cached for the
-session. Adding or removing a tool only requires a platform deploy —
+session. Adding or removing a tool only requires a platform deploy,
 this package does not need a release. See the
 [Management API docs](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md)
 and the [canonical catalogue source](https://github.com/Caputchin/caputchin-platform/blob/main/apps/web/src/lib/mcp-tools.ts)
@@ -59,7 +59,7 @@ for the complete list of tool names + input schemas.
 
 If the platform endpoint is unreachable at startup, the SDK still serves
 the local tools and exposes a sentinel `caputchin_remote_unavailable`
-tool whose description carries the failure reason — your agent learns
+tool whose description carries the failure reason, your agent learns
 why the management surface is empty without you having to debug
 network state.
 
@@ -76,7 +76,7 @@ The 1.x line shipped its own bundled tool catalogue. 2.0.0 deletes that
 catalogue and switches to live proxy of `/api/mcp`. Customer-visible
 implications:
 
-- Tool names + input shapes are identical (they always were — the
+- Tool names + input shapes are identical (they always were, the
   bundled catalogue mirrored the platform).
 - New tools added to the platform after `@1.0.0` are now reachable
   without an SDK upgrade.
@@ -85,5 +85,5 @@ implications:
 
 ## Full reference
 
-- [docs/management-api.md](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md) — Management API surface
-- [docs/api.md](https://github.com/Caputchin/caputchin/blob/main/docs/api.md) — Runtime endpoints (browser-side + customer backend)
+- [docs/management-api.md](https://github.com/Caputchin/caputchin/blob/main/docs/management-api.md): Management API surface
+- [docs/api.md](https://github.com/Caputchin/caputchin/blob/main/docs/api.md): Runtime endpoints (browser-side + customer backend)

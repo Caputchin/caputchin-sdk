@@ -10,7 +10,7 @@ Monorepo for the `@caputchin` JavaScript and TypeScript client libraries. Contai
 | [`@caputchin/replay-contract`](packages/replay-contract) | The mandatory `run(seed, config, trace)` contract for server-validated game replay |
 | [`@caputchin/engine-runtime`](packages/engine-runtime) | Optional authoring kit (deterministic primitives, shims, `toRun` adapter) for replay-conforming games |
 
-Full documentation lives in [`docs/`](../docs/) — not inside this monorepo.
+Full documentation lives in [`docs/`](../docs/), not inside this monorepo.
 
 ## Quick links
 
@@ -62,4 +62,4 @@ Scopes: `widget`, `sdk`, `mcp`, `infra`, `docs`, `ci`, `deps`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

@@ -39,10 +39,10 @@ const sharedDefine = {
 const sharedLoader = { '.svg': 'dataurl' } as const;
 
 // Two builds, same basename, each registering both elements:
-//   1. ESM single entry (`widget.mjs`) — npm consumers
+//   1. ESM single entry (`widget.mjs`) - npm consumers
 //      `import '@caputchin/widget'` (registers on import) or
 //      `import { CaputchinWidget, CaputchinGame }`.
-//   2. IIFE single entry (`widget.js`) — jsDelivr / script-tag consumers drop
+//   2. IIFE single entry (`widget.js`) - jsDelivr / script-tag consumers drop
 //      one <script> tag. Registers both custom elements.
 export default defineConfig([
   {

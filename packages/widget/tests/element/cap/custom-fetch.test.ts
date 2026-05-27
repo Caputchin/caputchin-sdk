@@ -20,7 +20,7 @@ beforeEach(() => {
   installCustomFetch();
 });
 
-describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
+describe('CAP_CUSTOM_FETCH - URL-routed widget identity', () => {
   it('rewrites /__cpt/{id}/challenge → /api/v1/verify/start', async () => {
     const id = 'cpt_t1';
     registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
@@ -58,7 +58,7 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/verify/pass');
     const sentBody = JSON.parse((fetchSpy.mock.calls[0]![1] as RequestInit).body as string);
     expect(sentBody.platform.trace).toBe('tr-xyz');
-    // Pass/fail only — the widget surfaces no score (server-authoritative).
+    // Pass/fail only - the widget surfaces no score (server-authoritative).
     expect(onWrappedToken).toHaveBeenCalledWith(
       expect.objectContaining({ token: 'wrapped-xyz', score: null, durationMs: null })
     );
@@ -66,7 +66,7 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
     unregisterSession(id);
   });
 
-  it('two widgets routed independently — no cross-talk', async () => {
+  it('two widgets routed independently - no cross-talk', async () => {
     const idA = 'cpt_a';
     const idB = 'cpt_b';
     const ctxA = { platform: { sitekey: 'A' }, onWrappedToken: vi.fn() };
@@ -101,7 +101,7 @@ describe('CAP_CUSTOM_FETCH — URL-routed widget identity', () => {
   });
 });
 
-describe('CAP_CUSTOM_FETCH — seed gate', () => {
+describe('CAP_CUSTOM_FETCH - seed gate', () => {
   it('challenge with a valid 4-number seed resolves awaitSeed to that seed', async () => {
     const id = 'cpt_seed_ok';
     registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });

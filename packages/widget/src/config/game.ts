@@ -10,11 +10,11 @@ import { isLayoutAttr } from '../layout.js';
 export type GameTrigger = 'manual' | null;
 
 /** Game widget config. Verification (the cap gate) runs when a sitekey is
- *  present AND `no-verify` is not set — see {@link shouldVerify}. The two
+ *  present AND `no-verify` is not set - see {@link shouldVerify}. The two
  *  concerns are orthogonal: the sitekey is the tenant key that unlocks the
  *  bootstrap fetch (overrides + marketplace bundle resolution), while
  *  `no-verify` opts out of the gate. So a game-only widget can still supply a
- *  sitekey to receive overrides — it just skips the cap solve. With no sitekey
+ *  sitekey to receive overrides - it just skips the cap solve. With no sitekey
  *  there is nothing to verify against, so `no-verify` is implied.
  *  When `trigger === 'manual'`, no iframe mounts; customer slots custom
  *  game DOM via the default `<slot>` inside the layout shell and drives
@@ -138,7 +138,7 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
 /** Whether the cap verification gate runs for this game mount. True only when
  *  a sitekey is present and `no-verify` is not set. No sitekey ⇒ nothing to
  *  verify against ⇒ false (game-only). This is orthogonal to the bootstrap
- *  fetch, which is gated on the sitekey alone — a `no-verify` widget WITH a
+ *  fetch, which is gated on the sitekey alone - a `no-verify` widget WITH a
  *  sitekey still fetches overrides + resolves marketplace bundles. */
 export function shouldVerify(cfg: GameConfig): boolean {
   return cfg.sitekey !== null && !cfg.noVerify;

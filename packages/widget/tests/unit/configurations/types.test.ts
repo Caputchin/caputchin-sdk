@@ -27,11 +27,11 @@ describe('normalizeSchemaEntry', () => {
     expect(normalizeSchemaEntry({ type: 'range', min: 0, max: 10, step: 1 })).toEqual({ type: 'range', min: 0, max: 10, step: 1 });
   });
   it('range descriptor rejects missing bounds', () => {
-    // @ts-expect-error – min missing on purpose
+    // @ts-expect-error - min missing on purpose
     expect(normalizeSchemaEntry({ type: 'range', max: 10 })).toBeNull();
   });
   it('returns null for unknown bare type', () => {
-    // @ts-expect-error – not a valid bare type
+    // @ts-expect-error - not a valid bare type
     expect(normalizeSchemaEntry('color')).toBeNull();
   });
   it('returns null for undefined', () => {
@@ -39,14 +39,14 @@ describe('normalizeSchemaEntry', () => {
   });
 });
 
-describe('validateConfigValue — string', () => {
+describe('validateConfigValue - string', () => {
   it('accepts non-empty string', () => expect(validateConfigValue({ type: 'string' }, 'hi').ok).toBe(true));
   it('rejects empty string', () => expect(validateConfigValue({ type: 'string' }, '').ok).toBe(false));
   it('rejects boolean', () => expect(validateConfigValue({ type: 'string' }, true).ok).toBe(false));
   it('rejects number', () => expect(validateConfigValue({ type: 'string' }, 1).ok).toBe(false));
 });
 
-describe('validateConfigValue — link', () => {
+describe('validateConfigValue - link', () => {
   it('accepts https://', () => expect(validateConfigValue({ type: 'link' }, 'https://example.com/legal').ok).toBe(true));
   it('accepts http://', () => expect(validateConfigValue({ type: 'link' }, 'http://example.com').ok).toBe(true));
   it('rejects data: URI', () => {
@@ -73,14 +73,14 @@ describe('validateConfigValue — link', () => {
   });
 });
 
-describe('validateConfigValue — boolean', () => {
+describe('validateConfigValue - boolean', () => {
   it('accepts true', () => expect(validateConfigValue({ type: 'boolean' }, true).ok).toBe(true));
   it('accepts false', () => expect(validateConfigValue({ type: 'boolean' }, false).ok).toBe(true));
   it('rejects "true" string', () => expect(validateConfigValue({ type: 'boolean' }, 'true').ok).toBe(false));
   it('rejects 1', () => expect(validateConfigValue({ type: 'boolean' }, 1).ok).toBe(false));
 });
 
-describe('validateConfigValue — number', () => {
+describe('validateConfigValue - number', () => {
   it('accepts integer', () => expect(validateConfigValue({ type: 'number' }, 42).ok).toBe(true));
   it('accepts float', () => expect(validateConfigValue({ type: 'number' }, 1.5).ok).toBe(true));
   it('accepts negative', () => expect(validateConfigValue({ type: 'number' }, -7).ok).toBe(true));
@@ -89,7 +89,7 @@ describe('validateConfigValue — number', () => {
   it('rejects "42" string', () => expect(validateConfigValue({ type: 'number' }, '42').ok).toBe(false));
 });
 
-describe('validateConfigValue — range', () => {
+describe('validateConfigValue - range', () => {
   const entry = { type: 'range' as const, min: 0, max: 10, step: 0.5 };
   it('accepts number in range', () => expect(validateConfigValue(entry, 5).ok).toBe(true));
   it('accepts boundary min', () => expect(validateConfigValue(entry, 0).ok).toBe(true));
@@ -101,7 +101,7 @@ describe('validateConfigValue — range', () => {
   it('rejects boolean', () => expect(validateConfigValue(entry, true).ok).toBe(false));
 });
 
-describe('validateConfigValue — list', () => {
+describe('validateConfigValue - list', () => {
   const entry = { type: 'list' as const, values: ['easy', 'medium', 'hard'] };
   it('accepts enum member', () => expect(validateConfigValue(entry, 'easy').ok).toBe(true));
   it('rejects non-member', () => expect(validateConfigValue(entry, 'extreme').ok).toBe(false));

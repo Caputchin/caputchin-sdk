@@ -2,10 +2,10 @@
 //
 // PURITY RULE (the permanent audit line): every function here is built ONLY
 // from operations that are bit-identical across V8 / JSC / SpiderMonkey and
-// every V8 roll — `+ - * /`, comparisons, `Math.sqrt` / `Math.abs` /
+// every V8 roll - `+ - * /`, comparisons, `Math.sqrt` / `Math.abs` /
 // `Math.floor` / `Math.round` / `Math.trunc` (all IEEE-754-mandated), integer
 // bit ops, and explicit-endian bit reads of a double. NOTHING here may call a
-// native transcendental (`Math.sin/cos/tan/exp/log/pow/atan/hypot/cbrt/...`) —
+// native transcendental (`Math.sin/cos/tan/exp/log/pow/atan/hypot/cbrt/...`) -
 // those are libm-approximated and diverge between a player's ARM device and the
 // x86-64 server, which would reject honest players. Kernels are fdlibm-derived.
 //

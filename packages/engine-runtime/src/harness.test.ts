@@ -8,7 +8,7 @@ import type { Seed, TickInput } from './types';
 // A toy engine that exercises the contract: randomness via cap.rng kept in
 // state as a serializable tuple, player actions applied at logical ticks, and a
 // natural game-over. State is plain data (no closures) so it survives a
-// structured-clone / JSON round-trip — the property the live worker relies on.
+// structured-clone / JSON round-trip - the property the live worker relies on.
 interface ToyState {
   rngState: RngState;
   tick: number;

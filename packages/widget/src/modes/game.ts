@@ -168,7 +168,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         // height="full" in inline mode means "fill the parent vertically
         // if the parent has a definite height, else stay content-sized".
         // The pxHeight branch below uses `data-fill="true"` (height:100%
-        // !important) which would CAP the iframe at the parent height —
+        // !important) which would CAP the iframe at the parent height -
         // wrong when the parent is content-sized (collapses to the iframe
         // default 150px and the game scrolls). Instead use a per-axis
         // `data-fill-y` that resolves to `min-height: 100%`: a floor when
@@ -451,7 +451,7 @@ function ensureGameStyles(root: ShadowRoot): void {
     // grid cell, plain block layout) would balloon the host while the
     // inner frame stayed compact, leaving a gap between the iframe and
     // the host edges. width:fit-content opts out of cross-axis stretch
-    // in flex containers (inline-block alone doesn't — flex items get
+    // in flex containers (inline-block alone doesn't - flex items get
     // computed display:block-equivalent regardless of source). Customer
     // overrides (width="full" or pixel width) still set display:block +
     // an explicit width at mount time, which wins by inline-style

@@ -9,7 +9,7 @@ export interface Bridge {
    * Signal a completed round by handing the widget the OPAQUE TRACE of the
    * play. The trace is a serialized string the game alone defines
    * (the recorded inputs); the server re-runs the game's `run(seed, trace)` to
-   * compute the authoritative verdict — the game does NOT report a score here.
+   * compute the authoritative verdict - the game does NOT report a score here.
    * Seed the run from `ctx.seed` so the live play and the server replay agree.
    * (The score, if any, is the game's own in-iframe UI concern.)
    */
@@ -99,13 +99,13 @@ export type ConfigValueType = 'string' | 'link' | 'boolean' | 'number' | 'range'
 
 /** Schema entry for a single configuration key. Three legal shapes:
  *
- *   - Bare type string (`"show_high_score": "boolean"`) — short-form for
+ *   - Bare type string (`"show_high_score": "boolean"`) - short-form for
  *     types that need no extra metadata: `string`, `link`, `boolean`,
  *     `number`. `range` and `list` REQUIRE full forms because they carry
  *     constraint data (bounds, enum).
- *   - Array literal as enum (`"levels": ["a","b","c"]`) — short-form for
+ *   - Array literal as enum (`"levels": ["a","b","c"]`) - short-form for
  *     `list` type. Value must equal one of the array entries exactly.
- *   - Full descriptor (`{ type, name?, description?, ... }`) — every type
+ *   - Full descriptor (`{ type, name?, description?, ... }`) - every type
  *     accepts this form. `list` uses `{ type:"list", values:[…] }`,
  *     `range` uses `{ type:"range", min, max, step? }`. */
 export type ConfigSchemaEntry =
@@ -163,7 +163,7 @@ export interface LocaleKeySchema {
 }
 
 /** Marketplace-discovery metadata block in `caputchin.json`. Presence of
- *  this block is the "yes, please index this" signal — a manifest with
+ *  this block is the "yes, please index this" signal - a manifest with
  *  runtime blocks but no `marketplace` object is a valid customer-hosted
  *  game that the marketplace simply ignores. None of these fields are read
  *  at runtime by the widget or the SDK; they drive the marketplace card
@@ -190,7 +190,7 @@ export interface MarketplaceMetadata {
  *  built-in default footprint.
  *
  *  NOTE: a preferred *layout* (inline / modal / fullscreen) is intentionally
- *  NOT part of this MVP surface — honoring it needs a pre-mount channel the
+ *  NOT part of this MVP surface - honoring it needs a pre-mount channel the
  *  widget does not have today. That capability is designed and deferred. */
 export interface PreferredPresentation {
   width?: number;

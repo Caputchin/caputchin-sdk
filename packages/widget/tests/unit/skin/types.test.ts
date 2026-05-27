@@ -14,7 +14,7 @@ describe('schemaTypeOf', () => {
   });
 });
 
-describe('validateSkinValue — color', () => {
+describe('validateSkinValue - color', () => {
   it('accepts #rgb', () => expect(validateSkinValue('color', '#fff').ok).toBe(true));
   it('accepts #rgba', () => expect(validateSkinValue('color', '#fff0').ok).toBe(true));
   it('accepts #rrggbb', () => expect(validateSkinValue('color', '#FFEECC').ok).toBe(true));
@@ -26,7 +26,7 @@ describe('validateSkinValue — color', () => {
   it('rejects #zzz', () => expect(validateSkinValue('color', '#zzz').ok).toBe(false));
 });
 
-describe('validateSkinValue — scheme allow-list (security)', () => {
+describe('validateSkinValue - scheme allow-list (security)', () => {
   it('rejects javascript: even when payload smuggles a fake extension', () => {
     const v = validateSkinValue('image', 'javascript:alert(1)//x.png');
     expect(v.ok).toBe(false);
@@ -49,7 +49,7 @@ describe('validateSkinValue — scheme allow-list (security)', () => {
   });
 });
 
-describe('validateSkinValue — image', () => {
+describe('validateSkinValue - image', () => {
   it('accepts .png / .jpg / .jpeg / .webp / .svg / .gif', () => {
     for (const ext of ['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif']) {
       expect(validateSkinValue('image', `https://example.com/x.${ext}`).ok).toBe(true);
@@ -75,7 +75,7 @@ describe('validateSkinValue — image', () => {
   it('rejects data: missing MIME', () => expect(validateSkinValue('image', 'data:;base64,abc').ok).toBe(false));
 });
 
-describe('validateSkinValue — audio', () => {
+describe('validateSkinValue - audio', () => {
   it('accepts .mp3 / .ogg / .wav', () => {
     for (const ext of ['mp3', 'ogg', 'wav']) {
       expect(validateSkinValue('audio', `https://example.com/x.${ext}`).ok).toBe(true);
@@ -85,7 +85,7 @@ describe('validateSkinValue — audio', () => {
   it('accepts data:audio/mpeg;base64,abc', () => expect(validateSkinValue('audio', 'data:audio/mpeg;base64,abc').ok).toBe(true));
 });
 
-describe('validateSkinValue — video', () => {
+describe('validateSkinValue - video', () => {
   it('accepts .mp4 / .webm', () => {
     for (const ext of ['mp4', 'webm']) {
       expect(validateSkinValue('video', `https://example.com/x.${ext}`).ok).toBe(true);

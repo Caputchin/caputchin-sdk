@@ -53,7 +53,7 @@ export interface GamePassMessage {
   seq: number;
   /** The opaque trace of the completed play. The widget forwards it to
    *  /verify/pass; the server replays it for the authoritative verdict. The
-   *  game reports no score here — the gate is the server replay. */
+   *  game reports no score here - the gate is the server replay. */
   trace: string;
 }
 
@@ -74,7 +74,7 @@ export interface ManifestMessage {
   locales: { presets: Record<string, LocalePreset> } | null;
   /** Carries BOTH presets and schema, because the schema drives per-value
    *  type validation at resolve time (color / image / audio / video
-   *  allow-list). The `locales` field has no analogue — locale text validation
+   *  allow-list). The `locales` field has no analogue - locale text validation
    *  isn't type-based. */
   skins: {
     schema?: Record<string, SkinSchemaEntry>;

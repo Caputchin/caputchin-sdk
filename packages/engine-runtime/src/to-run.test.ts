@@ -69,7 +69,7 @@ describe('toRun', () => {
 
   it('null config falls back to defaultConfig; a supplied config overrides it', () => {
     // defaultConfig.passScore = 100 (score ~100 -> passes). A stricter supplied
-    // config raises the bar so the SAME (seed, trace) fails — proving config is a
+    // config raises the bar so the SAME (seed, trace) fails - proving config is a
     // run input, not baked, and that the gate reads from the server config.
     expect(run(SEED, null, TRACE).passed).toBe(true);
     expect(run(SEED, { passScore: 100_000 }, TRACE).passed).toBe(false);

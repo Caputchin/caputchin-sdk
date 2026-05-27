@@ -28,7 +28,7 @@ beforeAll(() => {
   }
 });
 
-describe('CaputchinGame — layout integration', () => {
+describe('CaputchinGame - layout integration', () => {
   it('observedAttributes includes layout', () => {
     expect(CaputchinGame.observedAttributes).toContain('layout');
   });

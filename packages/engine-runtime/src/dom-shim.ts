@@ -1,11 +1,11 @@
-// Minimal headless DOM shim — an OPTIONAL kit helper for the framework path.
+// Minimal headless DOM shim - an OPTIONAL kit helper for the framework path.
 // A framework-headless sim (Phaser, Pixi, PlayCanvas, …) expects
 // `document` / `window` / a `<canvas>` to exist even when nothing renders. This
 // installs deterministic no-op stubs so such a sim can instantiate inside a
 // sealed isolate that has no real DOM, WITHOUT pulling in real rendering,
 // layout, or wall-clock.
 //
-// Determinism: every stub returns fixed values — fixed viewport size, no
+// Determinism: every stub returns fixed values - fixed viewport size, no
 // measured layout, and `requestAnimationFrame` that NEVER schedules a callback
 // (the sim is advanced by the kit's fixed-step loop, not by rAF). Rendering
 // calls are swallowed: the renderer draws into the void and cannot affect the
@@ -13,7 +13,7 @@
 //
 // It is orthogonal to (and mutually exclusive with) the neutralization shim:
 // the framework path needs `navigator` / rAF that the neutralization shim bans,
-// so apply ONE — `applyDomShim` for the framework lane, `applyShim` for the
+// so apply ONE - `applyDomShim` for the framework lane, `applyShim` for the
 // bare lane. A per-engine preset (Phase 7+) builds on this minimal surface.
 
 type AnyRecord = Record<string, unknown>;
@@ -144,7 +144,7 @@ export function applyDomShim(scope: object = globalThis): string[] {
       g[name] = value;
       installed.push(name);
     } catch {
-      // non-configurable on this host — best effort
+      // non-configurable on this host - best effort
     }
   };
 

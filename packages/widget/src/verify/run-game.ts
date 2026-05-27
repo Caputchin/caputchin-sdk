@@ -49,7 +49,7 @@ export async function resolveGameUrl(
     // id (single round trip). A `games` pool pick can differ from
     // the mount-time `game`, so the id guard sends that case to a fresh
     // resolve. `prefetched.url === null` means the bootstrap saw no
-    // marketplace bundle for the id — the same outcome a fresh resolve
+    // marketplace bundle for the id - the same outcome a fresh resolve
     // would report, so fail closed identically.
     const bundle = prefetched && prefetched.gameId === gameId ? prefetched : null;
     if (bundle) {
@@ -106,7 +106,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
       // A game may emit game-pass more than once (continued play after the
       // first win). Only the FIRST is authoritative: it releases the cap gate
       // and the server replays that trace for the verdict. Subsequent passes
-      // are silently ignored — one replayable round per session at MVP, so the
+      // are silently ignored - one replayable round per session at MVP, so the
       // widget never resubmits. Tolerating a multi-pass game is the widget's
       // job: games are third-party and we can't assume they emit pass once.
       if (!firstPassSeen) {

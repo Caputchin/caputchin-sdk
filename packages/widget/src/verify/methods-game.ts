@@ -13,7 +13,7 @@ import type { GameConfig } from '../config/game.js';
  *
  * One replayable round per session at MVP: the first `pass()` releases the cap
  * gate (token gets minted, the server replays that trace for the verdict).
- * Subsequent `pass()` calls are silently ignored — the verdict is locked, so
+ * Subsequent `pass()` calls are silently ignored - the verdict is locked, so
  * the widget never resubmits. Mirrors the iframe game path (`run-game.ts`).
  */
 export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfig>): void {

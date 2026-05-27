@@ -54,7 +54,7 @@ function validateColor(value: string): ValidationResult {
  *  the per-type MIME allow-list; everything else must use the http/https
  *  scheme allow-list (so `javascript:`, `file:`, `vbscript:`, `about:` are
  *  rejected even when a fake extension is appended) plus a per-type file
- *  extension. Plain checks — no validation library needed. */
+ *  extension. Plain checks - no validation library needed. */
 function validateAsset(type: Exclude<SkinValueType, 'color'>, value: string): ValidationResult {
   // data: URI branch first so a benign data:image/png passes without
   // colliding with the scheme allow-list (which only permits http/https).

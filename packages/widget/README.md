@@ -33,12 +33,12 @@ Or via CDN (no bundler required):
 
 The widget injects `<input name="caputchin-token">` into the enclosing form on completion. Post that field to your backend and verify it against `/siteverify`.
 
-Modes — `auto` (default), `form-submit`, `manual`, `game-only`. The first three run Cap and produce a token; `game-only` skips Cap entirely and just hosts the game. Omitting `sitekey` is shorthand for `game-only`.
+Modes: `auto` (default), `form-submit`, `manual`, `game-only`. The first three run Cap and produce a token; `game-only` skips Cap entirely and just hosts the game. Omitting `sitekey` is shorthand for `game-only`.
 
-The game iframe is sandboxed (`allow-scripts` only, opaque origin) — no third-party game script touches the host page.
+The game iframe is sandboxed (`allow-scripts` only, opaque origin), so no third-party game script touches the host page.
 
 ## Full reference
 
-[docs/widget.md](../../docs/widget.md) — attributes, events, modes, error codes, programmatic API.
+[docs/widget.md](../../docs/widget.md): attributes, events, modes, error codes, programmatic API.
 
-[Integration guide](../../docs/guides/integrate-widget.md) — end-to-end walkthrough.
+[Integration guide](../../docs/guides/integrate-widget.md): end-to-end walkthrough.

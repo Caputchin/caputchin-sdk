@@ -58,7 +58,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
   // Games commonly call element.focus() on mount (e.g. auto-focusing a
   // Start button so keyboard users can hit Enter). Inside an iframe that
   // hasn't been interacted with yet, focus() yanks focus away from the
-  // host page — interrupting whatever the user was typing into a form
+  // host page - interrupting whatever the user was typing into a form
   // field, breaking RTM screen-readers, etc.
   //
   // Patch: while the iframe document is unfocused AND the user hasn't
@@ -68,7 +68,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
   // authored.
   //
   // Scope: HTMLElement.prototype.focus is the entry point for buttons,
-  // inputs, divs, anchors — covers every focusable element. The runtime
+  // inputs, divs, anchors - covers every focusable element. The runtime
   // is the right layer for the patch (works for every game without each
   // game opting in).
   let userInteractedWithIframe = false;
@@ -179,7 +179,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
       const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
 
-      // Same fallback as postManifest — try the marketplace id first, then
+      // Same fallback as postManifest - try the marketplace id first, then
       // fall through to the default slot so games that registered without an
       // author-declared id still resolve.
       const factory = registry[kickoffGameId] ?? registry[DEFAULT_REGISTRY_KEY];

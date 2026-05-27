@@ -1,5 +1,5 @@
-// Types for the OPTIONAL engine kit. The one mandatory contract —
-// `run(seed, trace) -> verdict` plus the Seed and Verdict shapes — lives in
+// Types for the OPTIONAL engine kit. The one mandatory contract -
+// `run(seed, trace) -> verdict` plus the Seed and Verdict shapes - lives in
 // `@caputchin/replay-contract`; this kit is one convenient way to PRODUCE a
 // conforming `run` from a pure reducer, never a contract authors must adopt.
 //
@@ -28,7 +28,7 @@ export interface Result {
 
 /**
  * Setup handed to `init`. `config` is the resolved gameplay configuration the
- * run executed under (e.g. pass_score, lives, gravity) — an engine input,
+ * run executed under (e.g. pass_score, lives, gravity) - an engine input,
  * because it changes gameplay. The run is self-contained and the server does
  * not resolve config, so config is baked into the artifact (or carried in the
  * author's own trace) at the author's discretion.
@@ -76,7 +76,7 @@ export interface EngineDef<S, A = unknown, C = unknown, V = S> {
 /**
  * One recorded input the replay loop applies: the author's `action`, stamped
  * with the LOGICAL tick it lands on (never wall-clock). This is a structural
- * helper for the kit's loop + codec, generic over the author's action type — it
+ * helper for the kit's loop + codec, generic over the author's action type - it
  * is not a "trace" the platform sees.
  */
 export interface TickInput<A> {
@@ -99,6 +99,6 @@ export interface ReplayOutcome {
   readonly durationMs: number;
   /** Tick at which the engine reported game-over (or `maxTicks` if it never did). */
   readonly endTick: number;
-  /** True if the engine hit `maxTicks` without ending — a rejectable run. */
+  /** True if the engine hit `maxTicks` without ending - a rejectable run. */
   readonly truncated: boolean;
 }

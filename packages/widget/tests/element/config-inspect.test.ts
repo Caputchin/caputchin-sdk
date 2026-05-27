@@ -8,7 +8,7 @@ function el(attrs: Record<string, string>): HTMLElement {
   return e;
 }
 
-describe('inspectWidgetConfig — defaults', () => {
+describe('inspectWidgetConfig - defaults', () => {
   it('defaults to visible (invisible=false)', () => {
     const r = inspectWidgetConfig(el({ sitekey: 'k' }));
     expect(r.config.invisible).toBe(false);
@@ -25,7 +25,7 @@ describe('inspectWidgetConfig — defaults', () => {
   });
 });
 
-describe('inspectWidgetConfig — trigger × invisible coercion', () => {
+describe('inspectWidgetConfig - trigger × invisible coercion', () => {
   it('coerces invisible+click → invisible+auto + emits issue', () => {
     const r = inspectWidgetConfig(el({ sitekey: 'k', invisible: '', trigger: 'click' }));
     expect(r.config.trigger).toBe('auto');
@@ -33,7 +33,7 @@ describe('inspectWidgetConfig — trigger × invisible coercion', () => {
   });
 });
 
-describe('inspectWidgetConfig — sitekey rules', () => {
+describe('inspectWidgetConfig - sitekey rules', () => {
   it('marks inert + emits issue when sitekey missing', () => {
     const r = inspectWidgetConfig(el({}));
     expect(r.inert).toBe(true);
@@ -41,7 +41,7 @@ describe('inspectWidgetConfig — sitekey rules', () => {
   });
 });
 
-describe('inspectWidgetConfig — size + width', () => {
+describe('inspectWidgetConfig - size + width', () => {
   it('defaults size=normal width=auto', () => {
     const r = inspectWidgetConfig(el({ sitekey: 'k' }));
     expect(r.config.size).toBe('normal');
@@ -67,7 +67,7 @@ describe('inspectWidgetConfig — size + width', () => {
   });
 });
 
-describe('inspectGameConfig — sitekey-optional', () => {
+describe('inspectGameConfig - sitekey-optional', () => {
   it('null sitekey when absent (game-only path)', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));
     expect(r.config.sitekey).toBeNull();
@@ -87,7 +87,7 @@ describe('inspectGameConfig — sitekey-optional', () => {
   });
 });
 
-describe('inspectGameConfig — no-verify / shouldVerify', () => {
+describe('inspectGameConfig - no-verify / shouldVerify', () => {
   it('noVerify is false by default', () => {
     expect(inspectGameConfig(el({ sitekey: 'k', game: '@x/y' })).config.noVerify).toBe(false);
   });
@@ -110,7 +110,7 @@ describe('inspectGameConfig — no-verify / shouldVerify', () => {
   });
 });
 
-describe('inspectGameConfig — layout', () => {
+describe('inspectGameConfig - layout', () => {
   it('defaults layout=auto', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));
     expect(r.config.layout).toBe('auto');
@@ -129,7 +129,7 @@ describe('inspectGameConfig — layout', () => {
   });
 });
 
-describe('inspectGameConfig — game-src validation', () => {
+describe('inspectGameConfig - game-src validation', () => {
   it('strips javascript: scheme + emits issue', () => {
     const r = inspectGameConfig(el({ sitekey: 'k', 'game-src': 'javascript:alert(1)' }));
     expect(r.config.gameSrc).toBeNull();
@@ -143,7 +143,7 @@ describe('inspectGameConfig — game-src validation', () => {
   });
 });
 
-describe('inspectGameConfig — height attr', () => {
+describe('inspectGameConfig - height attr', () => {
   it('defaults to null (auto)', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));
     expect(r.config.height).toBeNull();
@@ -166,7 +166,7 @@ describe('inspectGameConfig — height attr', () => {
   });
 });
 
-describe('inspectGameConfig — lang attr', () => {
+describe('inspectGameConfig - lang attr', () => {
   it('defaults to null when omitted', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));
     expect(r.config.locale).toBeNull();

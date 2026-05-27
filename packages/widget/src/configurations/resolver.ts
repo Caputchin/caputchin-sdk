@@ -218,7 +218,7 @@ export function resolveConfig(input: ResolveConfigInput): ResolveConfigResult {
     return { resolved: resolveAuto(presetsMap, schemaMap, issues), issues };
   }
 
-  // Preset name (case-sensitive — see comment above).
+  // Preset name (case-sensitive - see comment above).
   const byName = findByName(presetsMap, trimmed);
   if (byName) {
     const resolved = resolveLeaf(presetsMap, schemaMap, byName.name, byName.preset, issues);

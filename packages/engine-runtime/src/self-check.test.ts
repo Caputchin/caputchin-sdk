@@ -20,7 +20,7 @@ function divergentSinInput(): number {
   throw new Error('no divergent sin input found (unexpected)');
 }
 
-describe('selfCheck — passes a clean deterministic run', () => {
+describe('selfCheck - passes a clean deterministic run', () => {
   it('a pure run over seed/trace is deterministic', async () => {
     const run: RunFn = (seed) => ({ passed: true, score: (seed[0] % 10) + 1, durationMs: 100 });
     const report = await selfCheck(run, CASES);
@@ -52,7 +52,7 @@ describe('selfCheck — passes a clean deterministic run', () => {
   });
 });
 
-describe('selfCheck — flags ambient non-determinism', () => {
+describe('selfCheck - flags ambient non-determinism', () => {
   it('flags a run that reads Date.now()', async () => {
     const run: RunFn = () => ({ passed: Date.now() > 0, score: 1, durationMs: 1 });
     const report = await selfCheck(run, CASES);
@@ -99,7 +99,7 @@ describe('selfCheck — flags ambient non-determinism', () => {
   });
 });
 
-describe('selfCheck — flags instability + bad output', () => {
+describe('selfCheck - flags instability + bad output', () => {
   it('flags a run that drifts across identical re-runs', async () => {
     let n = 0;
     const run: RunFn = () => ({ passed: true, score: n++, durationMs: 1 });
@@ -134,7 +134,7 @@ describe('selfCheck — flags instability + bad output', () => {
   });
 });
 
-describe('selfCheck — aggregate report', () => {
+describe('selfCheck - aggregate report', () => {
   it('ok is false when any one of several cases is non-deterministic', async () => {
     const run: RunFn = (seed) => ({ passed: true, score: seed[0] === 1 ? Date.now() : 5, durationMs: 1 });
     const cases: SelfCheckCase[] = [
