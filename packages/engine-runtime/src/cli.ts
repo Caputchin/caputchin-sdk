@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// caputchin-selfcheck — the pre-publish determinism CLI. Points at a
+// caputchin-selfcheck - the pre-publish determinism CLI. Points at a
 // BUILT run artifact (the file the game publishes) and replays it through the
 // `selfCheck` prober under a hostile, isolate-equivalent environment, so an
 // author (and our own first-party games) confirm cross-env determinism before
@@ -11,7 +11,7 @@
 // <artifact.js> must export `run` (RUN_EXPORT_NAME). Each --trace is a file
 // holding one opaque trace (as the artifact's own decoder reads it); repeat for
 // several recorded plays. With no --trace, an empty kit-default trace is used
-// (exercises init + the tick loop — still catches Date.now-in-init — but real
+// (exercises init + the tick loop - still catches Date.now-in-init - but real
 // recorded traces give the strongest coverage). Each --seed is four comma-
 // separated u32s; defaults probe two distinct seeds.
 
@@ -138,8 +138,8 @@ function printReport(report: SelfCheckReport): void {
   const failed = report.cases.filter((c) => !c.deterministic).length;
   stdout.write(
     report.ok
-      ? `\ncaputchin-selfcheck: OK — ${report.cases.length} case(s) deterministic\n`
-      : `\ncaputchin-selfcheck: FAILED — ${failed}/${report.cases.length} case(s) non-deterministic\n`,
+      ? `\ncaputchin-selfcheck: OK (${report.cases.length} case(s) deterministic)\n`
+      : `\ncaputchin-selfcheck: FAILED (${failed}/${report.cases.length} case(s) non-deterministic)\n`,
   );
 }
 

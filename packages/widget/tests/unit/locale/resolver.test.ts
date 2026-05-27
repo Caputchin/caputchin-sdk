@@ -8,7 +8,7 @@ function presetsOf(p: Presets): Presets {
   return p;
 }
 
-describe('resolveLocale — preset name lookup', () => {
+describe('resolveLocale - preset name lookup', () => {
   it('matches preset by exact case-sensitive name', () => {
     const presets = presetsOf({
       en: { _lang: 'en', _default: true, hello: 'Hi' },
@@ -31,7 +31,7 @@ describe('resolveLocale — preset name lookup', () => {
   });
 });
 
-describe('resolveLocale — iso lookup', () => {
+describe('resolveLocale - iso lookup', () => {
   it('matches a single preset by iso (case-insensitive)', () => {
     const presets = presetsOf({
       english: { _lang: 'en', hello: 'Hi' },
@@ -68,7 +68,7 @@ describe('resolveLocale — iso lookup', () => {
   });
 });
 
-describe('resolveLocale — auto cascade', () => {
+describe('resolveLocale - auto cascade', () => {
   it('matches the first navigator.languages entry by primary subtag', () => {
     const presets = presetsOf({
       en: { _lang: 'en', _default: true, hello: 'Hi' },
@@ -116,7 +116,7 @@ describe('resolveLocale — auto cascade', () => {
   });
 });
 
-describe('resolveLocale — direction auto-derive', () => {
+describe('resolveLocale - direction auto-derive', () => {
   it('auto-derives rtl for arabic when _direction omitted', () => {
     const presets = presetsOf({
       ar: { _lang: 'ar', _default: true, hello: 'مرحبا' },
@@ -150,7 +150,7 @@ describe('resolveLocale — direction auto-derive', () => {
   });
 });
 
-describe('resolveLocale — _extends chain merge', () => {
+describe('resolveLocale - _extends chain merge', () => {
   it('child overrides base text key', () => {
     const presets = presetsOf({
       base: { _lang: 'en', hello: 'Hi', bye: 'Bye' },
@@ -219,7 +219,7 @@ describe('resolveLocale — _extends chain merge', () => {
   });
 });
 
-describe('resolveLocale — inline JSON', () => {
+describe('resolveLocale - inline JSON', () => {
   it('parses inline JSON with explicit _extends and merges chain', () => {
     const presets = presetsOf({
       en: { _lang: 'en', _default: true, hello: 'Hi', bye: 'Bye' },
@@ -254,7 +254,7 @@ describe('resolveLocale — inline JSON', () => {
 
   it('inline JSON with _lang uses it as implicit _extends (pulls iso base strings)', () => {
     // Browser prefers en, customer passes `{ _lang: "ar", overrideKey: "X" }`.
-    // Old behavior layered atop the en (auto) base — surprising because
+    // Old behavior layered atop the en (auto) base - surprising because
     // declaring _lang=ar means "I want ar". New behavior treats _lang as
     // implicit _extends so unspecified keys come from the ar preset.
     const presets = presetsOf({
@@ -325,7 +325,7 @@ describe('resolveLocale — inline JSON', () => {
   });
 });
 
-describe('resolveLocale — rejectInlineJson option', () => {
+describe('resolveLocale - rejectInlineJson option', () => {
   it('emits an issue and falls back to auto when inline JSON arrives under the flag', () => {
     const presets = presetsOf({
       en: { _lang: 'en', _default: true, hello: 'Hi' },
@@ -348,7 +348,7 @@ describe('resolveLocale — rejectInlineJson option', () => {
   });
 });
 
-describe('resolveLocale — unknown attr value', () => {
+describe('resolveLocale - unknown attr value', () => {
   it('unknown preset and unknown iso emit issue and cascade to auto', () => {
     const presets = presetsOf({
       en: { _lang: 'en', _default: true, hello: 'Hi' },

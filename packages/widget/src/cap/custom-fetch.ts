@@ -17,7 +17,7 @@ const GATE_TIMEOUT_MS = 5 * 60 * 1000;
 // start failure / missing seed so kickoff never deadlocks). Armed at session
 // registration; settled in the challenge branch (success), via resolveSeedGate
 // (cap solve failed before/without firing the challenge), on the timeout
-// backstop (solve hung internally — neither threw nor challenged), or on
+// backstop (solve hung internally - neither threw nor challenged), or on
 // unregister.
 interface SeedGate {
   promise: Promise<Seed | null>;
@@ -238,7 +238,7 @@ export function installCustomFetch(): void {
       try {
         // The wrapped token the customer submits (to /siteverify or the HV
         // forwarder) is the platform's base64url envelope at
-        // `platform.wrappedToken` — NOT the top-level `token`, which is Cap's
+        // `platform.wrappedToken` - NOT the top-level `token`, which is Cap's
         // own redeem token spread from the cap response. Reading `token` here
         // injects an unverifiable value (unpack-failed downstream). Contract:
         // GameCompleteRedeemed in @caputchin/api-schemas (verify/pass route).
@@ -247,7 +247,7 @@ export function installCustomFetch(): void {
         if (typeof wrapped === 'string') {
           // The widget surfaces pass/fail only: the authoritative score/durationMs
           // are the server replay's, read by the customer's backend at /siteverify
-          // — not relayed through the client pass event.
+          // - not relayed through the client pass event.
           ctx.onWrappedToken(assembleWrappedToken({ token: wrapped }));
         }
       } catch {

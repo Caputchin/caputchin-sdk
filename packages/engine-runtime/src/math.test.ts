@@ -86,16 +86,16 @@ describe('cap.math determinism', () => {
   // transcendental, or it reintroduces architecture-dependent divergence.
   it('source uses no banned native transcendental', () => {
     const src = readFileSync(fileURLToPath(new URL('./math.ts', import.meta.url)), 'utf8');
-    // Strip comments first — the audit is about CALLS, not prose that names them.
+    // Strip comments first - the audit is about CALLS, not prose that names them.
     const code = src
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/[^\n]*/g, '');
     // 1. dotted native transcendentals
     const dotted =
       /Math\.(sin|cos|tan|asin|acos|atan|atan2|exp|expm1|log|log2|log10|log1p|pow|hypot|cbrt|sinh|cosh|tanh|random)\b/g;
-    // 2. bracket access (`Math["sin"]`) — could reach any member dynamically
+    // 2. bracket access (`Math["sin"]`) - could reach any member dynamically
     const bracket = /Math\s*\[/g;
-    // 3. aliasing the whole Math object (`const M = Math`, `x = Math`) — would
+    // 3. aliasing the whole Math object (`const M = Math`, `x = Math`) - would
     //    let a banned member be reached through the alias, dodging checks 1+2
     const aliased = /[=:]\s*Math\b(?!\s*\.(?:abs|floor|ceil|round|trunc|sign|min|max|sqrt)\b)/g;
     const hits = [

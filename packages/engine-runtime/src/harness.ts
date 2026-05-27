@@ -4,7 +4,7 @@ import type { EngineDef, ReplayInput, ReplayOutcome } from './types';
 // The engine-run loop the kit uses to turn recorded inputs into an outcome. The
 // SAME control flow drives live play (the SDK driver steps the engine frame by
 // frame, recording inputs) and replay (this `replay` runs the recorded inputs in
-// one pass) — that shared loop is what makes live score == replay score by
+// one pass) - that shared loop is what makes live score == replay score by
 // construction, the basis of the kit's `toRun` adapter.
 //
 // Per logical tick: apply the inputs stamped at that tick (in recorded order),

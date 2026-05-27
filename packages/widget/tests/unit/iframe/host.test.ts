@@ -101,7 +101,7 @@ describe('IframeHost', () => {
     container.remove();
   });
 
-  it('dispose clears kickoff-ack timer — no load-failed after dispose', () => {
+  it('dispose clears kickoff-ack timer - no load-failed after dispose', () => {
     const onLoadFailed = vi.fn();
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
@@ -137,7 +137,7 @@ describe('IframeHost', () => {
     expect(host.getIframe()?.tagName).toBe('IFRAME');
   });
 
-  it('manifest msg is intercepted — not forwarded to onMessage', () => {
+  it('manifest msg is intercepted - not forwarded to onMessage', () => {
     const onMessage = vi.fn();
     const host = new IframeHost(null, null, 'g1', document.createElement('div'), onMessage);
     mountHost(host);

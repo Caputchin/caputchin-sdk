@@ -1,7 +1,7 @@
-// `toRun` — the reducer→contract adapter. It turns a `defineEngine`
+// `toRun` - the reducer→contract adapter. It turns a `defineEngine`
 // reducer into the one mandatory `run(seed, config, trace) -> verdict` the
 // artifact exports. This is the kit's whole reason to exist: the author writes
-// pure game logic, the kit produces the conforming `run`. Using it is OPTIONAL —
+// pure game logic, the kit produces the conforming `run`. Using it is OPTIONAL -
 // an author may hand-write a `run` and skip the kit entirely.
 
 import { replay } from './harness';
@@ -13,7 +13,7 @@ export interface ToRunOptions<A, C> {
   /**
    * The config the run falls back to when invoked with `null` config: the
    * server passes `null` until per-site config injection lands, so the run
-   * uses these defaults. When the server DOES supply a config it is used as-is —
+   * uses these defaults. When the server DOES supply a config it is used as-is -
    * config is a run INPUT, never baked, so the same artifact serves every preset.
    */
   readonly defaultConfig: C;
@@ -21,7 +21,7 @@ export interface ToRunOptions<A, C> {
   readonly maxTicks: number;
   /**
    * Pass/fail decision over the authoritative replay outcome + the resolved
-   * config. Read the gate threshold (e.g. `passScore`) from `config` here — it is
+   * config. Read the gate threshold (e.g. `passScore`) from `config` here - it is
    * server-supplied, so it is safe; never derive the gate from the trace.
    */
   passed(outcome: ReplayOutcome, config: C): boolean;

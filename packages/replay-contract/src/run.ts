@@ -6,8 +6,8 @@ import type { Verdict } from './verdict';
 
 /**
  * The server-supplied gameplay config a run executes under. OPAQUE to
- * the platform — each game defines its own shape, so we never type or inspect it,
- * exactly like the trace — and NULLABLE: `null` means "use the run's own internal
+ * the platform - each game defines its own shape, so we never type or inspect it,
+ * exactly like the trace - and NULLABLE: `null` means "use the run's own internal
  * defaults", mirroring the bootstrap config-override's "empty ⇒ game defaults"
  * semantics.
  *
@@ -34,9 +34,9 @@ export type ReplayConfig = unknown;
  * - `seed` is the server-derived per-round {@link Seed} (server round-setup).
  * - `config` is the server-supplied {@link ReplayConfig} (server round-setup,
  *   nullable, opaque). seed + config are the round's server-owned setup; the
- *   trace is the player's input — hence the ordering.
+ *   trace is the player's input - hence the ordering.
  * - `trace` is the OPAQUE blob the customer's client emitted and this function
- *   alone interprets. We never parse or type its contents — it is raw bytes or a
+ *   alone interprets. We never parse or type its contents - it is raw bytes or a
  *   string, bounded only by a byte cap and the sandbox `cpuMs` limit. There is
  *   deliberately no `Trace` type anywhere: the engine owns its own input stream.
  * - the return is a {@link Verdict}, sync or async (WASM instantiation is async

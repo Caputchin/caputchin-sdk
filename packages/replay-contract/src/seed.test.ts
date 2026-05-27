@@ -14,7 +14,7 @@ describe('deriveSeed', () => {
   const S = 'sess_abc123';
   const G = 'caputchin/games/leaf-memory';
 
-  it('is deterministic — same inputs, same seed', async () => {
+  it('is deterministic - same inputs, same seed', async () => {
     const a = await deriveSeed(S, G, 0);
     const b = await deriveSeed(S, G, 0);
     expect(a).toEqual(b);

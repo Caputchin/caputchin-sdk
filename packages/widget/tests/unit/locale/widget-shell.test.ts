@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { resolveWidgetShell } from '../../../src/locale/widget-shell.js';
 
-describe('resolveWidgetShell — browser-auto path', () => {
+describe('resolveWidgetShell - browser-auto path', () => {
   it('defaults to en + ltr when no navigator hint provided', () => {
     const shell = resolveWidgetShell(null, []);
     expect(shell.lang).toBe('en');
@@ -42,7 +42,7 @@ describe('resolveWidgetShell — browser-auto path', () => {
   });
 });
 
-describe('resolveWidgetShell — explicit lang attr', () => {
+describe('resolveWidgetShell - explicit lang attr', () => {
   it('resolves preset name (ar) from a browser that prefers en', () => {
     const shell = resolveWidgetShell('ar', ['en']);
     expect(shell.lang).toBe('ar');

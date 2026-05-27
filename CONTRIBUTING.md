@@ -40,7 +40,7 @@ pnpm -r typecheck
 Single-line [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <subject>` (max 100 chars, no body, no footer).
 
 Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-Breaking changes: append `!` after the type/scope — `feat(widget)!: ...`.
+Breaking changes: append `!` after the type/scope, e.g. `feat(widget)!: ...`.
 
 ## Where docs live
 

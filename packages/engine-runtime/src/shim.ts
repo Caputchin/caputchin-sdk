@@ -1,4 +1,4 @@
-// The neutralization shim — an OPTIONAL kit helper for the IEEE-754 + JS path.
+// The neutralization shim - an OPTIONAL kit helper for the IEEE-754 + JS path.
 // Run once at the top of the engine's execution scope; applying the
 // SAME shim live and on replay keeps those two environments from drifting via a
 // stray non-deterministic global. It is optional: a fixed-point or WASM author
@@ -8,7 +8,7 @@
 //   1. Swaps `Math.*` transcendentals to point at `cap.math`, so even engine
 //      code that calls `Math.sin` (rather than importing cap.math) is
 //      deterministic. The IEEE-mandated members (`sqrt`/`abs`/`floor`/…) are
-//      left alone — they are already bit-identical.
+//      left alone - they are already bit-identical.
 //   2. Replaces every non-deterministic global (`Date`, `Math.random`,
 //      `crypto`, `fetch`, timers, GC observers, …) with a loud thrower, so any
 //      accidental use fails immediately and visibly instead of silently making
@@ -36,7 +36,7 @@ function banned(name: string): never {
  * Build the value that replaces a banned global. A Proxy (over a function
  * target) so it fails LOUD on every use shape: calling it (`Date()`),
  * constructing it (`new Date()`), AND reading any property
- * (`crypto.getRandomValues`, `Intl.DateTimeFormat`, `navigator.language`) — the
+ * (`crypto.getRandomValues`, `Intl.DateTimeFormat`, `navigator.language`) - the
  * last is why a plain throwing function is not enough for namespace globals,
  * where method access would otherwise be a cryptic `undefined is not a
  * function`. `typeof` still reports `'function'` so benign feature-detection
@@ -128,7 +128,7 @@ export function applyShim(scope: object = globalThis): string[] {
     try {
       math[name] = capMath[name] as unknown;
     } catch {
-      // non-writable in some host — best effort; the lint + probe still cover it
+      // non-writable in some host - best effort; the lint + probe still cover it
     }
   }
   // Math.random is the one Math member to ban outright rather than swap.
@@ -144,7 +144,7 @@ export function applyShim(scope: object = globalThis): string[] {
       g[name] = makeBanned(name);
       neutralized.push(name);
     } catch {
-      // non-configurable global on this host — best effort
+      // non-configurable global on this host - best effort
     }
   }
 

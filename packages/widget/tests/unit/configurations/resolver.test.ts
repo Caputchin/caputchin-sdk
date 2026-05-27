@@ -12,7 +12,7 @@ const SIMPLE_SCHEMA: Record<string, ConfigSchemaEntry> = {
   difficulty: ['easy', 'medium', 'hard'],
 };
 
-describe('resolveConfig — basic cascade', () => {
+describe('resolveConfig - basic cascade', () => {
   it('empty presets returns null', () => {
     const r = resolveConfig({ presets: {}, attrValue: 'default' });
     expect(r.resolved).toBeNull();
@@ -44,7 +44,7 @@ describe('resolveConfig — basic cascade', () => {
   });
 });
 
-describe('resolveConfig — preset name lookup', () => {
+describe('resolveConfig - preset name lookup', () => {
   it('matches preset by exact name', () => {
     const r = resolveConfig({ presets: SIMPLE_PRESETS, schema: SIMPLE_SCHEMA, attrValue: 'hard' });
     expect(r.resolved?.['difficulty']).toBe('hard');
@@ -56,7 +56,7 @@ describe('resolveConfig — preset name lookup', () => {
   });
 });
 
-describe('resolveConfig — _extends chain', () => {
+describe('resolveConfig - _extends chain', () => {
   it('child wins on key conflict, parent values inherited', () => {
     const presets: Record<string, ConfigPreset> = {
       base: { _default: true, show_high_score: true, difficulty: 'easy' },
@@ -95,7 +95,7 @@ describe('resolveConfig — _extends chain', () => {
   });
 });
 
-describe('resolveConfig — inline JSON', () => {
+describe('resolveConfig - inline JSON', () => {
   it('rejectInlineJson=true emits issue + cascades to auto', () => {
     const r = resolveConfig({
       presets: SIMPLE_PRESETS,
@@ -135,7 +135,7 @@ describe('resolveConfig — inline JSON', () => {
   });
 });
 
-describe('resolveConfig — schema-driven validation', () => {
+describe('resolveConfig - schema-driven validation', () => {
   it('drops key on invalid value + emits issue', () => {
     const presets: Record<string, ConfigPreset> = {
       default: { _default: true, difficulty: 'extreme', show_high_score: true },

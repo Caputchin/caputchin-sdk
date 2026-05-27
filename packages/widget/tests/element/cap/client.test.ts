@@ -58,7 +58,7 @@ describe('createCapClient', () => {
     expect(() => client.dispose()).not.toThrow();
   });
 
-  it('two clients solve in parallel — no serialization queue', async () => {
+  it('two clients solve in parallel - no serialization queue', async () => {
     const order: number[] = [];
 
     const { Cap } = await import('@cap.js/widget');

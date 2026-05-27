@@ -12,7 +12,7 @@ const SCHEMA_COLORS: Record<string, SkinSchemaEntry> = {
   surface_bg: { type: 'color', name: 'Surface', description: 'main bg' },
 };
 
-describe('resolveSkin — basic cascade', () => {
+describe('resolveSkin - basic cascade', () => {
   it('empty presets returns null', () => {
     const r = resolveSkin({
       presets: {},
@@ -86,7 +86,7 @@ describe('resolveSkin — basic cascade', () => {
   });
 });
 
-describe('resolveSkin — preset name lookup', () => {
+describe('resolveSkin - preset name lookup', () => {
   const presets: Record<string, SkinPreset> = {
     'sun': { _theme: 'light', _default: true, primary: '#fff' },
     'moon': { _theme: 'dark', _default: true, primary: '#000' },
@@ -113,7 +113,7 @@ describe('resolveSkin — preset name lookup', () => {
   });
 });
 
-describe('resolveSkin — mode shortcut tie-break', () => {
+describe('resolveSkin - mode shortcut tie-break', () => {
   it('mode "light" picks _default:true', () => {
     const presets: Record<string, SkinPreset> = {
       a: { _theme: 'light', primary: '#aaa' },
@@ -177,7 +177,7 @@ describe('resolveSkin — mode shortcut tie-break', () => {
   });
 });
 
-describe('resolveSkin — auto cascade', () => {
+describe('resolveSkin - auto cascade', () => {
   it('prefersDark=true with no dark preset falls back to light', () => {
     const presets: Record<string, SkinPreset> = {
       light: { _theme: 'light', _default: true, primary: '#fff' },
@@ -204,7 +204,7 @@ describe('resolveSkin — auto cascade', () => {
   });
 });
 
-describe('resolveSkin — _extends chain', () => {
+describe('resolveSkin - _extends chain', () => {
   it('extends a preset by name; child wins on key conflict', () => {
     const presets: Record<string, SkinPreset> = {
       base: { _theme: 'dark', _default: true, primary: '#000', accent: '#444' },
@@ -297,7 +297,7 @@ describe('resolveSkin — _extends chain', () => {
   });
 });
 
-describe('resolveSkin — inline JSON', () => {
+describe('resolveSkin - inline JSON', () => {
   it('rejectInlineJson=true emits issue + cascades to auto', () => {
     const r = resolveSkin({
       presets: PRESETS_LIGHT_DARK,
@@ -387,7 +387,7 @@ describe('resolveSkin — inline JSON', () => {
   });
 });
 
-describe('resolveSkin — schema-driven validation', () => {
+describe('resolveSkin - schema-driven validation', () => {
   it('drops key on invalid color value + emits issue', () => {
     const presets: Record<string, SkinPreset> = {
       light: { _theme: 'light', _default: true, primary: '#zzz', accent: '#fff' },

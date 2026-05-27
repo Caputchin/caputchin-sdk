@@ -16,7 +16,7 @@
 // presets, then aliased bundled at the tail. The downstream default scan
 // (`findByLang` / `findByMode` / `findDefault`) returns the FIRST
 // `_default: true` it meets, so override-first ordering makes a customer's
-// marked default win its group over a bundled default of the same group —
+// marked default win its group over a bundled default of the same group -
 // even when the customer's preset has a NEW name (not a same-name collision).
 // Value precedence is unaffected: it rides on the `_extends` chain flatten
 // (deepest ancestor first, leaf wins), which is independent of this order.
@@ -37,7 +37,7 @@ export function injectOverrideLayer<T extends PresetWithExtends>(
   const merged: Record<string, T> = {};
   const aliases: Record<string, T> = {};
 
-  // 1. Override layer first — so its defaults (and first-declared fallback)
+  // 1. Override layer first - so its defaults (and first-declared fallback)
   //    are selected ahead of bundled.
   for (const [name, preset] of Object.entries(override)) {
     if (Object.prototype.hasOwnProperty.call(safeBundled, name)) {
@@ -60,7 +60,7 @@ export function injectOverrideLayer<T extends PresetWithExtends>(
       merged[name] = preset;
     }
   }
-  // 3. Aliased bundled (collided) at the tail — reachable by `_extends`
+  // 3. Aliased bundled (collided) at the tail - reachable by `_extends`
   //    for value inheritance, but iterated last so override defaults win
   //    selection.
   return { ...merged, ...aliases };

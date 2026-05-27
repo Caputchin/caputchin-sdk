@@ -64,7 +64,7 @@ export class CaputchinGame extends HTMLElement {
 
     // Bundled cascade once for hint extraction (sitekey + game both feed
     // the bootstrap call). If sitekey is absent (game-only path), skip
-    // bootstrap entirely — overrides are gated by sitekey/plan-tier and
+    // bootstrap entirely - overrides are gated by sitekey/plan-tier and
     // there's nothing to fetch.
     const rawLocale = state.config.locale;
     const inlineSignals = rawLocale ? deriveShellSignals(rawLocale) : { hint: null, direction: null };
@@ -90,7 +90,7 @@ export class CaputchinGame extends HTMLElement {
       // _lang signals), same as before.
       this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
       // The same bootstrap response already carries the marketplace bundle
-      // url + integrity for state.config.game — stash it (tagged with that
+      // url + integrity for state.config.game - stash it (tagged with that
       // id) so the game-load path can skip a second /widget/bootstrap call.
       this.state.gameBundle = bootstrap?.game
         ? { gameId: this.state.config.game, url: bootstrap.game.url, integrity: bootstrap.game.integrity }
@@ -138,7 +138,7 @@ export class CaputchinGame extends HTMLElement {
     // install-game-frame). There's no cross-cutting dimension between
     // game configurations and widget shell configurations. Widget shell
     // configurations CAN still be overridden via the bootstrap response's
-    // widget.overrides.configuration block — same as on `<caputchin-widget>`.
+    // widget.overrides.configuration block - same as on `<caputchin-widget>`.
     const widgetConfigOverride = (overrides?.configuration?.presets ?? null) as Parameters<typeof resolveWidgetShellConfig>[0];
     const shellConfig = resolveWidgetShellConfig(widgetConfigOverride);
     for (const message of shellConfig.issues) {
@@ -163,7 +163,7 @@ export class CaputchinGame extends HTMLElement {
     // Game-only path (no verification gate): mount + run, no trigger axis.
     // Covers both no-sitekey and explicit `no-verify` (with a sitekey, whose
     // overrides were still fetched above). Modal/fullscreen fall through to
-    // the trigger so the game opens on click — it just won't run the gate.
+    // the trigger so the game opens on click - it just won't run the gate.
     if (!shouldVerify(state.config) && !isManual) {
       runGame(this, state, apiHost).catch(() => {});
       return;

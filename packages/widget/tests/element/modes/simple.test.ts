@@ -39,7 +39,7 @@ describe('visible (default) widget presentation', () => {
     expect(shadow!.textContent).toContain('see no data');
     // State text replaces the old "I'm not a robot" label. Idle = "Verify".
     expect(shadow!.textContent).toContain('Verify');
-    // Light-DOM children stay empty — internals are isolated.
+    // Light-DOM children stay empty - internals are isolated.
     expect(el.querySelector('[role="checkbox"]')).toBeNull();
     el.remove();
   });

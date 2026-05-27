@@ -40,7 +40,7 @@ function assertField(name: string, value: string): void {
  * Derive the per-round seed from the session, game, and round index.
  *
  * Preimage: `${sessionId}:${gameId}:${roundIndex}` (UTF-8). Hash: SHA-256 via
- * Web Crypto (async — there is no sync SHA-256 in the platform, and rolling our
+ * Web Crypto (async - there is no sync SHA-256 in the platform, and rolling our
  * own would be an audit surface). The seed is the LOW 128 bits of the digest
  * (its last 16 bytes, the digest being big-endian with byte 0 most significant),
  * packed big-endian into four u32 words, most-significant word first.

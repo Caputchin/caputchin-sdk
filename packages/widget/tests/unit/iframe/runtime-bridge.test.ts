@@ -41,7 +41,7 @@ function registerGame(id: string, factory: (root: HTMLElement, bridge: unknown, 
   cap.games[id] = factory;
 }
 
-describe('iframe runtime — Caputchin global initialised on import', () => {
+describe('iframe runtime - Caputchin global initialised on import', () => {
   it('window.Caputchin.games is an object', () => {
     const cap = (window as unknown as { Caputchin: { games: Record<string, unknown> } }).Caputchin;
     expect(cap).toBeDefined();
@@ -54,7 +54,7 @@ describe('iframe runtime — Caputchin global initialised on import', () => {
   });
 });
 
-describe('iframe runtime — bridge.error contract', () => {
+describe('iframe runtime - bridge.error contract', () => {
   it('error({code, message}) posts game-error with both fields intact', () => {
     let captured: unknown = null;
     registerGame('err-1', (_root, bridge) => {
@@ -90,7 +90,7 @@ describe('iframe runtime — bridge.error contract', () => {
   });
 });
 
-describe('iframe runtime — bridge.pass contract', () => {
+describe('iframe runtime - bridge.pass contract', () => {
   it('pass({trace}) posts the trace', () => {
     let captured: unknown = null;
     registerGame('c-1', (_root, bridge) => {
@@ -119,7 +119,7 @@ describe('iframe runtime — bridge.pass contract', () => {
   });
 });
 
-describe('iframe runtime — manifest posted on boot', () => {
+describe('iframe runtime - manifest posted on boot', () => {
   it('manifest message posted at boot', () => {
     expect(manifestOnBoot).not.toBeNull();
     expect(manifestOnBoot!['kind']).toBe('manifest');
@@ -146,7 +146,7 @@ describe('iframe runtime — manifest posted on boot', () => {
   });
 });
 
-describe('iframe runtime — kickoff ctx delivery', () => {
+describe('iframe runtime - kickoff ctx delivery', () => {
   it('kickoff with lang payload forwards ctx.locale to the factory', () => {
     let capturedCtx: unknown = null;
     registerGame('ctx-1', (_root, _bridge, ctx) => {
@@ -196,7 +196,7 @@ describe('iframe runtime — kickoff ctx delivery', () => {
   });
 });
 
-describe('iframe runtime — layout-context msg', () => {
+describe('iframe runtime - layout-context msg', () => {
   it('bridge.layout reflects layout-context msg sent before kickoff', () => {
     let captured: { layout: unknown } | null = null;
     registerGame('lc-1', (_root, bridge) => {
@@ -252,7 +252,7 @@ describe('iframe runtime — layout-context msg', () => {
   });
 });
 
-describe('iframe runtime — kickoff missing factory', () => {
+describe('iframe runtime - kickoff missing factory', () => {
   it('unknown gameId posts game-not-registered', () => {
     dispatchKickoff('no-such-game', 9);
     const err = posted.find((m) => m['kind'] === 'game-error');

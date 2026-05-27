@@ -32,7 +32,7 @@ export async function fetchBootstrap(input: FetchBootstrapInput): Promise<Bootst
     return validateBootstrapResponse(raw);
   } catch {
     // AbortError on timeout, TypeError on network failure, SyntaxError on
-    // invalid JSON, anything else — uniform null result. The widget reads
+    // invalid JSON, anything else - uniform null result. The widget reads
     // null as "no overrides, mount with bundled".
     return null;
   } finally {

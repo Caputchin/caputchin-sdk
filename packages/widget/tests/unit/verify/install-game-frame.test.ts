@@ -30,7 +30,7 @@ function overrides(parts: Partial<OverridesPerAxis>): OverridesPerAxis {
   return { locale: null, skin: null, configuration: null, ...parts };
 }
 
-describe('resolveLocaleForGame — override merge', () => {
+describe('resolveLocaleForGame - override merge', () => {
   const baseManifest = manifest({
     locales: { presets: { en: { _lang: 'en', _default: true, hello: 'Hi' } } },
   });
@@ -63,7 +63,7 @@ describe('resolveLocaleForGame — override merge', () => {
     // Not a same-name collision: the override preset has a distinct name but
     // the same _lang group + _default:true. The bundled preset is named
     // "english" (not its ISO) so `locale="en"` resolves by ISO-GROUP default
-    // scan rather than exact-name match — that scan is where override-first
+    // scan rather than exact-name match - that scan is where override-first
     // iteration must make the override win. This is the case the original
     // (bundled-first) bug got wrong.
     const m = manifest({ locales: { presets: { english: { _lang: 'en', _default: true, hello: 'Hi' } } } });
@@ -74,7 +74,7 @@ describe('resolveLocaleForGame — override merge', () => {
   });
 });
 
-describe('resolveSkinForGame — override merge', () => {
+describe('resolveSkinForGame - override merge', () => {
   const baseManifest = manifest({
     skins: {
       schema: { primary: 'color', surface_bg: 'color' },

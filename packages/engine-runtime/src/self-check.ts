@@ -1,23 +1,23 @@
-// The self-check — the OPTIONAL pre-publish determinism prober. Since
+// The self-check - the OPTIONAL pre-publish determinism prober. Since
 // the platform sets no index-time determinism gate (a submitted reference trace
 // is an attack surface) and runs no server-side mismatch backstop at MVP, a
 // non-deterministic `run` would silently false-reject its own players on the
 // server isolate. This tool is the author's confidence mechanism BEFORE publish:
 // it replays the run under a hostile, isolate-equivalent environment and flags
-// any dependence on ambient non-determinism — wall-clock, `Math.random`, or
-// native (cross-arch-divergent) transcendental math — and any run-to-run drift.
+// any dependence on ambient non-determinism - wall-clock, `Math.random`, or
+// native (cross-arch-divergent) transcendental math - and any run-to-run drift.
 //
 // It is a LOCAL prober, not the trust anchor: the server's per-verify replay is
 // authoritative, and the harness (Phase 9) adds the real-isolate diff. What this
-// catches is the cheap, common class of bug — a run that reads `Date.now()` to
+// catches is the cheap, common class of bug - a run that reads `Date.now()` to
 // seed its PRNG, calls `Math.random()`, or uses `Math.sin` (libm-approximated,
-// so an ARM player and an x86 server disagree) — at author time, loud, before a
+// so an ARM player and an x86 server disagree) - at author time, loud, before a
 // single honest player is rejected.
 //
 // Limitation: it has only the `run` function reference, so it catches ambient
 // access AT RUN TIME (which includes `init`, since the kit runs `init` inside
 // `run`). A value captured at MODULE-LOAD time (`const T0 = Date.now()` at the
-// top of the artifact) is not visible here — the `applyShim` runtime ban and the
+// top of the artifact) is not visible here - the `applyShim` runtime ban and the
 // Phase 9 real-isolate diff cover that residual.
 
 import { parseVerdict, type ReplayConfig, type RunFn, type Seed, type Verdict } from '@caputchin/replay-contract';
@@ -83,8 +83,8 @@ class AmbientAccess extends Error {
 }
 
 /** A Proxy (over a function target) that throws {@link AmbientAccess} on EVERY
- *  use shape — call (`fetch()`), construct (`new Date()`), and property read
- *  (`crypto.getRandomValues`, `performance.now`) — so a namespace global fails
+ *  use shape - call (`fetch()`), construct (`new Date()`), and property read
+ *  (`crypto.getRandomValues`, `performance.now`) - so a namespace global fails
  *  loud at the access site instead of as a cryptic downstream `undefined`.
  *  `typeof` still reports `'function'` (benign feature-detection survives) and
  *  symbol gets return undefined (host coercion machinery is left alone). */
@@ -147,7 +147,7 @@ function patchGlobal(name: string, value: unknown): Patch {
       try {
         Object.defineProperty(globalThis, name, { value, configurable: true, writable: true });
       } catch {
-        /* non-configurable on this host — best effort, the diff/probe still covers it */
+        /* non-configurable on this host - best effort, the diff/probe still covers it */
       }
     },
     restore() {
@@ -251,7 +251,7 @@ async function checkCase(run: RunFn, c: SelfCheckCase, repeats: number): Promise
 
   // 2. Trig independence: re-run with native trig swapped to cap.math. A verdict
   //    that changes means the run reads native transcendentals (ARM/x86 diverge).
-  //    A run that already uses cap.math (or no trig) is invariant — no flag.
+  //    A run that already uses cap.math (or no trig) is invariant - no flag.
   const capTrigResult = await invoke(run, c, buildEnv(true));
   if (!('error' in capTrigResult) && capTrigResult.verdict !== null && !verdictsEqual(capTrigResult.verdict, baseline)) {
     violations.push({
@@ -288,7 +288,7 @@ export async function selfCheck<C = ReplayConfig>(
 ): Promise<SelfCheckReport> {
   const repeats = Math.max(2, opts.repeats ?? 8);
   // Probe the run opaquely: internally we only feed it `c.config ?? null`, so the
-  // config shape is irrelevant to the prober — the public generic is purely for
+  // config shape is irrelevant to the prober - the public generic is purely for
   // the caller's ergonomics (a typed RunFn<C> + SelfCheckCase<C> need no cast).
   const opaqueRun = run as RunFn;
   const reports: CaseReport[] = [];

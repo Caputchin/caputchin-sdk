@@ -39,7 +39,7 @@ describe('project (optional view)', () => {
     expect(v).not.toHaveProperty('tick');
   });
 
-  it('view never affects replay — same outcome with or without it', () => {
+  it('view never affects replay - same outcome with or without it', () => {
     const input = { seed: SEED, config: {}, actions: [], maxTicks: 100 };
     expect(replay(withView, input)).toEqual(replay(withoutView, input));
   });

@@ -56,13 +56,13 @@ describe('CaputchinGame methods', () => {
     document.body.appendChild(el);
   }
 
-  it('does NOT expose start() — verification auto-kicks on mount/first-click', () => {
+  it('does NOT expose start() - verification auto-kicks on mount/first-click', () => {
     mount({ sitekey: 'k', game: '@x/y', layout: 'inline' });
     expect((el as unknown as Record<string, unknown>)['start']).toBeUndefined();
     el.remove();
   });
 
-  it('exposes pass()/fail() — manual mode customer-driven release/abort', () => {
+  it('exposes pass()/fail() - manual mode customer-driven release/abort', () => {
     mount({ sitekey: 'k', trigger: 'manual' });
     expect(typeof (el as unknown as Record<string, unknown>)['pass']).toBe('function');
     expect(typeof (el as unknown as Record<string, unknown>)['fail']).toBe('function');

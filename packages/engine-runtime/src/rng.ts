@@ -1,7 +1,7 @@
 import type { Seed } from './types';
 
 // Deterministic PRNG for engines. Algorithm: sfc32 (Small Fast Counter, 128-bit
-// state) — fast, statistically strong, and built ONLY from int32 ops
+// state) - fast, statistically strong, and built ONLY from int32 ops
 // (`| 0`, `^`, `>>>`, `<<`, `+`), which are bit-identical across every JS engine
 // and every V8 roll. The one float op, `(t >>> 0) / 4294967296`, divides a
 // 32-bit unsigned by 2^32: an IEEE-754 correctly-rounded division, so also
@@ -102,7 +102,7 @@ export function rng(seed: Seed): Rng {
   return r;
 }
 
-/** Resume a PRNG from previously captured state — no warm-up, exact stream. */
+/** Resume a PRNG from previously captured state - no warm-up, exact stream. */
 export function rngFromState(s: RngState): Rng {
   return make(s[0], s[1], s[2], s[3]);
 }

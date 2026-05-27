@@ -23,8 +23,8 @@ function mockFetch(gameBlock: unknown): ReturnType<typeof vi.fn> {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('resolveGameUrl — bootstrap-bundle reuse', () => {
-  it('reuses the prefetched bundle when its id matches — NO second fetch', async () => {
+describe('resolveGameUrl - bootstrap-bundle reuse', () => {
+  it('reuses the prefetched bundle when its id matches - NO second fetch', async () => {
     const fetchFn = mockFetch({ url: 'https://should-not-be-called', integrity: 'nope' });
     const onError = vi.fn();
     const r = await resolveGameUrl(el(), cfg({ game: 'o/r' }), 'https://api', onError, {
@@ -70,7 +70,7 @@ describe('resolveGameUrl — bootstrap-bundle reuse', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
-  it('uses the explicit game-src verbatim — no bundle, no fetch', async () => {
+  it('uses the explicit game-src verbatim - no bundle, no fetch', async () => {
     const fetchFn = mockFetch({ url: 'x', integrity: 'y' });
     const r = await resolveGameUrl(el(), cfg({ gameSrc: 'https://host.test/g.js' }), 'https://api', vi.fn(), null);
     expect(r.url).toBe('https://host.test/g.js');

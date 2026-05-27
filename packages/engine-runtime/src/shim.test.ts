@@ -15,7 +15,7 @@ describe('applyShim', () => {
 
     expect(fakeMath.sin).toBe(capMath.sin);
     expect(fakeMath.cos).toBe(capMath.cos);
-    expect(fakeMath.sqrt).toBe(Math.sqrt); // deterministic already — left intact
+    expect(fakeMath.sqrt).toBe(Math.sqrt); // deterministic already - left intact
     expect(() => (fakeMath.random as () => number)()).toThrow(/non-deterministic|cap\.rng/);
   });
 

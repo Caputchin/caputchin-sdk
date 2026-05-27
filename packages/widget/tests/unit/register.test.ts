@@ -36,7 +36,7 @@ describe('defineCaputchinElements', () => {
     // Capture whatever is registered now; idempotency means the second call
     // must not replace it. Asserting against the captured refs (not the
     // imported classes) keeps this independent of any prior test's registry
-    // state — happy-dom shares one customElements registry across the file.
+    // state - happy-dom shares one customElements registry across the file.
     const widgetCtor = customElements.get('caputchin-widget');
     const gameCtor = customElements.get('caputchin-game');
     expect(() => defineCaputchinElements()).not.toThrow();
