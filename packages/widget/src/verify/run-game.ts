@@ -6,7 +6,6 @@ import { collectSkinAssetOrigins } from '../bootstrap/asset-origins.js';
 import { fetchMarketplaceResolution } from '../resolver.js';
 import { resolveGameId } from './id.js';
 import { installGameFrame } from './install-game-frame.js';
-import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
 import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
@@ -101,15 +100,18 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
     return;
   }
 
-  let firstClickHappened = false;
+  let firstPassSeen = false;
   const host = new IframeHost(gameUrl, integrity, gameId, el, (msg) => {
     if (msg.kind === 'game-pass') {
-      // The game emits the opaque TRACE; the server replays it for the verdict.
-      if (!firstClickHappened) {
-        firstClickHappened = true;
+      // A game may emit game-pass more than once (continued play after the
+      // first win). Only the FIRST is authoritative: it releases the cap gate
+      // and the server replays that trace for the verdict. Subsequent passes
+      // are silently ignored — one replayable round per session at MVP, so the
+      // widget never resubmits. Tolerating a multi-pass game is the widget's
+      // job: games are third-party and we can't assume they emit pass once.
+      if (!firstPassSeen) {
+        firstPassSeen = true;
         client.releaseGate({ trace: msg.trace });
-      } else {
-        void recordAdditionalRound(el, state, apiHost, { trace: msg.trace });
       }
     } else if (msg.kind === 'game-error') {
       const { code, originalCode } = mapIframeErrorCode(msg.code);

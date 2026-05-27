@@ -1,7 +1,6 @@
 import { fireError } from '../errors.js';
 import { emitPass } from './events.js';
 import type { ManualPassPayload, ManualFailPayload } from './payload.js';
-import { recordAdditionalRound } from './record-round.js';
 import type { WidgetState } from './state.js';
 import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
@@ -12,12 +11,12 @@ import type { GameConfig } from '../config/game.js';
  * checkbox click for modal/fullscreen. `pass()` and `fail()` are the
  * customer's release/abort handles, only valid when `trigger="manual"`.
  *
- * Multi-round: customers can call `pass()` repeatedly to record higher
- * scores. First call releases the cap gate (token gets minted); subsequent
- * calls fire `/verify/pass` directly with the locked token via
- * `recordAdditionalRound`, mirroring the iframe game multi-round flow.
+ * One replayable round per session at MVP: the first `pass()` releases the cap
+ * gate (token gets minted, the server replays that trace for the verdict).
+ * Subsequent `pass()` calls are silently ignored — the verdict is locked, so
+ * the widget never resubmits. Mirrors the iframe game path (`run-game.ts`).
  */
-export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): void {
+export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfig>): void {
   Object.defineProperty(el, 'pass', {
     value: (payload?: ManualPassPayload): void => {
       if (!state.config) return;
@@ -48,12 +47,9 @@ export function installGameMethods(el: HTMLElement, state: WidgetState<GameConfi
         // emit the pass event once the wrapped token comes back from redeem.
         state.firstPassFired = true;
         state.capClient.releaseGate({ trace });
-      } else {
-        // Subsequent pass: record an additional round + emit the pass event
-        // with the locked token. recordAdditionalRound silently no-ops if
-        // lockedToken isn't set yet (race against cap.solve completion).
-        void recordAdditionalRound(el, state, apiHost, { trace });
       }
+      // Subsequent pass() calls are silently ignored: the first verdict is
+      // authoritative + locked (one replayable round per session at MVP).
     },
     configurable: true,
     writable: false,
