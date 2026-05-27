@@ -173,6 +173,12 @@ export interface MarketplaceMetadata {
   description?: string;
   version?: string;
   preview?: string;
+  /** Optional contact address for the game's author. Never shown on the
+   *  marketplace card; the platform uses it only to notify the author about
+   *  their listing (for example, when a newly published version fails the
+   *  server-side replay conformance check and is therefore indexed without
+   *  the playable verification path). Omit to receive no notifications. */
+  author_email?: string;
   support?: {
     responsive?: boolean;
     touch?: boolean;
