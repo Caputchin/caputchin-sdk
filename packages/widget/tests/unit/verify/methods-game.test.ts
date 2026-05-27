@@ -6,9 +6,7 @@ import type { GameConfig } from '../../../src/config/game.js';
 
 // Drive every branch of the customer-facing pass()/fail()/setNickname()
 // handles directly against a controlled state, instead of the full element
-// mount (which can't easily reach the multi-round / cap-release branches).
-
-const API = 'https://api.test';
+// mount (which can't easily reach the cap-release branch).
 
 function gameEl(): HTMLElement & { pass: (p?: unknown) => void; fail: (p?: unknown) => void; setNickname: (s: string) => void } {
   return document.createElement('div') as never;
@@ -41,14 +39,14 @@ beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => new Response(null, {
 describe('installGameMethods — pass()', () => {
   it('no-ops silently when there is no config', () => {
     const el = gameEl();
-    installGameMethods(el, state(null), API);
+    installGameMethods(el, state(null));
     expect(() => el.pass()).not.toThrow();
   });
 
   it('fires invalid-call when trigger is not manual', () => {
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ trigger: 'auto' }), API);
+    installGameMethods(el, state({ trigger: 'auto' }));
     el.pass({ score: 1 });
     expect(errs.some((e) => e.code === 'invalid-call' && e.message.includes('pass'))).toBe(true);
   });
@@ -57,7 +55,7 @@ describe('installGameMethods — pass()', () => {
     const el = gameEl();
     const pass = passes(el);
     const presentation = { setState: vi.fn() };
-    installGameMethods(el, state({ sitekey: null }, { gamePresentation: presentation as never }), API);
+    installGameMethods(el, state({ sitekey: null }, { gamePresentation: presentation as never }));
     el.pass({ trace: 'tr-a' });
     el.pass(); // no payload → empty trace; still a pass/fail-only event
     expect(pass).toHaveLength(2);
@@ -70,29 +68,32 @@ describe('installGameMethods — pass()', () => {
   it('cap manual: errors if pass() runs before verification armed the gate', () => {
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ sitekey: 'k' }, { capClient: null }), API);
+    installGameMethods(el, state({ sitekey: 'k' }, { capClient: null }));
     el.pass();
     expect(errs.some((e) => e.code === 'invalid-call' && e.message.includes('before verification'))).toBe(true);
   });
 
-  it('cap manual: first pass releases the gate, subsequent passes record rounds', () => {
+  it('cap manual: first pass releases the gate, subsequent passes are ignored', () => {
     const el = gameEl();
+    const ps = passes(el);
     const cap = capClientStub();
     const st = state({ sitekey: 'k' }, { capClient: cap as never, widgetId: 'w1', lockedToken: 'tok' });
-    installGameMethods(el, st, API);
+    installGameMethods(el, st);
     el.pass({ trace: 'tr-1' });
     expect(cap.releaseGate).toHaveBeenCalledWith({ trace: 'tr-1' });
     expect(st.firstPassFired).toBe(true);
-    // second pass takes the recordAdditionalRound branch (no second release)
+    // Subsequent pass() is a graceful no-op: no second gate release, no
+    // /verify/pass resubmit, no follow-up pass event. One round per session.
     el.pass({ trace: 'tr-2' });
     expect(cap.releaseGate).toHaveBeenCalledTimes(1);
+    expect(ps).toHaveLength(0); // the verify-path pass event comes from cap.solve, not pass()
   });
 
   it('no-verify manual (sitekey + no-verify, no cap gate) emits pass token:null — NOT invalid-call', () => {
     const el = gameEl();
     const errs = errors(el);
     const ps = passes(el);
-    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }), API);
+    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }));
     el.pass({ trace: 'tr' });
     expect(errs.some((e) => e.code === 'invalid-call')).toBe(false);
     expect(ps.length).toBe(1);
@@ -104,7 +105,7 @@ describe('installGameMethods — fail()', () => {
   it('fires invalid-call when trigger is not manual', () => {
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ trigger: 'auto' }), API);
+    installGameMethods(el, state({ trigger: 'auto' }));
     el.fail();
     expect(errs.some((e) => e.code === 'invalid-call' && e.message.includes('fail'))).toBe(true);
   });
@@ -112,7 +113,7 @@ describe('installGameMethods — fail()', () => {
   it('cap manual: errors if fail() runs before the gate is armed', () => {
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ sitekey: 'k' }, { capClient: null }), API);
+    installGameMethods(el, state({ sitekey: 'k' }, { capClient: null }));
     el.fail();
     expect(errs.some((e) => e.code === 'invalid-call' && e.message.includes('before verification'))).toBe(true);
   });
@@ -123,7 +124,7 @@ describe('installGameMethods — fail()', () => {
     const cap = capClientStub();
     const presentation = { setState: vi.fn() };
     const st = state({ sitekey: 'k' }, { capClient: cap as never, gamePresentation: presentation as never });
-    installGameMethods(el, st, API);
+    installGameMethods(el, st);
     el.fail({ code: 'boom', message: 'kaboom' });
     expect(st.gameErrored).toBe(true);
     // customer code rides as originalCode; the public code is the relay kind
@@ -135,7 +136,7 @@ describe('installGameMethods — fail()', () => {
   it('game-only manual (sitekey null) fails without a cap gate, using defaults', () => {
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ sitekey: null }), API);
+    installGameMethods(el, state({ sitekey: null }));
     el.fail();
     // defaults: originalCode 'game-failed', default relay message
     expect(errs.some((e) => e.code === 'game-error-relayed' && (e as { originalCode?: string }).originalCode === 'game-failed')).toBe(true);
@@ -146,7 +147,7 @@ describe('installGameMethods — fail()', () => {
     // no-verify never arms one. fail() must relay like game-only does.
     const el = gameEl();
     const errs = errors(el);
-    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }), API);
+    installGameMethods(el, state({ sitekey: 'k', noVerify: true }, { capClient: null }));
     el.fail({ code: 'boom' });
     expect(errs.some((e) => e.code === 'invalid-call')).toBe(false);
     expect(errs.some((e) => e.code === 'game-error-relayed' && (e as { originalCode?: string }).originalCode === 'boom')).toBe(true);
@@ -156,7 +157,7 @@ describe('installGameMethods — fail()', () => {
 describe('installGameMethods — setNickname()', () => {
   it('throws not-implemented (Post-MVP)', () => {
     const el = gameEl();
-    installGameMethods(el, state({}), API);
+    installGameMethods(el, state({}));
     expect(() => el.setNickname('ABC')).toThrow(/not implemented/);
   });
 });

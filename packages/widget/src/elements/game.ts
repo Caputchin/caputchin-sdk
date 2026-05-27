@@ -40,7 +40,7 @@ export class CaputchinGame extends HTMLElement {
     const state = this.state;
     state.connected = true;
 
-    installGameMethods(this, state, __CAPUTCHIN_API_HOST__);
+    installGameMethods(this, state);
 
     const inspection = inspectGameConfig(this);
     for (const issue of inspection.issues) {
