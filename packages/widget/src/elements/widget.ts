@@ -63,6 +63,13 @@ export class CaputchinWidget extends HTMLElement {
       // wait. The new state bag from disconnectedCallback has no config,
       // so the guard fires and the mount is skipped.
       if (!this.state.connected || !this.state.config) return;
+      // Phase 11: this cap-only element can't host a game, but the site key is
+      // gated (requires a game). Surface a loud config error; verification
+      // fails closed at /verify/start (no ticket). Use <caputchin-game> on a
+      // gated key.
+      if (bootstrap?.requiresGame === true) {
+        fireError(this, 'invalid-config', 'This site key requires a game; use <caputchin-game> instead of <caputchin-widget>');
+      }
       this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null);
     });
   }

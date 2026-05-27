@@ -81,6 +81,7 @@ export class CaputchinGame extends HTMLElement {
       apiHost,
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
+      games: state.config.games ?? null,
       localeLang: hintShell.lang,
       skinTheme: hintSkin.theme,
     }).then((bootstrap) => {
@@ -89,8 +90,18 @@ export class CaputchinGame extends HTMLElement {
       // around the game still consumes only the widget block (its _theme /
       // _lang signals), same as before.
       this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
+      // Phase 11 gate: when the server gated this key it PICKED the game from
+      // the per-site pool + signed a ticket. The server pick overrides the
+      // client game/games/game-src attrs; stash the ticket to echo at
+      // /verify/start. The picked game's bundle is in bootstrap.game.
+      const requiresGame = bootstrap?.requiresGame === true;
+      this.state.requiresGame = requiresGame;
+      this.state.gateTicket = bootstrap?.ticket ?? null;
+      if (requiresGame && bootstrap?.gameId) {
+        this.state.config.game = bootstrap.gameId;
+      }
       // The same bootstrap response already carries the marketplace bundle
-      // url + integrity for state.config.game - stash it (tagged with that
+      // url + integrity for the resolved game - stash it (tagged with that
       // id) so the game-load path can skip a second /widget/bootstrap call.
       this.state.gameBundle = bootstrap?.game
         ? { gameId: this.state.config.game, url: bootstrap.game.url, integrity: bootstrap.game.integrity }
@@ -115,6 +126,20 @@ export class CaputchinGame extends HTMLElement {
     const isManual = state.config.trigger === 'manual';
     const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
+
+    // Phase 11 gated key: the server requires one of its installed games, so the
+    // self-hosted game-src / manual-DOM escape hatches don't apply. Clear
+    // game-src (the server-picked marketplace game runs instead); manual is
+    // surfaced as a config error and fails closed server-side (no game trace).
+    if (state.requiresGame) {
+      if (state.config.gameSrc) {
+        fireError(this, 'invalid-config', "game-src is ignored on a site key that requires a game; the site's installed game is used instead");
+        state.config.gameSrc = null;
+      }
+      if (isManual) {
+        fireError(this, 'invalid-config', 'trigger="manual" is not supported on a site key that requires a game; use the default game presentation');
+      }
+    }
 
     const baseShell = resolveWidgetShell(inlineSignals.hint, undefined, localeOverride);
     const shell = inlineSignals.direction

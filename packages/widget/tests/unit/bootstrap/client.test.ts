@@ -13,6 +13,11 @@ describe('buildBootstrapUrl', () => {
     expect(url).toContain('game=owner%2Frepo');
   });
 
+  it('includes games sub-pool hint when provided', () => {
+    const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'k', games: 'a,b' });
+    expect(url).toContain('games=a%2Cb');
+  });
+
   it('threads all hint params when provided', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
@@ -61,11 +66,11 @@ describe('validateBootstrapResponse', () => {
 
   it('accepts the empty-overrides shape', () => {
     const raw = { widget: { overrides: { locale: null, skin: null, configuration: null } }, game: null };
-    expect(validateBootstrapResponse(raw)).toEqual(raw);
+    expect(validateBootstrapResponse(raw)).toEqual({ ...raw, requiresGame: false });
   });
 
   it('accepts both blocks null', () => {
-    expect(validateBootstrapResponse({ widget: null, game: null })).toEqual({ widget: null, game: null });
+    expect(validateBootstrapResponse({ widget: null, game: null })).toEqual({ widget: null, game: null, requiresGame: false });
   });
 
   it('accepts game block with url+integrity', () => {
@@ -73,11 +78,27 @@ describe('validateBootstrapResponse', () => {
       widget: null,
       game: { url: 'https://cdn/x.js', integrity: 'sha384-abc', overrides: null },
     };
-    expect(validateBootstrapResponse(raw)).toEqual(raw);
+    expect(validateBootstrapResponse(raw)).toEqual({ ...raw, requiresGame: false });
   });
 
   it('coerces missing widget/game keys to null (defensive)', () => {
-    expect(validateBootstrapResponse({})).toEqual({ widget: null, game: null });
+    expect(validateBootstrapResponse({})).toEqual({ widget: null, game: null, requiresGame: false });
+  });
+
+  it('passes through the Phase 11 gate fields (requiresGame / gameId / ticket)', () => {
+    const raw = {
+      widget: null,
+      game: { url: 'https://cdn/leaf.js', integrity: 'sha384-x', overrides: null },
+      requiresGame: true,
+      gameId: 'caputchin/games/leaf',
+      ticket: 'enc.sig',
+    };
+    expect(validateBootstrapResponse(raw)).toEqual(raw);
+  });
+
+  it('coerces a non-true requiresGame to false + drops non-string gameId/ticket', () => {
+    const out = validateBootstrapResponse({ widget: null, game: null, requiresGame: 'yes', gameId: 42, ticket: {} });
+    expect(out).toEqual({ widget: null, game: null, requiresGame: false });
   });
 });
 
@@ -95,7 +116,7 @@ describe('fetchBootstrap', () => {
     const body = { widget: { overrides: { locale: null, skin: null, configuration: null } }, game: null };
     fetchSpy.mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual(body);
+    expect(out).toEqual({ ...body, requiresGame: false });
   });
 
   it('returns null on non-2xx response', async () => {

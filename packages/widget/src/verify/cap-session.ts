@@ -35,18 +35,22 @@ export interface CapSessionHandle {
 
 /** Build a cap session and wire it onto `state.capClient` (+ triggerCtx if
  *  present). Returns the client + a closure for the wrapped token + the seed.
- *  `gameId` is sent in the /verify/start platform so the SERVER stores it on the
- *  session - that stored gameId is what gates replay at /verify/pass (making it
- *  server-authoritative is the deferred Phase 11). */
+ *  On a GATED key the server ignores `gameId` and reads `ticket` (Phase 11):
+ *  it verifies the signature and sets the session's game from the ticket, so
+ *  gameId becomes server-authoritative. `gameId` is still sent (harmless,
+ *  server-ignored when gated; the live iframe + start event use it locally). */
 export function setupCapSession(
   state: WidgetState,
   apiHost: string,
   sitekey: string,
   gameId: string | null,
+  ticket: string | null = null,
 ): CapSessionHandle {
   let wrappedToken: WrappedToken | null = null;
+  const platform: Record<string, unknown> = { sitekey, gameId };
+  if (ticket) platform.ticket = ticket;
   const sessionCtx = {
-    platform: { sitekey, gameId } as Record<string, unknown>,
+    platform,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
   };
 
