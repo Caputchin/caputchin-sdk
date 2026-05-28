@@ -173,12 +173,17 @@ export interface MarketplaceMetadata {
   description?: string;
   version?: string;
   preview?: string;
-  /** Optional contact address for the game's author. Never shown on the
-   *  marketplace card; the platform uses it only to notify the author about
-   *  their listing (for example, when a newly published version fails the
-   *  server-side replay conformance check and is therefore indexed without
-   *  the playable verification path). Omit to receive no notifications. */
-  author_email?: string;
+  /** Optional author block. Each subfield is optional. `name` and `url` may
+   *  render on the marketplace detail page as an author byline. `email` is
+   *  never shown publicly; the platform uses it only to notify the author
+   *  when the daily index run fails to register their game. Omit the whole
+   *  block to fall back to the GitHub owner for display and to receive no
+   *  failure notifications. */
+  author?: {
+    name?: string;
+    url?: string;
+    email?: string;
+  };
   support?: {
     responsive?: boolean;
     touch?: boolean;
@@ -214,6 +219,18 @@ export interface PreferredPresentation {
 export interface GameManifest {
   /** Marketplace UI metadata. Absent on customer-hosted-only manifests. */
   marketplace?: MarketplaceMetadata;
+  /** Required for marketplace-indexable manifests: literal `true` indicates
+   *  the publisher has read and accepts the Marketplace Submission Terms at
+   *  caputchin.com/legal/submission-terms. Any other value (including
+   *  missing) drops the manifest from the marketplace index. Customer-hosted
+   *  manifests may omit this field. */
+  terms_accepted?: boolean;
+  /** Required for marketplace-indexable manifests: SPDX identifier or SPDX
+   *  expression naming the license that covers the bundled code and assets.
+   *  Must evaluate to an approved permissive identifier (whitelist published
+   *  at caputchin.com/docs/marketplace/publish-failed-reference). Customer-
+   *  hosted manifests may omit this field. */
+  license?: string;
   /** npm package coordinate. Used by the marketplace indexer to resolve a
    *  jsDelivr URL. Informational only at runtime. */
   npm?: string;
