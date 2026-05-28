@@ -1,11 +1,11 @@
-import type { ConfigPreset, ConfigSchemaEntry, ResolvedConfig } from '@caputchin/game-sdk';
+import type { ConfigPreset, ResolvedConfig } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
-import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
-import { resolveConfig } from './resolver.js';
 
-/** Keys present in the widget's bundled configurations preset. Adding a new
- *  themable surface means adding it to caputchin.json AND extending this
- *  type so the rest of the codebase gets autocomplete + miss detection. */
+// The SERVER resolves the shell configuration and sends the resolved preset;
+// this module builds the typed WidgetShellConfig from it, with a bundled
+// `default` fallback when the bootstrap failed / returned nothing.
+
+/** Keys present in the widget's bundled configurations preset. */
 export interface ShellConfig {
   home_link: string;
   legal_link: string;
@@ -15,18 +15,15 @@ export interface WidgetShellConfig {
   /** Pre-resolved configuration values. Used by simple.ts to set `href`s on
    *  the brand strip links. */
   values: ShellConfig;
+  /** Reserved; resolution issues now surface server-side. */
   issues: string[];
 }
 
 const PRESETS = (widgetManifest.configurations?.presets ?? {}) as Record<string, ConfigPreset>;
-const SCHEMA = (widgetManifest.configurations?.schema ?? null) as Record<string, ConfigSchemaEntry> | null;
-
-/** Last-ditch values if the bundled manifest goes missing somehow. Derived
- *  from the JSON's `default` preset at module init so the two sources
- *  can't drift: editing caputchin.json automatically refreshes the
- *  fallback. Should never be hit in production; exists so the type system
- *  can express a non-null `values` even on resolver failure. */
 const DEFAULT_PRESET = (PRESETS['default'] ?? {}) as Record<string, unknown>;
+
+/** Bundled fallback from the `default` preset (so it can't drift); used only
+ *  when the bootstrap returned no resolved config. */
 const HARDCODED_DEFAULT: ShellConfig = {
   home_link: typeof DEFAULT_PRESET['home_link'] === 'string' ? DEFAULT_PRESET['home_link'] : 'https://caputchin.com',
   legal_link: typeof DEFAULT_PRESET['legal_link'] === 'string' ? DEFAULT_PRESET['legal_link'] : 'https://caputchin.com/legal',
@@ -40,27 +37,8 @@ function toShellConfig(resolved: ResolvedConfig | null): ShellConfig {
   return out;
 }
 
-/** Resolve the widget shell configuration. Accepts the customer's `config`
- *  attribute value (omitted/`"auto"` → bundled `default` preset). Inline
- *  JSON is rejected on `<caputchin-widget>` (parity with lang + skin).
- *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
- *  the override bank is injected atop the bundled bank before resolution;
- *  collisions implicitly extend their bundled twin. There is no client
- *  `config` attribute (config is server-authoritative): resolution always
- *  targets the `default` preset, overlaid by the server's override bank. */
-export function resolveWidgetShellConfig(
-  overridePresets?: Record<string, ConfigPreset> | null,
-): WidgetShellConfig {
-  const merged = injectOverrideLayer(PRESETS, overridePresets);
-  const { resolved, issues } = resolveConfig({
-    presets: merged,
-    schema: SCHEMA,
-    attrValue: 'auto',
-    rejectInlineJson: true,
-  });
-  return {
-    values: toShellConfig(resolved),
-    issues,
-  };
+/** Build the widget shell configuration from the server-resolved config. Null
+ *  (bootstrap failed / no config resolved) → bundled `default` fallback. */
+export function buildWidgetShellConfig(resolved: ResolvedConfig | null): WidgetShellConfig {
+  return { values: toShellConfig(resolved), issues: [] };
 }

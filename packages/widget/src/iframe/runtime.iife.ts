@@ -102,39 +102,10 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
     postToParent({ kind: 'game-error', seq, code, message });
   }
 
-  function postManifest(): void {
-    // register() keys by manifest.id when present, otherwise by the runtime
-    // script's data-game-id (which matches embeddedGameId here), otherwise by
-    // DEFAULT_REGISTRY_KEY. Try the embeddedGameId slot first, then fall
-    // through to the default slot so author-declared ids and derived ids both
-    // reach the same manifest.
-    const manifests = (W['Caputchin'] as CaputchinGlobal).manifests;
-    const manifest =
-      (embeddedGameId !== null ? manifests[embeddedGameId] : undefined) ??
-      manifests[DEFAULT_REGISTRY_KEY];
-    postToParent({
-      kind: 'manifest',
-      seq: 0,
-      gameId: embeddedGameId,
-      // preferredLayout is a reserved wire field. Honoring a game's preferred
-      // layout needs a pre-mount channel the widget lacks today, so the SDK
-      // manifest no longer carries it (MVP = width/height only). Always null
-      // until that capability lands.
-      preferredLayout: null,
-      preferredWidth: typeof manifest?.preferred?.width === 'number' ? manifest.preferred.width : null,
-      preferredHeight: typeof manifest?.preferred?.height === 'number' ? manifest.preferred.height : null,
-      locales: manifest?.locales ?? null,
-      skins: manifest?.skins ?? null,
-      configurations: manifest?.configurations ?? null,
-    });
-  }
-
-  // Defer manifest until all body scripts have run so register() has populated manifests.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', postManifest, { once: true });
-  } else {
-    postManifest();
-  }
+  // The game no longer posts its manifest up to the widget. The server resolves
+  // presets + the preferred footprint (the bootstrap response), and the resolved
+  // presets arrive via the kickoff message below. The game factory + manifest
+  // registry (looked up on kickoff) are unchanged.
 
   window.addEventListener('message', (event: MessageEvent) => {
     if (event.source !== window.parent) return;
@@ -179,9 +150,8 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
       const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
 
-      // Same fallback as postManifest - try the marketplace id first, then
-      // fall through to the default slot so games that registered without an
-      // author-declared id still resolve.
+      // Try the marketplace id first, then fall through to the default slot so
+      // games that registered without an author-declared id still resolve.
       const factory = registry[kickoffGameId] ?? registry[DEFAULT_REGISTRY_KEY];
       if (!factory) {
         postError('game-not-registered', `No game registered for id "${kickoffGameId}"`);

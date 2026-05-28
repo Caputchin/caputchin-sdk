@@ -1,9 +1,9 @@
 import { inspectWidgetConfig } from '../config/widget.js';
 import { fireError } from '../errors.js';
-import { resolveWidgetShell } from '../locale/widget-shell.js';
-import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
+import { buildWidgetShell } from '../locale/widget-shell.js';
+import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
-import { resolveWidgetShellConfig } from '../configurations/widget-shell-config.js';
+import { buildWidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createPresentation } from '../modes/index.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -11,8 +11,8 @@ import type { WidgetConfig } from '../config/widget.js';
 import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
-import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { ConfigPreset, LocalePreset, SkinPreset } from '@caputchin/game-sdk';
+import { readNavLang, readPrefersDark } from '../bootstrap/signals.js';
+import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /**
  * `<caputchin-widget>`; cap PoW + instrumentation only. Default renders
@@ -48,59 +48,46 @@ export class CaputchinWidget extends HTMLElement {
     // box during the bootstrap wait (empty box, no FOUC of bundled).
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
-    // Bundled cascade once for hint extraction. Synchronous + cheap; result
-    // discarded because mount re-runs the resolvers with the override layer.
-    const hintShell = resolveWidgetShell(state.config.locale);
-    const hintSkin = resolveWidgetShellSkin(state.config.skin);
-
+    // The SERVER resolves one preset per axis. The widget sends its explicit
+    // locale/skin attrs + the visitor signals (navigator language, prefers-dark)
+    // and applies the returned resolved presets.
     void fetchBootstrap({
       apiHost,
       sitekey: state.config.sitekey,
-      localeLang: hintShell.lang,
-      skinTheme: hintSkin.theme,
+      locale: state.config.locale,
+      navLang: readNavLang(),
+      skin: state.config.skin,
+      prefersDark: readPrefersDark(),
     }).then((bootstrap) => {
       // Disconnect race: element removed from DOM during the bootstrap
       // wait. The new state bag from disconnectedCallback has no config,
       // so the guard fires and the mount is skipped.
       if (!this.state.connected || !this.state.config) return;
-      // Phase 11: this cap-only element can't host a game, but the site key is
+      // This cap-only element can't host a game, but the site key is
       // gated (requires a game). Surface a loud config error; verification
       // fails closed at /verify/start (no ticket). Use <caputchin-game> on a
       // gated key.
       if (bootstrap?.requiresGame === true) {
         fireError(this, 'invalid-config', 'This site key requires a game; use <caputchin-game> instead of <caputchin-widget>');
       }
-      this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null);
+      this.completeMount(apiHost, bootstrap?.widget?.resolved ?? null);
     });
   }
 
-  private completeMount(apiHost: string, overrides: OverridesPerAxis | null): void {
+  private completeMount(apiHost: string, resolved: ResolvedAxes | null): void {
     const state = this.state;
     if (!state.config) return;
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
-    const localeOverride = (overrides?.locale?.presets ?? null) as Record<string, LocalePreset> | null;
-    const skinOverride = (overrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
-    const configOverride = (overrides?.configuration?.presets ?? null) as Record<string, ConfigPreset> | null;
-
-    const shell = resolveWidgetShell(state.config.locale, undefined, localeOverride);
-    for (const message of shell.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = resolveWidgetShellSkin(state.config.skin, undefined, skinOverride);
-    for (const message of skin.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
-    const shellConfig = resolveWidgetShellConfig(configOverride);
-    for (const message of shellConfig.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    const shellConfig = buildWidgetShellConfig(resolved?.config ?? null);
 
     state.presentation = createPresentation(state.config.invisible, {
       host: this,

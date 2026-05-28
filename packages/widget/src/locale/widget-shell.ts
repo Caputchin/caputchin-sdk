@@ -1,7 +1,9 @@
-import type { LocalePreset, ResolvedLocale } from '@caputchin/game-sdk';
-import widgetManifest from '../../caputchin.json';
-import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
-import { resolveLocale } from './resolver.js';
+import type { ResolvedLocale } from '@caputchin/game-sdk';
+
+// The SERVER resolves the shell locale and sends the resolved preset in the
+// bootstrap response. This module no longer resolves; it just builds the typed
+// WidgetShell from the server-resolved locale (or the bundled English fallback
+// when the bootstrap failed / returned nothing).
 
 /** Keys present in the widget's bundled shell presets. Adding a new
  *  user-visible string means adding it to caputchin.json AND extending this
@@ -22,13 +24,9 @@ export interface WidgetShell {
   direction: 'ltr' | 'rtl';
   lang: string;
   strings: ShellStrings;
-  /** Human-readable issues raised during resolution (unknown preset name,
-   *  unsupported inline JSON, etc.). The element layer translates each into
-   *  an `invalid-config` event so host pages can log misconfiguration. */
+  /** Reserved for build-time issues; resolution issues now surface server-side. */
   issues: string[];
 }
-
-const PRESETS = widgetManifest.locales?.presets ?? {};
 
 const HARDCODED_FALLBACK: ShellStrings = {
   simpleVerify: 'Verify',
@@ -52,40 +50,13 @@ function toStrings(resolved: ResolvedLocale | null): ShellStrings {
   return out;
 }
 
-function readNavigatorLanguages(): readonly string[] {
-  if (typeof navigator === 'undefined') return [];
-  if (navigator.languages && navigator.languages.length > 0) return navigator.languages;
-  if (navigator.language) return [navigator.language];
-  return [];
-}
-
-/** Resolve the widget shell language pack. Accepts the customer's `lang`
- *  attribute value (omitted/`"auto"` ⇒ browser-auto). Inline JSON is
- *  rejected on the widget (parity decision: shell strings are bundled, so
- *  per-string overrides go through manifest authoring, not the element
- *  attribute). Unknown preset / ISO ⇒ issue + browser-auto fallback.
- *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
- *  the override bank is injected as a second layer atop the bundled bank
- *  before resolution; name-collision presets implicitly extend their bundled
- *  twin so the override only needs to declare the leaf keys it changes. */
-export function resolveWidgetShell(
-  attrValue?: string | null,
-  navLangs?: readonly string[],
-  overridePresets?: Record<string, LocalePreset> | null,
-): WidgetShell {
-  const languages = navLangs ?? readNavigatorLanguages();
-  const merged = injectOverrideLayer(PRESETS as Record<string, LocalePreset>, overridePresets);
-  const { resolved, issues } = resolveLocale(
-    merged,
-    attrValue ?? 'auto',
-    languages,
-    { rejectInlineJson: true },
-  );
+/** Build the widget shell language pack from the server-resolved locale.
+ *  Null (bootstrap failed / no locale resolved) → bundled English fallback. */
+export function buildWidgetShell(resolved: ResolvedLocale | null): WidgetShell {
   return {
     direction: resolved?._direction ?? 'ltr',
     lang: resolved?._lang ?? 'en',
     strings: toStrings(resolved),
-    issues,
+    issues: [],
   };
 }
