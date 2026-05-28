@@ -114,17 +114,25 @@ export class CaputchinGame extends HTMLElement {
     const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
 
-    // Gated key: the server requires one of its installed games, so the
-    // self-hosted game-src / manual-DOM escape hatches don't apply. Clear
-    // game-src (the server-picked marketplace game runs instead); manual is
-    // surfaced as a config error and fails closed server-side (no game trace).
+    // Gated key: the server requires one of its installed games. Manual mode
+    // is never compatible (no seed-determinism for replay), so fail closed.
+    // game-src IS compatible when the server's picked game is a custom
+    // upload: the customer's CDN holds the playable bundle (game-src) and
+    // the platform stored the headless run.js for replay determinism. The
+    // signal that the server picked a custom-replayable id is
+    // `state.gameBundle.url === null` (the bootstrap response carries no
+    // platform-vendored bundle URL for the picked id). Marketplace picks
+    // always carry a non-null url; clear game-src in those cases since the
+    // page is trying to override the gate.
     if (state.requiresGame) {
-      if (state.config.gameSrc) {
-        fireError(this, 'invalid-config', "game-src is ignored on a site key that requires a game; the site's installed game is used instead");
-        state.config.gameSrc = null;
-      }
       if (isManual) {
         fireError(this, 'invalid-config', 'trigger="manual" is not supported on a site key that requires a game; use the default game presentation');
+      } else if (state.config.gameSrc) {
+        const pickedCustomReplayable = state.gameBundle != null && state.gameBundle.url === null;
+        if (!pickedCustomReplayable) {
+          fireError(this, 'invalid-config', "game-src is ignored on a site key that requires a game; the site's installed game is used instead");
+          state.config.gameSrc = null;
+        }
       }
     }
 
