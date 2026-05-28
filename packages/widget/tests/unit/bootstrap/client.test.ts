@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchBootstrap, buildBootstrapUrl, validateBootstrapResponse } from '../../../src/bootstrap/client.js';
 
 describe('buildBootstrapUrl', () => {
-  it('includes sitekey + always emits prefers_dark; skips absent optional params', () => {
+  it('includes only sitekey when no other inputs are provided', () => {
     const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'cpt_pub_abc' });
-    expect(url).toBe('https://api.test/api/v1/widget/bootstrap?sitekey=cpt_pub_abc&prefers_dark=false');
+    expect(url).toBe('https://api.test/api/v1/widget/bootstrap?sitekey=cpt_pub_abc');
   });
 
   it('includes game when provided', () => {
@@ -18,33 +18,26 @@ describe('buildBootstrapUrl', () => {
     expect(url).toContain('games=a%2Cb');
   });
 
-  it('threads the resolution inputs (explicit attrs + visitor signals) when provided', () => {
+  it('threads the pre-resolved locale + skin when provided', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
       locale: 'ar',
-      navLang: 'en-US',
       skin: 'dark',
-      prefersDark: true,
     });
     expect(url).toContain('locale=ar');
-    expect(url).toContain('nav_lang=en-US');
     expect(url).toContain('skin=dark');
-    expect(url).toContain('prefers_dark=true');
   });
 
-  it('omits empty / null inputs (but prefers_dark always emits)', () => {
+  it('omits empty / null locale + skin (the server falls back to bundled defaults)', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
       locale: null,
-      navLang: undefined,
       skin: '',
     });
     expect(url).not.toContain('locale=');
-    expect(url).not.toContain('nav_lang');
     expect(url).not.toContain('skin=');
-    expect(url).toContain('prefers_dark=false');
   });
 });
 

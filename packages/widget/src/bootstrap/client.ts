@@ -1,10 +1,11 @@
 // Client for /api/v1/widget/bootstrap. The widget calls this once at
-// connectedCallback with its VISITOR SIGNALS (primary language, prefers-dark);
-// the server resolves one preset per axis (shell + game) and returns the
-// RESOLVED presets + the game URL/integrity. First paint blocks on this call up
-// to a 2 second hard timeout; on timeout, network error, or malformed response
-// the widget falls back to bundled-only rendering. The server resolves; the
-// widget no longer ships or walks override banks.
+// connectedCallback with the PRE-RESOLVED `locale` + `skin` (the element auto-
+// detected them from the browser before this call when the attributes were
+// missing, so the server always sees concrete values rather than `auto`); the
+// server resolves one preset per axis (shell + game) and returns the resolved
+// presets + the game URL/integrity. First paint blocks on this call up to a 2
+// second hard timeout; on timeout, network error, or malformed response the
+// widget falls back to bundled-only rendering.
 
 import type { BootstrapResponse } from './types.js';
 
@@ -15,14 +16,14 @@ export interface FetchBootstrapInput {
   /** Client sub-pool hint for a gated key (comma-joined game ids). The server
    *  picks one from `games ∩ pool`; ignored on an ungated key. */
   games?: string | null;
-  /** Resolution inputs. `locale` / `skin` are the explicit element
-   *  attributes (preset name / language tag / light|dark / inline JSON); `navLang`
-   *  is the primary navigator language (auto fallback, one value to bound the
-   *  edge-cache cardinality); `prefersDark` is the prefers-color-scheme:dark match. */
+  /** Resolution inputs. The element auto-detects these from the browser
+   *  (navigator language for locale, prefers-color-scheme for skin) when the
+   *  corresponding attribute is missing / `auto`, so by the time they reach
+   *  here they are concrete preset names / language tags / `light|dark` /
+   *  inline JSON. Null means the element could not determine a value (no
+   *  navigator); the server falls back to the bundled defaults. */
   locale?: string | null;
-  navLang?: string | null;
   skin?: string | null;
-  prefersDark?: boolean;
   timeoutMs?: number;
 }
 
@@ -67,9 +68,7 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   if (input.game) params.set('game', input.game);
   if (input.games) params.set('games', input.games);
   if (input.locale) params.set('locale', input.locale);
-  if (input.navLang) params.set('nav_lang', input.navLang);
   if (input.skin) params.set('skin', input.skin);
-  params.set('prefers_dark', input.prefersDark ? 'true' : 'false');
   return `${input.apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
 }
 

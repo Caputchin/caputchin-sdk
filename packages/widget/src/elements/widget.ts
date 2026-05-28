@@ -11,7 +11,7 @@ import type { WidgetConfig } from '../config/widget.js';
 import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
-import { readNavLang, readPrefersDark } from '../bootstrap/signals.js';
+import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /**
@@ -48,16 +48,15 @@ export class CaputchinWidget extends HTMLElement {
     // box during the bootstrap wait (empty box, no FOUC of bundled).
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
-    // The SERVER resolves one preset per axis. The widget sends its explicit
-    // locale/skin attrs + the visitor signals (navigator language, prefers-dark)
-    // and applies the returned resolved presets.
+    // The SERVER resolves one preset per axis. The widget pre-resolves its
+    // signal inputs first: when the `locale` / `skin` attribute is missing the
+    // element falls back to the navigator language / `prefers-color-scheme`,
+    // so the server always receives one concrete value per axis.
     void fetchBootstrap({
       apiHost,
       sitekey: state.config.sitekey,
-      locale: state.config.locale,
-      navLang: readNavLang(),
-      skin: state.config.skin,
-      prefersDark: readPrefersDark(),
+      locale: resolveLocaleSignal(state.config.locale),
+      skin: resolveSkinSignal(state.config.skin),
     }).then((bootstrap) => {
       // Disconnect race: element removed from DOM during the bootstrap
       // wait. The new state bag from disconnectedCallback has no config,

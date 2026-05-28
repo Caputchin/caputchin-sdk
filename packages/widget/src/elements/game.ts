@@ -14,7 +14,7 @@ import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
-import { readNavLang, readPrefersDark } from '../bootstrap/signals.js';
+import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /**
@@ -76,10 +76,8 @@ export class CaputchinGame extends HTMLElement {
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
       games: state.config.games ?? null,
-      locale: state.config.locale,
-      navLang: readNavLang(),
-      skin: state.config.skin,
-      prefersDark: readPrefersDark(),
+      locale: resolveLocaleSignal(state.config.locale),
+      skin: resolveSkinSignal(state.config.skin),
     }).then((bootstrap) => {
       if (!this.state.connected || !this.state.config) return;
       // The server-resolved GAME axes + preferred footprint ride to the iframe
