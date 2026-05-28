@@ -107,7 +107,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
   // presets arrive via the kickoff message below. The game factory + manifest
   // registry (looked up on kickoff) are unchanged.
 
-  window.addEventListener('message', (event: MessageEvent) => {
+  window.addEventListener('message', async (event: MessageEvent) => {
     if (event.source !== window.parent) return;
 
     const data = event.data as Record<string, unknown>;
@@ -148,11 +148,29 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
         return;
       }
 
-      const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
-
       // Try the marketplace id first, then fall through to the default slot so
       // games that registered without an author-declared id still resolve.
-      const factory = registry[kickoffGameId] ?? registry[DEFAULT_REGISTRY_KEY];
+      const lookupFactory = (): GameFactory | undefined => {
+        const registry = ((W['Caputchin'] as CaputchinGlobal) || {}).games || {};
+        return registry[kickoffGameId!] ?? registry[DEFAULT_REGISTRY_KEY];
+      };
+      let factory = lookupFactory();
+
+      // Race: the game's <script src> is the SECOND parser-blocking script in
+      // the srcdoc, and the parent can post kickoff before that script has
+      // executed (no-verify mount or fast cap-solve - the verify path's cap
+      // latency usually hides this). DOMContentLoaded fires only after every
+      // parser-blocking script has run, so by then the game has had its chance
+      // to register(). If the factory is still missing after that wait, the
+      // not-registered error below accurately reflects a real load failure
+      // (CSP block, 404, SRI mismatch, register() never called).
+      if (!factory && document.readyState === 'loading') {
+        await new Promise<void>((resolve) =>
+          document.addEventListener('DOMContentLoaded', () => resolve(), { once: true }),
+        );
+        factory = lookupFactory();
+      }
+
       if (!factory) {
         postError('game-not-registered', `No game registered for id "${kickoffGameId}"`);
         return;
