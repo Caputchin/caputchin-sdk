@@ -33,7 +33,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     form.appendChild(el);
     document.body.appendChild(form);
-    const state = {} as WidgetState;
+    const state = { connected: true } as WidgetState;
     const pres = presentation();
     const { pass } = listen(el);
 
@@ -49,7 +49,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { err } = listen(el);
-    await awaitCapAndEmitPass(el, {} as WidgetState, client(async () => { throw new Error('nope'); }), () => null, pres);
+    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => { throw new Error('nope'); }), () => null, pres);
     expect(err.some((e) => e.detail.code === 'verification-failed')).toBe(true);
     expect(pres.setState).toHaveBeenCalledWith('error');
   });
@@ -58,7 +58,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { err } = listen(el);
-    const state = { gameErrored: true } as WidgetState;
+    const state = { connected: true, gameErrored: true } as WidgetState;
     await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('nope'); }), () => null, pres);
     expect(err).toHaveLength(0);
     expect(pres.setState).toHaveBeenCalledWith('error');
@@ -68,7 +68,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { pass } = listen(el);
-    const state = { gameErrored: true } as WidgetState;
+    const state = { connected: true, gameErrored: true } as WidgetState;
     await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres);
     expect(pass).toHaveLength(0);
     expect(pres.setState).toHaveBeenCalledWith('error');
@@ -78,7 +78,36 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { err } = listen(el);
-    await awaitCapAndEmitPass(el, {} as WidgetState, client(async () => {}), () => null, pres);
+    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => {}), () => null, pres);
     expect(err.some((e) => (e.detail as { originalCode?: string }).originalCode === 'cap-redeem-failed')).toBe(true);
+  });
+
+  it('disposed widget (state.connected=false): silent on solve rejection, no error emit', async () => {
+    // The host widget unmounted mid-solve (React effect cleanup ran while
+    // cap.solve was still awaiting redeem). The disposed-widget guard in the
+    // redeem branch rejects the in-flight POST with widget-disposed; the
+    // rejection should NOT leak as a verification-failed event on the
+    // detached element (the harness's addEventListener stays attached even
+    // after the element is removed from DOM, so any emit would still surface
+    // in the parent UI's log).
+    const el = document.createElement('div');
+    const pres = presentation();
+    const { err } = listen(el);
+    const state = { connected: false } as WidgetState;
+    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('widget-disposed'); }), () => null, pres);
+    expect(err).toHaveLength(0);
+    expect(pres.setState).not.toHaveBeenCalled();
+  });
+
+  it('disposed widget on solve success: still no pass emit', async () => {
+    // Symmetric path: a solve that managed to resolve cleanly post-dispose
+    // shouldn't fire the pass event on a detached element either.
+    const el = document.createElement('div');
+    const pres = presentation();
+    const { pass } = listen(el);
+    const state = { connected: false } as WidgetState;
+    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres);
+    expect(pass).toHaveLength(0);
+    expect(pres.setState).not.toHaveBeenCalled();
   });
 });

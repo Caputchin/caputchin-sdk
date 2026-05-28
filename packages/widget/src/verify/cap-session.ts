@@ -90,12 +90,24 @@ export async function awaitCapAndEmitPass(
     // error fires below). No-op for the cap-only / manual paths (no kickoff
     // awaits the seed).
     if (state.widgetId) resolveSeedGate(state.widgetId);
+    // Disposed widget: the host element was removed from DOM (React effect
+    // cleanup) while cap.solve was still in flight, so the rejection lands on
+    // a widget the user can no longer see. Surfacing verification-failed here
+    // would still reach any addEventListener bound directly to the (now
+    // detached) element, leaking the noisy event into the parent UI's log.
+    // Drop silently.
+    if (!state.connected) return;
     if (!state.gameErrored) {
       fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
     }
     presentation?.setState('error');
     return;
   }
+
+  // Same disposed-widget guard for the success path: a stale cap.solve from
+  // the disposed widget that managed to resolve cleanly shouldn't emit the
+  // pass event on a detached element.
+  if (!state.connected) return;
 
   if (state.gameErrored) {
     presentation?.setState('error');
