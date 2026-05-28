@@ -1,17 +1,18 @@
-import type { ResolvedSkin, SkinPreset, SkinSchemaEntry } from '@caputchin/game-sdk';
+import type { ResolvedSkin } from '@caputchin/game-sdk';
 import widgetManifest from '../../caputchin.json';
-import { injectOverrideLayer } from '../bootstrap/cascade-merge.js';
-import { resolveSkin } from './resolver.js';
-// Brand SVGs are inlined as data URIs by tsup's dataurl loader at build
-// time so the bundle stays self-contained. Sources live as editable .svg
-// files in src/assets/; the loader turns each into `data:image/svg+xml;
-// base64,…` we can drop into an <img src> directly.
+// Brand SVGs are inlined as data URIs by tsup's dataurl loader at build time so
+// the bundle stays self-contained. The brand_logo is NOT server-resolved (the
+// JSON would balloon ~30KB per logo); the widget injects the theme-matched logo
+// into the server-resolved palette here.
 import brandLogoLight from '../assets/logo-light.svg';
 import brandLogoDark from '../assets/logo-dark.svg';
 
-/** Keys present in the widget's bundled shell skin presets. Adding a new
- *  themable surface means adding it to caputchin.json AND extending this
- *  type so the rest of the codebase gets autocomplete + miss detection. */
+// The SERVER resolves the shell skin and sends the resolved preset; this module
+// builds the typed WidgetShellSkin from it (and injects the theme-matched brand
+// logo), with a bundled light fallback when the bootstrap failed / returned
+// nothing.
+
+/** Keys present in the widget's bundled shell skin presets. */
 export interface ShellPalette {
   primary: string;
   primary_hover: string;
@@ -27,45 +28,30 @@ export interface ShellPalette {
   modal_backdrop: string;
   fullscreen_backdrop: string;
   close_btn_bg: string;
-  /** Color of the compact-mode separator dot in the brand strip. Lighter
-   *  than `text_muted` so the dot reads as decorative punctuation, not as
-   *  active text. */
   separator: string;
   brand_text: string;
   brand_text_hover: string;
-  /** Brand mark asset. Resolved as an `image`-typed skin value - typically a
-   *  `data:image/svg+xml;base64,…` URI in the bundled presets so the widget
-   *  bundle stays self-contained. Customer-curated paid skins can swap to
-   *  any allowed image URL via the same key. */
+  /** Brand mark asset (tsup-inlined data URI by theme; customer paid skins can
+   *  override via the `brand_logo` key, which wins). */
   brand_logo: string;
-  // Index signature lets the palette flow straight into the
-  // `Record<string, string>` writer in `css-vars.ts` without an `as unknown`
-  // bounce, and accommodates customer-curated paid skins that add their own
-  // keys. Named keys above still drive autocomplete + miss detection.
+  // Index signature lets the palette flow straight into the css-vars writer and
+  // accommodates customer-curated paid-skin keys.
   [key: string]: string;
 }
 
 export interface WidgetShellSkin {
   theme: 'light' | 'dark';
   palette: ShellPalette;
-  /** Human-readable issues raised during resolution. The element layer
-   *  translates each into an `invalid-config` event so host pages can log
-   *  misconfiguration. */
+  /** Reserved; resolution issues now surface server-side. */
   issues: string[];
 }
 
-const PRESETS = (widgetManifest.skins?.presets ?? {}) as Record<string, SkinPreset>;
-const SCHEMA = (widgetManifest.skins?.schema ?? null) as Record<string, SkinSchemaEntry> | null;
+const PRESETS = (widgetManifest.skins?.presets ?? {}) as Record<string, Record<string, unknown>>;
 
-/** Last-ditch palette if the bundled manifest goes missing somehow.
- *  Derived from the JSON's `light` preset at module init so the two
- *  sources can't drift: editing caputchin.json automatically refreshes
- *  the fallback. Should never be hit in production; exists so the type
- *  system can express a non-null `palette` even on resolver failure. */
+/** Bundled light-palette fallback (derived from caputchin.json so it can't
+ *  drift); used only when the bootstrap returned no resolved skin. */
 const HARDCODED_LIGHT: ShellPalette = {
   ...((PRESETS['light'] ?? {}) as Record<string, string>),
-  // brand_logo isn't authored in caputchin.json (the JSON would balloon
-  // ~30KB per logo if it were); it comes from the tsup-inlined SVG above.
   brand_logo: brandLogoLight,
 } as ShellPalette;
 
@@ -81,47 +67,16 @@ function toPalette(resolved: ResolvedSkin | null, theme: 'light' | 'dark'): Shel
     const value = resolved[key as string];
     if (typeof value === 'string') out[key] = value;
   }
-  // Theme-matched brand logo applies when the resolved preset didn't carry
-  // its own override. Customer-curated paid skins can override via the
-  // `brand_logo` key in their preset and that wins via the loop above.
+  // Theme-matched brand logo unless the resolved preset overrode it.
   if (typeof resolved['brand_logo'] !== 'string') {
     out.brand_logo = BRAND_LOGO_BY_THEME[theme];
   }
   return out;
 }
 
-/** Resolve the widget shell skin. Accepts the customer's `skin` attribute
- *  value (omitted/`"auto"` ⇒ system `prefers-color-scheme`). Inline JSON is
- *  rejected on `<caputchin-widget>` (per shell-attribute parity with
- *  `lang`); the game element pre-derives a theme hint from inline JSON and
- *  passes it as a bare string before reaching this resolver.
- *
- *  When `overridePresets` is supplied (from /api/v1/widget/bootstrap),
- *  the override bank is injected atop the bundled bank before resolution;
- *  collisions implicitly extend their bundled twin. */
-export function resolveWidgetShellSkin(
-  attrValue?: string | null,
-  prefersDark?: boolean,
-  overridePresets?: Record<string, SkinPreset> | null,
-): WidgetShellSkin {
-  const dark = typeof prefersDark === 'boolean'
-    ? prefersDark
-    : (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        : false);
-  const merged = injectOverrideLayer(PRESETS, overridePresets);
-  const { resolved, issues } = resolveSkin({
-    presets: merged,
-    schema: SCHEMA,
-    attrValue: attrValue ?? 'auto',
-    prefersDark: dark,
-    rejectInlineJson: true,
-    baseUrl: null,
-  });
+/** Build the widget shell skin from the server-resolved skin. Null (bootstrap
+ *  failed / no skin resolved) → bundled light fallback. */
+export function buildWidgetShellSkin(resolved: ResolvedSkin | null): WidgetShellSkin {
   const theme: 'light' | 'dark' = resolved?._theme ?? 'light';
-  return {
-    theme,
-    palette: toPalette(resolved, theme),
-    issues,
-  };
+  return { theme, palette: toPalette(resolved, theme), issues: [] };
 }

@@ -1,81 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { resolveWidgetShellSkin } from '../../../src/skin/widget-shell-skin.js';
-import widgetManifest from '../../../caputchin.json';
+import { buildWidgetShellSkin } from '../../../src/skin/widget-shell-skin.js';
+import type { ResolvedSkin } from '@caputchin/game-sdk';
 
-const LIGHT_PRESET = widgetManifest.skins.presets.light as Record<string, string>;
-
-describe('resolveWidgetShellSkin', () => {
-  it('attr=null + prefersDark=false → light palette', () => {
-    const r = resolveWidgetShellSkin(null, false);
-    expect(r.theme).toBe('light');
-    expect(r.palette.primary).toBe('#2F6640');
-    expect(r.palette.surface_bg).toBe('#ffffff');
-    expect(r.issues).toHaveLength(0);
-  });
-  it('attr=null + prefersDark=true → dark palette', () => {
-    const r = resolveWidgetShellSkin(null, true);
-    expect(r.theme).toBe('dark');
-    expect(r.palette.primary).toBe('#4E9B65');
-    expect(r.palette.surface_bg).toBe('#182518');
-  });
-  it('attr="dark" overrides system (prefersDark=false)', () => {
-    const r = resolveWidgetShellSkin('dark', false);
-    expect(r.theme).toBe('dark');
-    expect(r.palette.primary).toBe('#4E9B65');
-  });
-  it('attr="light" overrides system (prefersDark=true)', () => {
-    const r = resolveWidgetShellSkin('light', true);
-    expect(r.theme).toBe('light');
-    expect(r.palette.primary).toBe('#2F6640');
-  });
-  it('attr="auto" + prefersDark=true → dark', () => {
-    const r = resolveWidgetShellSkin('auto', true);
-    expect(r.theme).toBe('dark');
+// The SERVER resolves the shell skin (resolution gated by the
+// platform's relocated golden tests). buildWidgetShellSkin adapts the resolved
+// skin → the typed WidgetShellSkin + injects the theme-matched bundled brand
+// logo, with a bundled light fallback.
+describe('buildWidgetShellSkin', () => {
+  it('null resolved → bundled light fallback + light brand logo', () => {
+    const s = buildWidgetShellSkin(null);
+    expect(s.theme).toBe('light');
+    expect(typeof s.palette.primary).toBe('string');
+    expect(s.palette.brand_logo).toMatch(/^data:image\/svg/);
   });
 
-  it('light preset carries the green wordmark color and primary brand logo', () => {
-    const r = resolveWidgetShellSkin('light', false);
-    expect(r.palette.brand_text).toBe('#2F6640');
-    expect(r.palette.brand_text_hover).toBe('#1f4a2c');
-    // brand_logo injected from src/assets/logo-light.svg via tsup dataurl
-    // loader. In the test (vitest) env the loader hands us the raw string
-    // contents instead of a data: URI prefix, but it MUST contain SVG
-    // markup either way.
-    expect(r.palette.brand_logo).toMatch(/svg|data:image\/svg\+xml/);
+  it('applies the server-resolved skin (theme + palette) + theme-matched brand logo', () => {
+    const resolved = { _theme: 'dark', primary: '#abcdef' } as unknown as ResolvedSkin;
+    const s = buildWidgetShellSkin(resolved);
+    expect(s.theme).toBe('dark');
+    expect(s.palette.primary).toBe('#abcdef');
+    // brand_logo not in the resolved preset → theme-matched bundled logo injected.
+    expect(s.palette.brand_logo).toMatch(/^data:image\/svg/);
   });
 
-  it('dark preset carries the off-white wordmark color and inverted brand logo', () => {
-    const r = resolveWidgetShellSkin('dark', false);
-    expect(r.palette.brand_text).toBe('#F7F5F2');
-    expect(r.palette.brand_text_hover).toBe('#9ACE9B');
-    expect(r.palette.brand_logo).toMatch(/svg|data:image\/svg\+xml/);
-    // Light and dark logos must be different assets.
-    const light = resolveWidgetShellSkin('light', false).palette.brand_logo;
-    expect(r.palette.brand_logo).not.toBe(light);
-  });
-  it('unknown preset name emits issue + cascades to auto', () => {
-    const r = resolveWidgetShellSkin('not-a-preset', false);
-    expect(r.issues.length).toBeGreaterThan(0);
-    expect(r.theme).toBe('light');
-  });
-  it('inline JSON is rejected, emits issue, cascades to auto', () => {
-    const r = resolveWidgetShellSkin('{"_theme":"dark","primary":"#ff0000"}', false);
-    expect(r.issues.some((m) => m.includes('does not accept inline JSON'))).toBe(true);
-    expect(r.theme).toBe('light');
-    // primary stays at the light preset's value, NOT the inline override
-    expect(r.palette.primary).toBe('#2F6640');
-  });
-
-  // S1 drift guard: the in-code HARDCODED_LIGHT fallback in widget-shell-skin
-  // mirrors the bundled JSON light preset. Resolving with attr='light' returns
-  // the JSON-derived palette; this assertion catches drift between the two
-  // sources so future maintainers can't silently desync the safety net.
-  it('every color key in the bundled light JSON preset matches the resolved light palette', () => {
-    const r = resolveWidgetShellSkin('light', false);
-    for (const [key, jsonValue] of Object.entries(LIGHT_PRESET)) {
-      if (key.startsWith('_')) continue;
-      if (key === 'brand_logo') continue; // not in JSON; sourced from build-time SVG import
-      expect(r.palette[key], `light preset key "${key}"`).toBe(jsonValue);
-    }
+  it('a resolved brand_logo override wins over the bundled logo', () => {
+    const resolved = { _theme: 'light', brand_logo: 'https://cdn.acme.com/logo.png' } as unknown as ResolvedSkin;
+    expect(buildWidgetShellSkin(resolved).palette.brand_logo).toBe('https://cdn.acme.com/logo.png');
   });
 });

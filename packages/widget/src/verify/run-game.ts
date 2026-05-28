@@ -84,8 +84,8 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
-  // On a gated key the server sets the session game from the signed ticket
-  // (Phase 11), not from the client gameId. Echo the ticket here.
+  // On a gated key the server sets the session game from the signed ticket,
+  // not from the client gameId. Echo the ticket here.
   const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId, state.gateTicket ?? null);
   const dispatchStart = (): void => emitStart(el, gameId);
   const presentation = state.gamePresentation ?? null;
@@ -119,7 +119,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
       state.gameErrored = true;
       client.abortGate(new Error(`game-error: ${msg.code}`));
     }
-  }, collectSkinAssetOrigins(state.gameOverrides ?? null));
+  }, collectSkinAssetOrigins(state.gameResolved?.skin ?? null));
   state.iframeHost = host;
 
   // Start the cap solve NOW (before kickoff) so /verify/start fires and the seed
@@ -148,7 +148,8 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
       state.gameStartedEmitted = true;
       dispatchStart();
     },
-    state.gameOverrides ?? null,
+    state.gameResolved ?? null,
+    state.gamePreferred ?? null,
     awaitSeed,
   );
 
@@ -183,7 +184,7 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
       fireError(el, code, msg.message, originalCode);
       state.gamePresentation?.setState('error');
     }
-  }, collectSkinAssetOrigins(state.gameOverrides ?? null));
+  }, collectSkinAssetOrigins(state.gameResolved?.skin ?? null));
   state.iframeHost = host;
 
   await installGameFrame(
@@ -197,6 +198,7 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
       state.iframeHost = null;
     },
     dispatchStart,
-    state.gameOverrides ?? null,
+    state.gameResolved ?? null,
+    state.gamePreferred ?? null,
   );
 }

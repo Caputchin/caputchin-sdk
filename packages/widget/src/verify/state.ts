@@ -5,7 +5,7 @@ import type { IframeHost } from '../iframe/host.js';
 import type { Presentation } from '../modes/index.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
-import type { OverridesPerAxis } from '../bootstrap/types.js';
+import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /** Per-mount mutable state. Generic in the config shape so both element
  *  classes share one definition; cap-only widgets simply leave the iframe
@@ -26,11 +26,14 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
   gameStartedEmitted?: boolean;
   gameErrored?: boolean;
   firstPassFired?: boolean;
-  /** Per-game override banks (language/skin/configuration) from the bootstrap
-   *  `game` block, captured at mount and applied over the game manifest
-   *  presets when the iframe kicks off. Null when there's no sitekey (no
-   *  bootstrap fetch) or the tier/scope yielded none. */
-  gameOverrides?: OverridesPerAxis | null;
+  /** Server-RESOLVED game axes (locale/skin/config) from the bootstrap `game`
+   *  block, captured at mount and forwarded into the iframe kickoff. Null when
+   *  there's no bootstrap (no sitekey + no keyless game) or it timed out → the
+   *  game runs its bundled defaults. */
+  gameResolved?: ResolvedAxes | null;
+  /** The game's preferred footprint from the bootstrap `game` block (was the
+   *  deleted manifest message's preferredWidth/Height). */
+  gamePreferred?: { width?: number; height?: number } | null;
   /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
    *  `game` block, so the game-load path reuses that one round trip instead
    *  of a second `/widget/bootstrap` call.
@@ -39,7 +42,7 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  pick can differ from the mount-time `game`, so that path resolves
    *  fresh). Null when no bootstrap ran (no sitekey) or it timed out. */
   gameBundle?: { gameId: string | null; url: string | null; integrity: string | null } | null;
-  /** Server game gate (Phase 11). `requiresGame` is true when the site key is
+  /** Server game gate. `requiresGame` is true when the site key is
    *  gated: the server picked the game + signed `gateTicket` at bootstrap. The
    *  ticket is echoed to /verify/start (which sets the session's game from it,
    *  server-authoritative). Both null/false on an ungated key. */
@@ -62,7 +65,8 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     gameStartedEmitted: false,
     gameErrored: false,
     firstPassFired: false,
-    gameOverrides: null,
+    gameResolved: null,
+    gamePreferred: null,
     gameBundle: null,
     requiresGame: false,
     gateTicket: null,

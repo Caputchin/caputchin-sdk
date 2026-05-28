@@ -1,6 +1,6 @@
 import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
-import type { IframeToWidget, ManifestMessage } from '../protocol/messages.js';
+import type { IframeToWidget } from '../protocol/messages.js';
 import type { Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
 
 // srcdoc iframes always fire `load` for the wrapper document; even on CSP block or 404.
@@ -19,11 +19,6 @@ export class IframeHost {
   private unlisten: (() => void) | null = null;
   private kickoffAckTimer: ReturnType<typeof setTimeout> | null = null;
   private onLoadFailed: ((code: 'iframe-load-failed', message: string) => void) | null = null;
-
-  private manifestResolver: ((m: ManifestMessage | null) => void) | null = null;
-  private manifestTimer: ReturnType<typeof setTimeout> | null = null;
-  private manifestSettled = false;
-  private bufferedManifest: ManifestMessage | null = null;
 
   constructor(
     gameUrl: string | null,
@@ -87,10 +82,6 @@ export class IframeHost {
     this.onLoadFailed = onLoadFailed;
 
     this.unlisten = listen(iframe, this.hostEl, (msg) => {
-      if (msg.kind === 'manifest') {
-        this.handleManifest(msg);
-        return;
-      }
       if (msg.kind === 'dimensions-measured') {
         // Apply directly to the iframe; outer shell (inline frame /
         // overlay dialog) re-flows automatically. Iframe-slot `data-fill`
@@ -112,57 +103,6 @@ export class IframeHost {
   /** Returns the iframe element for re-parenting by external presenters. */
   getIframe(): HTMLIFrameElement | null {
     return this.iframe;
-  }
-
-  /** Returns the game bundle URL (passed via `<caputchin-game game-src>`
-   *  or derived from the `game` attribute's npm/CDN lookup). Used by the
-   *  skin resolver as the base for bundle-relative asset paths in
-   *  `skins.presets`. `null` for game-only-no-bundle cases. */
-  getGameUrl(): string | null {
-    return this.gameUrl;
-  }
-
-  /**
-   * Wait for the iframe runtime to post its manifest. Resolves to the message
-   * if received within `timeoutMs`, or `null` on timeout. Safe to call multiple
-   * times; subsequent calls reuse the buffered manifest.
-   */
-  waitManifest(timeoutMs: number): Promise<ManifestMessage | null> {
-    if (this.bufferedManifest) {
-      return Promise.resolve(this.bufferedManifest);
-    }
-    if (this.manifestSettled) {
-      return Promise.resolve(null);
-    }
-    return new Promise((resolve) => {
-      this.manifestResolver = resolve;
-      this.manifestTimer = setTimeout(() => {
-        this.manifestTimer = null;
-        this.settleManifest(null);
-      }, timeoutMs);
-    });
-  }
-
-  private handleManifest(msg: ManifestMessage): void {
-    if (this.manifestSettled) return;
-    if (this.manifestResolver) {
-      this.settleManifest(msg);
-    } else {
-      this.bufferedManifest = msg;
-    }
-  }
-
-  private settleManifest(msg: ManifestMessage | null): void {
-    if (this.manifestSettled) return;
-    this.manifestSettled = true;
-    if (this.manifestTimer !== null) {
-      clearTimeout(this.manifestTimer);
-      this.manifestTimer = null;
-    }
-    if (this.manifestResolver) {
-      this.manifestResolver(msg);
-      this.manifestResolver = null;
-    }
   }
 
   setLayoutContext(layout: Layout): void {
@@ -213,14 +153,6 @@ export class IframeHost {
 
   dispose(): void {
     this.clearKickoffAckTimer();
-    if (this.manifestTimer !== null) {
-      clearTimeout(this.manifestTimer);
-      this.manifestTimer = null;
-    }
-    if (this.manifestResolver) {
-      this.manifestResolver(null);
-      this.manifestResolver = null;
-    }
     if (this.iframe) {
       send(this.iframe, { kind: 'dispose', seq: -1 });
       this.iframe.remove();

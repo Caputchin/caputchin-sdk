@@ -2,10 +2,10 @@ import { inspectGameConfig, shouldVerify } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { fireError } from '../errors.js';
-import { resolveWidgetShell } from '../locale/widget-shell.js';
-import { resolveWidgetShellSkin } from '../skin/widget-shell-skin.js';
+import { buildWidgetShell } from '../locale/widget-shell.js';
+import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
-import { resolveWidgetShellConfig } from '../configurations/widget-shell-config.js';
+import { buildWidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createGamePresentation } from '../modes/game.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
@@ -14,8 +14,8 @@ import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
-import type { OverridesPerAxis } from '../bootstrap/types.js';
-import type { LocalePreset, SkinPreset } from '@caputchin/game-sdk';
+import { readNavLang, readPrefersDark } from '../bootstrap/signals.js';
+import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /**
  * `<caputchin-game>`; game host with optional cap verification.
@@ -62,18 +62,12 @@ export class CaputchinGame extends HTMLElement {
       fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
     }
 
-    // Bundled cascade once for hint extraction (sitekey + game both feed
-    // the bootstrap call). If sitekey is absent (game-only path), skip
-    // bootstrap entirely - overrides are gated by sitekey/plan-tier and
-    // there's nothing to fetch.
-    const rawLocale = state.config.locale;
-    const inlineSignals = rawLocale ? deriveShellSignals(rawLocale) : { hint: null, direction: null };
-    const skinThemeHint = state.config.skin ? deriveShellSkinHint(state.config.skin) : null;
-    const hintShell = resolveWidgetShell(inlineSignals.hint);
-    const hintSkin = resolveWidgetShellSkin(skinThemeHint);
-
+    // The SERVER resolves one preset per axis (shell + game). When there's no
+    // sitekey (game-only path) there's no server resolution to do - the game
+    // loads via resolveGameUrl and runs its bundled defaults, the shell uses its
+    // bundled fallback.
     if (state.config.sitekey === null) {
-      this.completeMount(apiHost, null, inlineSignals, skinThemeHint);
+      this.completeMount(apiHost, null);
       return;
     }
 
@@ -82,15 +76,17 @@ export class CaputchinGame extends HTMLElement {
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
       games: state.config.games ?? null,
-      localeLang: hintShell.lang,
-      skinTheme: hintSkin.theme,
+      locale: state.config.locale,
+      navLang: readNavLang(),
+      skin: state.config.skin,
+      prefersDark: readPrefersDark(),
     }).then((bootstrap) => {
       if (!this.state.connected || !this.state.config) return;
-      // Game-scope override banks ride to the iframe via state; the shell
-      // around the game still consumes only the widget block (its _theme /
-      // _lang signals), same as before.
-      this.state.gameOverrides = bootstrap?.game?.overrides ?? null;
-      // Phase 11 gate: when the server gated this key it PICKED the game from
+      // The server-resolved GAME axes + preferred footprint ride to the iframe
+      // via state; the shell AROUND the game consumes the widget block.
+      this.state.gameResolved = bootstrap?.game?.resolved ?? null;
+      this.state.gamePreferred = bootstrap?.game?.preferred ?? null;
+      // Server gate: when the server gated this key it PICKED the game from
       // the per-site pool + signed a ticket. The server pick overrides the
       // client game/games/game-src attrs; stash the ticket to echo at
       // /verify/start. The picked game's bundle is in bootstrap.game.
@@ -100,34 +96,27 @@ export class CaputchinGame extends HTMLElement {
       if (requiresGame && bootstrap?.gameId) {
         this.state.config.game = bootstrap.gameId;
       }
-      // The same bootstrap response already carries the marketplace bundle
-      // url + integrity for the resolved game - stash it (tagged with that
-      // id) so the game-load path can skip a second /widget/bootstrap call.
+      // The same bootstrap response already carries the bundle url + integrity
+      // for the resolved game - stash it (tagged with that id) so the game-load
+      // path can skip a second /widget/bootstrap call.
       this.state.gameBundle = bootstrap?.game
         ? { gameId: this.state.config.game, url: bootstrap.game.url, integrity: bootstrap.game.integrity }
         : null;
-      this.completeMount(apiHost, bootstrap?.widget?.overrides ?? null, inlineSignals, skinThemeHint);
+      this.completeMount(apiHost, bootstrap?.widget?.resolved ?? null);
     });
   }
 
-  private completeMount(
-    apiHost: string,
-    overrides: OverridesPerAxis | null,
-    inlineSignals: ShellSignals,
-    skinThemeHint: string | null,
-  ): void {
+  private completeMount(apiHost: string, resolved: ResolvedAxes | null): void {
     const state = this.state;
     if (!state.config) return;
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
-    const localeOverride = (overrides?.locale?.presets ?? null) as Record<string, LocalePreset> | null;
-    const skinOverride = (overrides?.skin?.presets ?? null) as Record<string, SkinPreset> | null;
     const isManual = state.config.trigger === 'manual';
     const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
 
-    // Phase 11 gated key: the server requires one of its installed games, so the
+    // Gated key: the server requires one of its installed games, so the
     // self-hosted game-src / manual-DOM escape hatches don't apply. Clear
     // game-src (the server-picked marketplace game runs instead); manual is
     // surfaced as a config error and fails closed server-side (no game trace).
@@ -141,34 +130,17 @@ export class CaputchinGame extends HTMLElement {
       }
     }
 
-    const baseShell = resolveWidgetShell(inlineSignals.hint, undefined, localeOverride);
-    const shell = inlineSignals.direction
-      ? { ...baseShell, direction: inlineSignals.direction }
-      : baseShell;
-    for (const message of baseShell.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    // Shell around the game is built from the server-resolved WIDGET axes. The
+    // GAME's own resolved axes (state.gameResolved) ride to the iframe kickoff
+    // separately (install-game-frame).
+    const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = resolveWidgetShellSkin(skinThemeHint, undefined, skinOverride);
-    for (const message of skin.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
-    // Widget shell config (brand link targets) on the game element always
-    // uses the bundled default. The customer's `config` attribute on
-    // `<caputchin-game>` drives the GAME's configurations only (see
-    // install-game-frame). There's no cross-cutting dimension between
-    // game configurations and widget shell configurations. Widget shell
-    // configurations CAN still be overridden via the bootstrap response's
-    // widget.overrides.configuration block - same as on `<caputchin-widget>`.
-    const widgetConfigOverride = (overrides?.configuration?.presets ?? null) as Parameters<typeof resolveWidgetShellConfig>[0];
-    const shellConfig = resolveWidgetShellConfig(widgetConfigOverride);
-    for (const message of shellConfig.issues) {
-      fireError(this, 'invalid-config', message);
-    }
+    const shellConfig = buildWidgetShellConfig(resolved?.config ?? null);
 
     const gp = createGamePresentation({
       host: this,
@@ -244,54 +216,6 @@ export class CaputchinGame extends HTMLElement {
       console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
     }
   }
-}
-
-interface ShellSignals {
-  /** Preset name / ISO to feed to `resolveWidgetShell`. `null` ⇒ browser auto. */
-  hint: string | null;
-  /** Explicit direction override pulled from inline JSON's `_direction`.
-   *  Applied on top of the shell's own resolved direction. */
-  direction: 'ltr' | 'rtl' | null;
-}
-
-/** Pull shell-relevant signals out of the customer's `lang` attribute.
- *  Non-JSON values pass through verbatim as the hint (no direction
- *  override). Inline JSON contributes `_lang` / `_extends` as the hint AND
- *  `_direction` as an explicit override. Malformed JSON yields no signals
- *  (shell falls back to browser auto; the game-side resolver emits the
- *  parse issue). */
-function deriveShellSignals(raw: string): ShellSignals {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith('{')) return { hint: raw, direction: null };
-  let parsed: unknown;
-  try { parsed = JSON.parse(trimmed); } catch { return { hint: null, direction: null }; }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { hint: null, direction: null };
-  }
-  const obj = parsed as Record<string, unknown>;
-  let hint: string | null = null;
-  if (typeof obj._lang === 'string' && obj._lang.length > 0) hint = obj._lang;
-  else if (typeof obj._extends === 'string' && obj._extends.length > 0) hint = obj._extends;
-  const direction = obj._direction === 'rtl' || obj._direction === 'ltr' ? obj._direction : null;
-  return { hint, direction };
-}
-
-/** Pull a mode hint from the customer's `skin` attribute for the widget
- *  shell. The shell never consumes per-key overrides; it just needs to
- *  know whether to render light or dark. For non-JSON values the raw
- *  string passes through (light/dark/auto/preset-name). For inline JSON
- *  we extract `_theme`, falling back to `_extends` if it names a mode
- *  shortcut. Malformed JSON yields `null` → shell auto. */
-function deriveShellSkinHint(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith('{')) return raw;
-  let parsed: unknown;
-  try { parsed = JSON.parse(trimmed); } catch { return null; }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const obj = parsed as Record<string, unknown>;
-  if (obj._theme === 'light' || obj._theme === 'dark') return obj._theme;
-  if (obj._extends === 'light' || obj._extends === 'dark') return obj._extends;
-  return null;
 }
 
 function resolveLayout(attr: LayoutAttr): 'inline' | 'modal' | 'fullscreen' {

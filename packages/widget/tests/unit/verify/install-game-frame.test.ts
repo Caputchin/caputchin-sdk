@@ -1,102 +1,74 @@
-import { describe, it, expect } from 'vitest';
-
-import {
-  resolveLocaleForGame,
-  resolveSkinForGame,
-} from '../../../src/verify/install-game-frame.js';
+import { describe, it, expect, vi } from 'vitest';
+import { installGameFrame, applyIframeSize } from '../../../src/verify/install-game-frame.js';
 import type { GameConfig } from '../../../src/config/game.js';
-import type { ManifestMessage } from '../../../src/protocol/messages.js';
-import type { OverridesPerAxis } from '../../../src/bootstrap/types.js';
+import type { ResolvedAxes } from '../../../src/bootstrap/types.js';
 
-// These helpers are the seam where dashboard-authored per-game override
-// banks (from the bootstrap `game` block) meet the game's own manifest
-// presets. The merge primitive (injectOverrideLayer) + each axis resolver
-// are unit-tested elsewhere; this file proves the GLUE: overrides are
-// injected as a second layer over the manifest, name-collisions extend
-// their bundled twin, and skin/config (which need a manifest schema) ignore
-// overrides when the game declares no block.
+// The manifest handshake is gone. installGameFrame no
+// longer resolves client-side or waits for a manifest; it kicks off with the
+// SERVER-resolved axes (proving the config=null fill flows to the live game)
+// and sizes from the server-sent preferred footprint.
 
-const el = (): HTMLElement => document.createElement('div');
-
-function cfg(overrides: Partial<GameConfig>): GameConfig {
-  return { locale: null, skin: null, ...overrides } as unknown as GameConfig;
+function mockHost() {
+  const calls: { kickoff?: unknown; size?: [unknown, unknown] } = {};
+  return {
+    mount: vi.fn(),
+    getIframe: () => ({}) as HTMLIFrameElement,
+    setSize: vi.fn((w: unknown, h: unknown) => { calls.size = [w, h]; }),
+    setLayoutContext: vi.fn(),
+    kickoff: vi.fn((seq: number, seed: unknown, locale: unknown, skin: unknown, config: unknown) => {
+      calls.kickoff = { seq, seed, locale, skin, config };
+    }),
+    calls,
+  };
 }
+const mockGp = () => ({ getIframeSlot: () => document.createElement('div') });
+const cfg = (p: Partial<GameConfig>): GameConfig => ({ locale: null, skin: null, ...p }) as unknown as GameConfig;
 
-function manifest(parts: Partial<ManifestMessage>): ManifestMessage {
-  return parts as unknown as ManifestMessage;
-}
-
-function overrides(parts: Partial<OverridesPerAxis>): OverridesPerAxis {
-  return { locale: null, skin: null, configuration: null, ...parts };
-}
-
-describe('resolveLocaleForGame - override merge', () => {
-  const baseManifest = manifest({
-    locales: { presets: { en: { _lang: 'en', _default: true, hello: 'Hi' } } },
+describe('installGameFrame', () => {
+  it('kicks off with the server-resolved axes (incl config) + sizes from preferred', async () => {
+    const host = mockHost();
+    const resolved: ResolvedAxes = {
+      locale: { _lang: 'en', _direction: 'ltr' } as never,
+      skin: { _theme: 'dark' } as never,
+      config: { pairs: 8 } as never,
+    };
+    await installGameFrame(
+      document.createElement('div'),
+      mockGp() as never,
+      cfg({ layout: 'inline' as never }),
+      host as never,
+      () => {},
+      () => {},
+      resolved,
+      { width: 320, height: 480 },
+      async () => null,
+    );
+    const k = host.calls.kickoff as { locale: unknown; skin: unknown; config: unknown };
+    expect(k.locale).toEqual(resolved.locale);
+    expect(k.skin).toEqual(resolved.skin);
+    expect(k.config).toEqual({ pairs: 8 }); // the old cfg=null, now server-resolved
+    expect(host.calls.size).toEqual([320, 480]);
   });
 
-  it('override of a same-name preset wins on the collided key, inherits the rest', () => {
-    const ov = overrides({ locale: { presets: { en: { hello: 'Hola' } } } });
-    const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), baseManifest, ov);
-    expect(resolved).not.toBeNull();
-    expect(resolved!.hello).toBe('Hola'); // override leaf wins
-    expect(resolved!._lang).toBe('en'); // metadata inherited from bundled twin
-  });
-
-  it('no overrides → resolves straight from the manifest', () => {
-    const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), baseManifest, overrides({}));
-    expect(resolved!.hello).toBe('Hi');
-  });
-
-  it('override-only preset resolves even when the manifest ships no languages', () => {
-    const ov = overrides({ locale: { presets: { en: { _lang: 'en', _default: true, hello: 'Hola' } } } });
-    const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), manifest({ locales: null }), ov);
-    expect(resolved!.hello).toBe('Hola');
-  });
-
-  it('no manifest presets and no overrides → null', () => {
-    const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), manifest({ locales: null }), overrides({}));
-    expect(resolved).toBeNull();
-  });
-
-  it('a NEW-NAME override default wins its group over the bundled default (override-first at the seam)', () => {
-    // Not a same-name collision: the override preset has a distinct name but
-    // the same _lang group + _default:true. The bundled preset is named
-    // "english" (not its ISO) so `locale="en"` resolves by ISO-GROUP default
-    // scan rather than exact-name match - that scan is where override-first
-    // iteration must make the override win. This is the case the original
-    // (bundled-first) bug got wrong.
-    const m = manifest({ locales: { presets: { english: { _lang: 'en', _default: true, hello: 'Hi' } } } });
-    const ov = overrides({ locale: { presets: { house_en: { _lang: 'en', _default: true, hello: 'Yo' } } } });
-    const resolved = resolveLocaleForGame(el(), cfg({ locale: 'en' }), m, ov);
-    expect(resolved).not.toBeNull();
-    expect(resolved!.hello).toBe('Yo'); // override default wins, not bundled 'Hi'
+  it('null resolved → kickoff with null axes (game uses bundled defaults)', async () => {
+    const host = mockHost();
+    await installGameFrame(document.createElement('div'), mockGp() as never, cfg({}), host as never, () => {}, () => {}, null, null, async () => null);
+    const k = host.calls.kickoff as { locale: unknown; config: unknown };
+    expect(k.locale).toBeNull();
+    expect(k.config).toBeNull();
   });
 });
 
-describe('resolveSkinForGame - override merge', () => {
-  const baseManifest = manifest({
-    skins: {
-      schema: { primary: 'color', surface_bg: 'color' },
-      presets: { light: { _theme: 'light', _default: true, primary: '#2F6640', surface_bg: '#ffffff' } },
-    },
+describe('applyIframeSize', () => {
+  it('uses the preferred footprint; width="full" stretches to 100%', () => {
+    const host = mockHost();
+    applyIframeSize(host as never, cfg({ width: 'full' as never }), { width: 320, height: 480 });
+    expect(host.calls.size).toEqual(['100%', 480]);
   });
 
-  it('override merges over the manifest skin preset', () => {
-    // A customer override that should be the active light skin carries the
-    // selection metadata (_theme/_default) the dashboard saves; override-first
-    // ordering then makes it win the mode scan over the bundled twin, while
-    // unset keys inherit from that twin via the implicit _extends.
-    const ov = overrides({ skin: { presets: { light: { _theme: 'light', _default: true, primary: '#FF0000' } } } });
-    const resolved = resolveSkinForGame(el(), cfg({ skin: 'light' }), baseManifest, null, ov);
-    expect(resolved).not.toBeNull();
-    expect(resolved!.primary).toBe('#FF0000'); // override leaf wins
-    expect(resolved!.surface_bg).toBe('#ffffff'); // inherited from bundled twin
-  });
-
-  it('no manifest skin block → null even when overrides are present (schema is manifest-authoritative)', () => {
-    const ov = overrides({ skin: { presets: { light: { primary: '#FF0000' } } } });
-    const resolved = resolveSkinForGame(el(), cfg({ skin: 'light' }), manifest({ skins: undefined }), null, ov);
-    expect(resolved).toBeNull();
+  it('falls back to defaults when no preferred footprint', () => {
+    const host = mockHost();
+    applyIframeSize(host as never, cfg({}), null);
+    expect(host.calls.size).toEqual([400, 300]);
   });
 });

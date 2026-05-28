@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchBootstrap, buildBootstrapUrl, validateBootstrapResponse } from '../../../src/bootstrap/client.js';
 
 describe('buildBootstrapUrl', () => {
-  it('includes sitekey as required + skips absent optional params', () => {
+  it('includes sitekey + always emits prefers_dark; skips absent optional params', () => {
     const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'cpt_pub_abc' });
-    expect(url).toBe('https://api.test/api/v1/widget/bootstrap?sitekey=cpt_pub_abc');
+    expect(url).toBe('https://api.test/api/v1/widget/bootstrap?sitekey=cpt_pub_abc&prefers_dark=false');
   });
 
   it('includes game when provided', () => {
@@ -18,34 +18,33 @@ describe('buildBootstrapUrl', () => {
     expect(url).toContain('games=a%2Cb');
   });
 
-  it('threads all hint params when provided', () => {
+  it('threads the resolution inputs (explicit attrs + visitor signals) when provided', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      localeLang: 'en',
-      localePreset: 'en-us',
-      skinTheme: 'dark',
-      skinPreset: 'midnight',
-      configPreset: 'custom',
+      locale: 'ar',
+      navLang: 'en-US',
+      skin: 'dark',
+      prefersDark: true,
     });
-    expect(url).toContain('locale_lang=en');
-    expect(url).toContain('locale_preset=en-us');
-    expect(url).toContain('skin_theme=dark');
-    expect(url).toContain('skin_preset=midnight');
-    expect(url).toContain('config_preset=custom');
+    expect(url).toContain('locale=ar');
+    expect(url).toContain('nav_lang=en-US');
+    expect(url).toContain('skin=dark');
+    expect(url).toContain('prefers_dark=true');
   });
 
-  it('omits empty / null hint values from the query string', () => {
+  it('omits empty / null inputs (but prefers_dark always emits)', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',
       sitekey: 'k',
-      localeLang: null,
-      localePreset: undefined,
-      skinTheme: '',
+      locale: null,
+      navLang: undefined,
+      skin: '',
     });
-    expect(url).not.toContain('locale_lang');
-    expect(url).not.toContain('locale_preset');
-    expect(url).not.toContain('skin_theme');
+    expect(url).not.toContain('locale=');
+    expect(url).not.toContain('nav_lang');
+    expect(url).not.toContain('skin=');
+    expect(url).toContain('prefers_dark=false');
   });
 });
 
@@ -85,7 +84,7 @@ describe('validateBootstrapResponse', () => {
     expect(validateBootstrapResponse({})).toEqual({ widget: null, game: null, requiresGame: false });
   });
 
-  it('passes through the Phase 11 gate fields (requiresGame / gameId / ticket)', () => {
+  it('passes through the server gate fields (requiresGame / gameId / ticket)', () => {
     const raw = {
       widget: null,
       game: { url: 'https://cdn/leaf.js', integrity: 'sha384-x', overrides: null },

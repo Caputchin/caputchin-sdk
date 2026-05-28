@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 type CapturedMessage = Record<string, unknown>;
 
 const posted: CapturedMessage[] = [];
-let manifestOnBoot: CapturedMessage | null = null;
 
 beforeAll(async () => {
   vi.spyOn(window, 'postMessage').mockImplementation((msg) => {
@@ -13,8 +12,6 @@ beforeAll(async () => {
   document.body.innerHTML = '<div id="cpt-root"></div>';
 
   await import('../../../src/iframe/runtime.iife.ts');
-
-  manifestOnBoot = posted.find((m) => m['kind'] === 'manifest') ?? null;
 });
 
 beforeEach(() => {
@@ -119,32 +116,8 @@ describe('iframe runtime - bridge.pass contract', () => {
   });
 });
 
-describe('iframe runtime - manifest posted on boot', () => {
-  it('manifest message posted at boot', () => {
-    expect(manifestOnBoot).not.toBeNull();
-    expect(manifestOnBoot!['kind']).toBe('manifest');
-  });
-
-  it('manifest has gameId=null when no data-game-id script tag in test env', () => {
-    expect(manifestOnBoot!['gameId']).toBeNull();
-  });
-
-  it('manifest has preferredLayout=null when no manifest registered for gameId', () => {
-    expect(manifestOnBoot!['preferredLayout']).toBeNull();
-  });
-
-  it('manifest carries null languages when no manifest registered', () => {
-    expect(manifestOnBoot!['locales']).toBeNull();
-  });
-
-  it('manifest carries null skins when no manifest registered', () => {
-    expect(manifestOnBoot!['skins']).toBeNull();
-  });
-
-  it('manifest carries null configurations when no manifest registered', () => {
-    expect(manifestOnBoot!['configurations']).toBeNull();
-  });
-});
+// The runtime no longer posts a manifest on boot (the server resolves presets).
+// Kickoff ctx delivery is unchanged.
 
 describe('iframe runtime - kickoff ctx delivery', () => {
   it('kickoff with lang payload forwards ctx.locale to the factory', () => {

@@ -1,9 +1,10 @@
-// Client for /api/v1/widget/bootstrap. The widget calls this
-// once at connectedCallback to fetch customer override preset banks (gated
-// per plan tier) and marketplace game URL + integrity (when in game mode).
-// First paint blocks on this call up to a 2 second hard timeout; on
-// timeout, network error, or malformed response the widget falls back to
-// bundled-only rendering.
+// Client for /api/v1/widget/bootstrap. The widget calls this once at
+// connectedCallback with its VISITOR SIGNALS (primary language, prefers-dark);
+// the server resolves one preset per axis (shell + game) and returns the
+// RESOLVED presets + the game URL/integrity. First paint blocks on this call up
+// to a 2 second hard timeout; on timeout, network error, or malformed response
+// the widget falls back to bundled-only rendering. The server resolves; the
+// widget no longer ships or walks override banks.
 
 import type { BootstrapResponse } from './types.js';
 
@@ -14,11 +15,14 @@ export interface FetchBootstrapInput {
   /** Client sub-pool hint for a gated key (comma-joined game ids). The server
    *  picks one from `games ∩ pool`; ignored on an ungated key. */
   games?: string | null;
-  localeLang?: string | null;
-  localePreset?: string | null;
-  skinTheme?: string | null;
-  skinPreset?: string | null;
-  configPreset?: string | null;
+  /** Resolution inputs. `locale` / `skin` are the explicit element
+   *  attributes (preset name / language tag / light|dark / inline JSON); `navLang`
+   *  is the primary navigator language (auto fallback, one value to bound the
+   *  edge-cache cardinality); `prefersDark` is the prefers-color-scheme:dark match. */
+  locale?: string | null;
+  navLang?: string | null;
+  skin?: string | null;
+  prefersDark?: boolean;
   timeoutMs?: number;
 }
 
@@ -62,11 +66,10 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   params.set('sitekey', input.sitekey);
   if (input.game) params.set('game', input.game);
   if (input.games) params.set('games', input.games);
-  if (input.localeLang) params.set('locale_lang', input.localeLang);
-  if (input.localePreset) params.set('locale_preset', input.localePreset);
-  if (input.skinTheme) params.set('skin_theme', input.skinTheme);
-  if (input.skinPreset) params.set('skin_preset', input.skinPreset);
-  if (input.configPreset) params.set('config_preset', input.configPreset);
+  if (input.locale) params.set('locale', input.locale);
+  if (input.navLang) params.set('nav_lang', input.navLang);
+  if (input.skin) params.set('skin', input.skin);
+  params.set('prefers_dark', input.prefersDark ? 'true' : 'false');
   return `${input.apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
 }
 
@@ -92,7 +95,7 @@ export function validateBootstrapResponse(raw: unknown): BootstrapResponse | nul
   return {
     widget: (widget as BootstrapResponse['widget']) ?? null,
     game: (game as BootstrapResponse['game']) ?? null,
-    // Phase 11 gate fields. requiresGame coerced to a strict boolean; gameId /
+    // Server gate fields. requiresGame coerced to a strict boolean; gameId /
     // ticket are opaque strings the widget echoes back (the server re-validates
     // the ticket signature), so a loose pass-through is safe here.
     requiresGame: obj['requiresGame'] === true,

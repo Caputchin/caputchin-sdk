@@ -1,72 +1,26 @@
 import { describe, it, expect } from 'vitest';
-import { resolveWidgetShell } from '../../../src/locale/widget-shell.js';
+import { buildWidgetShell } from '../../../src/locale/widget-shell.js';
+import type { ResolvedLocale } from '@caputchin/game-sdk';
 
-describe('resolveWidgetShell - browser-auto path', () => {
-  it('defaults to en + ltr when no navigator hint provided', () => {
-    const shell = resolveWidgetShell(null, []);
-    expect(shell.lang).toBe('en');
-    expect(shell.direction).toBe('ltr');
-    expect(shell.strings.simpleVerify).toBe('Verify');
-    expect(shell.strings.brandName).toBe('Caputchin');
-    expect(shell.strings.brandTag).toBe('see no data');
-    expect(shell.issues).toEqual([]);
+// The SERVER resolves the shell locale (resolution is gated by the
+// platform's relocated golden tests). buildWidgetShell only adapts the resolved
+// locale → the typed WidgetShell, with a bundled English fallback.
+describe('buildWidgetShell', () => {
+  it('null resolved → bundled English fallback (ltr)', () => {
+    const s = buildWidgetShell(null);
+    expect(s.lang).toBe('en');
+    expect(s.direction).toBe('ltr');
+    expect(s.strings.simpleVerify).toBe('Verify');
+    expect(s.strings.brandName).toBe('Caputchin');
   });
 
-  it('resolves to ar + rtl when navigator language is ar', () => {
-    const shell = resolveWidgetShell(null, ['ar']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.direction).toBe('rtl');
-    expect(shell.strings.simpleVerify).toBe('تحقق');
-    expect(shell.strings.brandName).toBe('كابوتشن');
-    expect(shell.strings.overlayClose).toBe('إغلاق');
-  });
-
-  it('normalizes "ar-EG" to ar via primary subtag', () => {
-    const shell = resolveWidgetShell(null, ['ar-EG']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.direction).toBe('rtl');
-  });
-
-  it('falls back to en when navigator language has no matching preset', () => {
-    // 'th' (Thai) is deliberately outside the official supported set; keep it
-    // a non-preset language so this exercises the en fallback path.
-    const shell = resolveWidgetShell(null, ['th']);
-    expect(shell.lang).toBe('en');
-    expect(shell.direction).toBe('ltr');
-  });
-
-  it('treats locale="auto" the same as null/omitted', () => {
-    const shell = resolveWidgetShell('auto', ['ar']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.direction).toBe('rtl');
-  });
-});
-
-describe('resolveWidgetShell - explicit lang attr', () => {
-  it('resolves preset name (ar) from a browser that prefers en', () => {
-    const shell = resolveWidgetShell('ar', ['en']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.direction).toBe('rtl');
-    expect(shell.strings.simpleVerify).toBe('تحقق');
-    expect(shell.issues).toEqual([]);
-  });
-
-  it('resolves ISO code ("ar-EG" → ar) from a browser that prefers en', () => {
-    const shell = resolveWidgetShell('ar-EG', ['en']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.direction).toBe('rtl');
-    expect(shell.issues).toEqual([]);
-  });
-
-  it('unknown value emits an issue and falls back to browser-auto', () => {
-    const shell = resolveWidgetShell('xyz', ['ar']);
-    expect(shell.lang).toBe('ar');
-    expect(shell.issues.some((m) => /xyz/.test(m))).toBe(true);
-  });
-
-  it('inline JSON is rejected on the widget; emits issue + falls back to auto', () => {
-    const shell = resolveWidgetShell('{"_lang":"ar"}', ['en']);
-    expect(shell.lang).toBe('en');
-    expect(shell.issues.some((m) => /inline JSON/i.test(m))).toBe(true);
+  it('applies the server-resolved locale (lang, direction, strings)', () => {
+    const resolved = { _lang: 'ar', _direction: 'rtl', simpleVerify: 'تحقق' } as unknown as ResolvedLocale;
+    const s = buildWidgetShell(resolved);
+    expect(s.lang).toBe('ar');
+    expect(s.direction).toBe('rtl');
+    expect(s.strings.simpleVerify).toBe('تحقق');
+    // A key the resolved preset didn't carry falls back to the bundled string.
+    expect(s.strings.brandName).toBe('Caputchin');
   });
 });

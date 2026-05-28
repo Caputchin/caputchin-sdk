@@ -65,67 +65,69 @@ describe('invisible widget presentation', () => {
   });
 });
 
+// The SERVER resolves locale/skin; the element forwards its attrs + visitor
+// signals to /bootstrap and APPLIES the resolved presets. Resolution +
+// validation (unknown preset, inline JSON rejection) is gated by the platform's
+// relocated golden tests, not here.
+function stubBootstrap(body: unknown): ReturnType<typeof vi.fn> {
+  const fn = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+  vi.stubGlobal('fetch', fn);
+  return fn;
+}
+
 describe('widget lang attribute', () => {
-  it('locale="ar" flips shell to arabic strings + dir="rtl"', async () => {
+  it('applies the server-resolved locale (rtl + arabic strings)', async () => {
+    stubBootstrap({
+      widget: { resolved: { locale: { _lang: 'ar', _direction: 'rtl', simpleVerify: 'تحقق', brandName: 'كابوتشن' }, skin: null, config: null } },
+      game: null,
+    });
     const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar' });
     document.body.appendChild(el);
     await flushMount();
     expect(el.getAttribute('dir')).toBe('rtl');
     const text = el.shadowRoot!.textContent ?? '';
-    expect(text).toContain('تحقق'); // Verify
-    expect(text).toContain('كابوتشن'); // Caputchin brand
+    expect(text).toContain('تحقق');
+    expect(text).toContain('كابوتشن');
     el.remove();
   });
 
-  it('locale="ar-EG" normalizes to ar via primary subtag', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar-EG' });
+  it('forwards the locale attr + visitor signals to the bootstrap for resolution', async () => {
+    const fetchFn = stubBootstrap({});
+    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar' });
     document.body.appendChild(el);
     await flushMount();
-    expect(el.getAttribute('dir')).toBe('rtl');
-    expect(el.shadowRoot!.textContent ?? '').toContain('تحقق');
+    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('locale=ar');
+    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('prefers_dark=');
     el.remove();
   });
 
-  it('inline JSON fires invalid-config + falls back to auto (no dir flip)', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: '{"_lang":"ar"}' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
+  it('bundled English fallback when the server resolves nothing', async () => {
+    stubBootstrap({});
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
     document.body.appendChild(el);
     await flushMount();
-    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
     expect(el.getAttribute('dir')).not.toBe('rtl');
-    el.remove();
-  });
-
-  it('unknown preset name fires invalid-config + falls back to auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'xyz' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
-    document.body.appendChild(el);
-    await flushMount();
-    expect(messages.some((m) => /xyz/.test(m))).toBe(true);
+    expect(el.shadowRoot!.textContent ?? '').toContain('Verify');
     el.remove();
   });
 });
 
 describe('widget skin attribute', () => {
-  it('skin="light" sets data-skin-theme + writes CSS vars for primary', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'light' });
+  it('bundled light fallback when the server resolves no skin', async () => {
+    stubBootstrap({});
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
     document.body.appendChild(el);
     await flushMount();
     expect(el.getAttribute('data-skin-theme')).toBe('light');
     expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#2F6640');
-    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe('#ffffff');
     el.remove();
   });
 
-  it('skin="dark" flips to dark palette CSS vars', async () => {
+  it('applies the server-resolved dark skin (theme + CSS vars)', async () => {
+    stubBootstrap({
+      widget: { resolved: { locale: null, skin: { _theme: 'dark', primary: '#4E9B65', surface_bg: '#182518' }, config: null } },
+      game: null,
+    });
     const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'dark' });
     document.body.appendChild(el);
     await flushMount();
@@ -135,31 +137,12 @@ describe('widget skin attribute', () => {
     el.remove();
   });
 
-  it('inline JSON skin fires invalid-config + falls back to auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: '{"_theme":"dark"}' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
+  it('forwards the skin attr to the bootstrap for resolution', async () => {
+    const fetchFn = stubBootstrap({});
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'dark' });
     document.body.appendChild(el);
     await flushMount();
-    expect(messages.some((m) => /inline JSON/i.test(m))).toBe(true);
-    // auto fallback: prefersDark unknown in test env → defaults to light
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
-    el.remove();
-  });
-
-  it('unknown skin name fires invalid-config + falls back to auto', async () => {
-    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'midnight' });
-    const messages: string[] = [];
-    el.addEventListener('error', (e) => {
-      const detail = (e as CustomEvent).detail as { message?: string };
-      if (detail?.message) messages.push(detail.message);
-    });
-    document.body.appendChild(el);
-    await flushMount();
-    expect(messages.some((m) => /midnight/.test(m))).toBe(true);
+    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('skin=dark');
     el.remove();
   });
 });

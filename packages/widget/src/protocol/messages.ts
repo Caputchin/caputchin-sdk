@@ -1,15 +1,4 @@
-import type {
-  ConfigPreset,
-  ConfigSchemaEntry,
-  LocalePreset,
-  Layout,
-  ResolvedConfig,
-  ResolvedLocale,
-  ResolvedSkin,
-  Seed,
-  SkinPreset,
-  SkinSchemaEntry,
-} from '@caputchin/game-sdk';
+import type { Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
 
 export interface KickoffMessage {
   kind: 'kickoff';
@@ -64,29 +53,10 @@ export interface GameErrorMessage {
   message: string;
 }
 
-export interface ManifestMessage {
-  kind: 'manifest';
-  seq: number;
-  gameId: string | null;
-  preferredLayout: Layout | null;
-  preferredWidth: number | null;
-  preferredHeight: number | null;
-  locales: { presets: Record<string, LocalePreset> } | null;
-  /** Carries BOTH presets and schema, because the schema drives per-value
-   *  type validation at resolve time (color / image / audio / video
-   *  allow-list). The `locales` field has no analogue - locale text validation
-   *  isn't type-based. */
-  skins: {
-    schema?: Record<string, SkinSchemaEntry>;
-    presets: Record<string, SkinPreset>;
-  } | null;
-  /** Configurations block from the game's manifest. Carries schema + presets
-   *  because schema drives runtime validation, parallel to skins. */
-  configurations: {
-    schema?: Record<string, ConfigSchemaEntry>;
-    presets: Record<string, ConfigPreset>;
-  } | null;
-}
+// The game→widget ManifestMessage is gone. The server resolves presets + the
+// preferred footprint (in the bootstrap response), so the game no longer posts
+// its manifest up to the widget. The game→widget channel keeps only its
+// lifecycle + sizing messages.
 
 /** Initial-render size measurement / explicit `bridge.setSize()` from the
  *  game. Widget re-applies via IframeHost.setSize so the iframe fits the
@@ -107,10 +77,9 @@ export type IframeToWidget =
   | GameStartedMessage
   | GamePassMessage
   | GameErrorMessage
-  | ManifestMessage
   | DimensionsMeasuredMessage;
 
-const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'manifest', 'dimensions-measured']);
+const IFRAME_KINDS = new Set(['game-started', 'game-pass', 'game-error', 'dimensions-measured']);
 
 export function isIframeToWidget(msg: unknown): msg is IframeToWidget {
   if (typeof msg !== 'object' || msg === null) return false;
