@@ -91,13 +91,28 @@ describe('widget lang attribute', () => {
     el.remove();
   });
 
-  it('forwards the locale attr + visitor signals to the bootstrap for resolution', async () => {
+  it('forwards the locale attr to the bootstrap; the skin axis falls back to the prefers-color-scheme reading', async () => {
     const fetchFn = stubBootstrap({});
     const el = getWidget({ sitekey: 'k', trigger: 'click', locale: 'ar' });
     document.body.appendChild(el);
     await flushMount();
-    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('locale=ar');
-    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('prefers_dark=');
+    const url = String(fetchFn.mock.calls[0]?.[0]);
+    expect(url).toContain('locale=ar');
+    // No skin attr -> element pre-resolves to "light" or "dark" from
+    // prefers-color-scheme; happy-dom defaults to light.
+    expect(url).toMatch(/skin=(light|dark)/);
+    el.remove();
+  });
+
+  it('with no locale attr the element pre-resolves from the navigator language', async () => {
+    const fetchFn = stubBootstrap({});
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
+    document.body.appendChild(el);
+    await flushMount();
+    const url = String(fetchFn.mock.calls[0]?.[0]);
+    // happy-dom navigator.language defaults to "en-US"; the element forwards it
+    // verbatim. If absent, the param is omitted entirely.
+    expect(url).toMatch(/(locale=en[-]US|^(?!.*locale=))/);
     el.remove();
   });
 

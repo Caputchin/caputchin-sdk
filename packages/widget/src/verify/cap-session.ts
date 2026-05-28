@@ -35,7 +35,7 @@ export interface CapSessionHandle {
 
 /** Build a cap session and wire it onto `state.capClient` (+ triggerCtx if
  *  present). Returns the client + a closure for the wrapped token + the seed.
- *  On a GATED key the server ignores `gameId` and reads `ticket` (Phase 11):
+ *  On a GATED key the server ignores `gameId` and reads `ticket`:
  *  it verifies the signature and sets the session's game from the ticket, so
  *  gameId becomes server-authoritative. `gameId` is still sent (harmless,
  *  server-ignored when gated; the live iframe + start event use it locally). */
