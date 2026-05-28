@@ -61,6 +61,16 @@ export function createCapClient(
     dispose(): void {
       unregisterSession(widgetId);
       cap.reset();
+      // Remove the cap-widget element from <html>. `new Cap()` appends it to
+      // document.documentElement; cap.reset() does NOT remove it. Without this,
+      // each remount of the host element (e.g. React effect re-run debounced
+      // behind a sibling fetch) accumulates cap-widget elements under <html>,
+      // each with its own window-level interaction listeners that keep firing
+      // speculative /verify/start + /verify/pass calls under their (now
+      // unregistered) widget id. Removing the element triggers its own
+      // disconnectedCallback which detaches those listeners + clears state.
+      const widgetEl = (cap as unknown as { widget?: HTMLElement }).widget;
+      if (widgetEl?.parentNode) widgetEl.parentNode.removeChild(widgetEl);
     },
   };
 }

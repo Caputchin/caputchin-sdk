@@ -221,6 +221,21 @@ export function installCustomFetch(): void {
     }
 
     // op === 'redeem'
+    // Drop redeems for an unregistered widget (the host widget element
+    // unmounted via React effect cleanup AFTER cap.solve started, so the
+    // in-flight redeem now points at a session whose gate + sessionId were
+    // cleared by unregisterSession). Firing the POST anyway lands on the
+    // server with platform={} → 400 missing-session-id, surfacing a noisy
+    // console error for a widget the user can no longer see. A synthetic
+    // 410 here lets cap.js's catch swallow it cleanly. (The corresponding
+    // speculative redeem from the same disposed cap-widget is suppressed by
+    // removing the cap-widget element from DOM in dispose(); see client.ts.)
+    if (!sessionContexts.has(widgetId)) {
+      return new Response(JSON.stringify({ success: false, error: 'widget-disposed' }), {
+        status: 410,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     let platform: Record<string, unknown> = {};
     const gate = redeemGates.get(widgetId);
     if (gate) platform = await gate.promise;

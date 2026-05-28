@@ -93,6 +93,31 @@ describe('CAP_CUSTOM_FETCH - URL-routed widget identity', () => {
     unregisterSession(idB);
   });
 
+  it('drops a redeem for a disposed widget without firing the network call', async () => {
+    // Race the harness exposes on first page load: the host element remounts
+    // (e.g. a debounced effect re-fires once a sibling fetch resolves). The
+    // FIRST mount's cap.solve is still in flight when its widget gets disposed
+    // - unregisterSession clears the redeem gate + sessionId for that widget
+    // id, then the in-flight redeem finally fires. Without this guard the POST
+    // lands on /verify/pass with platform={} and surfaces a noisy
+    // missing-session-id 400 for a widget the user can no longer see.
+    const id = 'cpt_disposed';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: vi.fn() });
+    armRedeemGate(id);
+
+    // Dispose: matches the host element's disconnectedCallback path.
+    unregisterSession(id);
+
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(new Response('{}'));
+    const res = await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/redeem`, {
+      method: 'POST',
+      body: JSON.stringify({ token: 'cap', solutions: [1, 2, 3] }),
+    });
+    expect(res.status).toBe(410);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   it('passes through non-routed URLs unchanged', async () => {
     const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(new Response('{}'));
     await window.CAP_CUSTOM_FETCH!('https://example.com/other', { method: 'GET' });

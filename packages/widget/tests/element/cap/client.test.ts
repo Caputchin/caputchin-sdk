@@ -58,6 +58,44 @@ describe('createCapClient', () => {
     expect(() => client.dispose()).not.toThrow();
   });
 
+  it('dispose removes the cap-widget element from DOM (stops stale speculative fires)', async () => {
+    // tests/setup.ts globally mocks Cap with `widget: { token: null }` (a plain
+    // object, no parentNode), so the dispose() removal logic short-circuits and
+    // stays untested by every other case in this file. Re-mock locally with a
+    // real HTMLElement appended to documentElement so the removal path runs.
+    const { Cap } = await import('@cap.js/widget');
+    const capMock = Cap as ReturnType<typeof vi.fn>;
+    const widgetEl = document.createElement('cap-widget');
+    document.documentElement.appendChild(widgetEl);
+    capMock.mockImplementationOnce(() => ({
+      solve: vi.fn(async () => ({ success: true })),
+      reset: vi.fn(),
+      widget: widgetEl,
+      token: null,
+    }));
+    expect(document.documentElement.contains(widgetEl)).toBe(true);
+    const client = createCapClient(nextId(), 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    client.dispose();
+    expect(document.documentElement.contains(widgetEl)).toBe(false);
+  });
+
+  it('dispose is safe when the cap-widget is already detached (parentNode null)', async () => {
+    // Defense-in-depth: cap.reset() called elsewhere may have already removed
+    // the widget. The optional-chain on parentNode keeps dispose() from
+    // throwing on the second pass.
+    const { Cap } = await import('@cap.js/widget');
+    const capMock = Cap as ReturnType<typeof vi.fn>;
+    const detached = document.createElement('cap-widget');
+    capMock.mockImplementationOnce(() => ({
+      solve: vi.fn(async () => ({ success: true })),
+      reset: vi.fn(),
+      widget: detached,
+      token: null,
+    }));
+    const client = createCapClient(nextId(), 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+    expect(() => client.dispose()).not.toThrow();
+  });
+
   it('two clients solve in parallel - no serialization queue', async () => {
     const order: number[] = [];
 
