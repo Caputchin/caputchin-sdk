@@ -238,4 +238,46 @@ describe('iframe runtime - kickoff missing factory', () => {
     expect(started).toEqual({ kind: 'game-started', seq: 5 });
     expect(posted.find((m) => m['kind'] === 'game-error')).toBeUndefined();
   });
+
+  it('kickoff arriving BEFORE the game registers (parser still running) defers to DOMContentLoaded', async () => {
+    // The realistic race: the iframe's runtime <script> runs first + attaches
+    // the message listener. The parent posts kickoff. The second
+    // parser-blocking <script src> (the game) hasn't executed yet, so the
+    // registry is empty. Without the defer the runtime would fire a spurious
+    // `game-not-registered`. With it, the runtime waits for DOMContentLoaded,
+    // by which time the game has had its chance to call register().
+    // Restore in finally so an assertion miss can't leak readyState='loading'
+    // to subsequent tests in this file (which would defer their kickoffs to a
+    // DCL that never fires, cascading into hangs).
+    const originalReadyState = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState')
+      ?? Object.getOwnPropertyDescriptor(document, 'readyState');
+    Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+    try {
+      let factoryInvoked = false;
+      dispatchKickoff('deferred-1', 77);
+
+      // One microtask hop: the handler's await suspended on DOMContentLoaded.
+      // No error should have fired yet.
+      await Promise.resolve();
+      expect(posted.find((m) => m['kind'] === 'game-error' && m['seq'] === 77)).toBeUndefined();
+      expect(posted.find((m) => m['kind'] === 'game-started' && m['seq'] === 77)).toBeUndefined();
+
+      // Game registers AFTER kickoff (the race window).
+      registerGame('deferred-1', () => {
+        factoryInvoked = true;
+      });
+
+      // Parser finishes - DOMContentLoaded fires. Runtime's await resolves and
+      // retries the lookup; factory is now present.
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(factoryInvoked).toBe(true);
+      expect(posted.find((m) => m['kind'] === 'game-started' && m['seq'] === 77)).toBeDefined();
+      expect(posted.find((m) => m['kind'] === 'game-error' && m['seq'] === 77)).toBeUndefined();
+    } finally {
+      if (originalReadyState) Object.defineProperty(document, 'readyState', originalReadyState);
+      else Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
+    }
+  });
 });
