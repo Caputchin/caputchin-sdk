@@ -237,6 +237,20 @@ export interface GameManifest {
   /** Path inside the repo / npm package to the built bundle. Used by the
    *  marketplace indexer alongside `npm` to resolve a jsDelivr URL. */
   entry?: string;
+  /** Optional dedicated headless replay artifact. When present, the
+   *  marketplace indexer vendors `run.entry` (+ each declared `run.modules`)
+   *  alongside the playable bundle so the server can re-run the round under
+   *  the issued seed. Omit to fall back to replaying the live `entry` bundle
+   *  directly. `modules` lets a wasm-using game ship its `.wasm` files (and
+   *  any helper `.js` chunks) as Worker-Loader module entries; the run entry
+   *  imports each by `name`. Constraints enforced at index time: name must
+   *  match `/^[a-zA-Z0-9_-]+\.(wasm|js)$/`, `type` matches the extension,
+   *  reserved names `entry.js` / `artifact.js` are rejected, duplicates
+   *  rejected, up to 16 entries. */
+  run?: {
+    entry: string;
+    modules?: { name: string; type: "wasm" | "js"; path: string }[];
+  };
   /** Author-declared id. Optional and unused by the SDK; preserved here so
    *  manifests carrying a legacy `id` field continue to type-check. */
   id?: string;
