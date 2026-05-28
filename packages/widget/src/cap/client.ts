@@ -37,6 +37,22 @@ export function createCapClient(
   // and /api/v1/verify/pass endpoints.
   const cap = new Cap({ apiEndpoint: `${apiHost}/${CPT_ROUTE_PREFIX}/${widgetId}/` });
 
+  // Silence cap.js's `console.error("[cap]", ...)` for in-flight solves that
+  // fail AFTER the host widget was disposed. cap.js's own solve catch calls
+  // widget.error(message) which both console.errors AND dispatches an error
+  // event; once we've removed the cap-widget from DOM in dispose() the widget
+  // is no longer connected, and surfacing those messages is pure noise (the
+  // host widget the user could see is gone). Override per-instance so other
+  // cap-widgets keep their normal error reporting.
+  const widgetForOverride = (cap as unknown as { widget?: HTMLElement & { error?: (msg: string) => void } }).widget;
+  if (widgetForOverride?.error) {
+    const originalError = widgetForOverride.error.bind(widgetForOverride);
+    widgetForOverride.error = function (message: string): void {
+      if (!widgetForOverride.isConnected) return;
+      originalError(message);
+    };
+  }
+
   armRedeemGate(widgetId);
 
   return {

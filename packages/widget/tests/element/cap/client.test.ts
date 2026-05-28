@@ -79,6 +79,38 @@ describe('createCapClient', () => {
     expect(document.documentElement.contains(widgetEl)).toBe(false);
   });
 
+  it('overrides cap.widget.error so post-dispose console noise is suppressed', async () => {
+    // Cap.js's solve catch calls widget.error(message) which console.errors AND
+    // dispatches an error event. After dispose() removes the widget from DOM,
+    // surfacing that message is pure noise. The override no-ops when the widget
+    // is no longer in the document; while the widget is still connected the
+    // original logging fires.
+    const { Cap } = await import('@cap.js/widget');
+    const capMock = Cap as ReturnType<typeof vi.fn>;
+    const widgetEl = document.createElement('cap-widget') as HTMLElement & { error?: (m: string) => void };
+    const originalCalls: string[] = [];
+    widgetEl.error = (msg: string) => { originalCalls.push(msg); };
+    document.documentElement.appendChild(widgetEl);
+    capMock.mockImplementationOnce(() => ({
+      solve: vi.fn(async () => ({ success: true })),
+      reset: vi.fn(),
+      widget: widgetEl,
+      token: null,
+    }));
+
+    const client = createCapClient(nextId(), 'https://api.test.com', { platform: {}, onWrappedToken: vi.fn() });
+
+    // Connected: original fires.
+    (widgetEl.error as (m: string) => void)('still-here');
+    expect(originalCalls).toEqual(['still-here']);
+
+    // Disposed: the dispose path removes the widget from DOM; subsequent
+    // calls go through the override and are silently dropped.
+    client.dispose();
+    (widgetEl.error as (m: string) => void)('widget-disposed');
+    expect(originalCalls).toEqual(['still-here']);
+  });
+
   it('dispose is safe when the cap-widget is already detached (parentNode null)', async () => {
     // Defense-in-depth: cap.reset() called elsewhere may have already removed
     // the widget. The optional-chain on parentNode keeps dispose() from
