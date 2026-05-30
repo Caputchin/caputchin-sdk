@@ -2,18 +2,19 @@
 // the resulting IIFE is injected into the srcdoc as a string literal.
 // Runs inside srcdoc iframe; opaque origin. communicates with host page via postMessage.
 
-import type { Bridge, GameContext, GameFactory, GameManifest, Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
+import type { Bridge, GameContext, GameFactory, Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
 import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
 (function () {
+  // The in-frame manifest registry is gone: register() no longer stores it and
+  // the runtime resolves presets + preferred footprint from the server bootstrap
+  // / kickoff message, never the manifest. Only the factory registry remains.
   interface CaputchinGlobal {
     games: Record<string, GameFactory>;
-    manifests: Record<string, GameManifest>;
   }
 
   (window as unknown as Record<string, unknown>)['Caputchin'] = {
     games: {},
-    manifests: {},
   } satisfies CaputchinGlobal;
 
   const W = window as unknown as Record<string, unknown>;
