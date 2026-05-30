@@ -23,6 +23,11 @@ describe('buildSrcdoc', () => {
     expect(html).toContain(`'sha256-${SHA}'`);
   });
 
+  it('CSP allows wasm-unsafe-eval so WASM game engines can instantiate', () => {
+    const html = buildSrcdoc(base);
+    expect(html).toContain("'wasm-unsafe-eval'");
+  });
+
   it('CSP default-src none', () => {
     const html = buildSrcdoc(base);
     expect(html).toContain("default-src 'none'");

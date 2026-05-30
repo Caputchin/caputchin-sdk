@@ -34,7 +34,14 @@ export function buildSrcdoc(opts: SrcdocOptions): string {
 
   const safeRuntimeSha256 = escapeAttr(runtimeSha256);
 
-  let scriptSrc = `'sha256-${safeRuntimeSha256}'`;
+  // 'wasm-unsafe-eval' lets a game compile/instantiate its own WebAssembly
+  // (e.g. a WASM game engine like the DOOM-based Phobos) inside the frame.
+  // It permits WebAssembly only, NOT general eval(): the containment floor is
+  // unchanged (default-src / connect-src stay 'none', the frame is
+  // opaque-origin with no network and no parent-DOM access), so WASM here is
+  // compute-only and cannot escape the sandbox. Required because browsers block
+  // WebAssembly.instantiate under a script-src that lacks this source.
+  let scriptSrc = `'sha256-${safeRuntimeSha256}' 'wasm-unsafe-eval'`;
   let gameScriptTag = '';
 
   if (gameUrl) {
