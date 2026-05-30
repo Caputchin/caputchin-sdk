@@ -208,10 +208,11 @@ export interface PreferredPresentation {
   height?: number;
 }
 
-/** The full package manifest the game ships in `caputchin.json`. Authors
- *  import this file and pass the parsed object to `register`. The widget
- *  reads runtime hints (preferred size, locale presets) directly off the
- *  manifest.
+/** The full package manifest the game ships in `caputchin.json`. This is the
+ *  author + marketplace-indexer source of truth: the indexer reads the FILE
+ *  server-side (preferred size, locale/skin/config presets, run artifact) and
+ *  the server resolves + ships those down to the widget at runtime. It is NOT
+ *  passed to `register` — the SDK never reads the manifest in the browser.
  *
  *  The nested `marketplace` block is optional; games that only run on customer
  *  sites omit it. The `entry`/`npm` distribution fields support marketplace
@@ -289,27 +290,20 @@ export type GameFactory = (
 
 type Caputchin = {
   games: Record<string, GameFactory>;
-  manifests: Record<string, GameManifest>;
 };
 
-/** Fallback registry key used when the manifest carries no `id` AND no
- *  `data-game-id` is available on the iframe runtime script tag. Each
- *  iframe only ever loads one game, so a single fixed slot is enough.
- *  Exported so the widget's iframe runtime + tests can reference the
- *  same constant. */
+/** Fallback registry key used when no `data-game-id` is available on the
+ *  iframe runtime script tag. Each iframe only ever loads one game, so a
+ *  single fixed slot is enough. Exported so the widget's iframe runtime +
+ *  tests can reference the same constant. */
 export const DEFAULT_REGISTRY_KEY = '__caputchin_default__';
 
-/** Resolve the registry key the SDK uses to store the factory + manifest.
- *  Resolution order:
+/** Resolve the registry key the SDK stores the factory under:
  *
- *   1. `manifest.id` if present and non-empty (legacy manifests).
- *   2. `<script data-game-id="…">` in the current document (the iframe
+ *   1. `<script data-game-id="…">` in the current document (the iframe
  *      runtime sets this from the widget's `game` attribute).
- *   3. {@link DEFAULT_REGISTRY_KEY} as a final fallback. */
-function resolveRegistryKey(manifest: GameManifest): string {
-  if (typeof manifest.id === 'string' && manifest.id.length > 0) {
-    return manifest.id;
-  }
+ *   2. {@link DEFAULT_REGISTRY_KEY} as a final fallback. */
+function resolveRegistryKey(): string {
   if (typeof document !== 'undefined') {
     const tag = document.querySelector('script[data-game-id]');
     const attr = tag ? tag.getAttribute('data-game-id') : null;
@@ -318,13 +312,15 @@ function resolveRegistryKey(manifest: GameManifest): string {
   return DEFAULT_REGISTRY_KEY;
 }
 
-export function register(manifest: GameManifest, factory: GameFactory): void {
-  if (!manifest || typeof manifest !== 'object') {
-    console.warn('[caputchin/game-sdk] register() called without a manifest; skipping');
-    return;
-  }
-
-  const key = resolveRegistryKey(manifest);
+/** Register the game's factory with the iframe's Caputchin global; the widget
+ *  iframe runtime invokes it on kickoff. No manifest is passed: the SERVER
+ *  resolves presets + the preferred footprint (from the indexed `caputchin.json`
+ *  / dashboard-authored schemas) and ships them down via the bootstrap +
+ *  kickoff message, so the in-frame manifest is never read at runtime. The
+ *  `caputchin.json` file stays the author + marketplace-indexer source of truth
+ *  (typed by {@link GameManifest}); it just isn't handed to `register`. */
+export function register(factory: GameFactory): void {
+  const key = resolveRegistryKey();
 
   const g = globalThis as Record<string, unknown>;
 
@@ -332,11 +328,10 @@ export function register(manifest: GameManifest, factory: GameFactory): void {
     console.warn(
       '[caputchin/game-sdk] Caputchin global not found; was the SDK loaded outside a Caputchin iframe?',
     );
-    g['Caputchin'] = { games: {}, manifests: {} } satisfies Caputchin;
+    g['Caputchin'] = { games: {} } satisfies Caputchin;
   }
 
   const caputchin = g['Caputchin'] as Caputchin;
-  if (!caputchin.manifests) caputchin.manifests = {};
   if (!caputchin.games) caputchin.games = {};
 
   if (Object.prototype.hasOwnProperty.call(caputchin.games, key)) {
@@ -344,5 +339,4 @@ export function register(manifest: GameManifest, factory: GameFactory): void {
   }
 
   caputchin.games[key] = factory;
-  caputchin.manifests[key] = manifest;
 }

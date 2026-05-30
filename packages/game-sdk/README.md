@@ -13,7 +13,7 @@ npm install @caputchin/game-sdk
 ```javascript
 import { register } from '@caputchin/game-sdk';
 
-register('my-game-id', (container, bridge) => {
+register((container, bridge) => {
   // Render your game UI into container (inside the sandboxed iframe).
   // Call bridge.pass() only when the player passes the round.
   // If the player fails or abandons, do not call bridge.pass; silence is the failure signal.

@@ -44,11 +44,6 @@ describe('iframe runtime - Caputchin global initialised on import', () => {
     expect(cap).toBeDefined();
     expect(typeof cap.games).toBe('object');
   });
-
-  it('window.Caputchin.manifests is an object', () => {
-    const cap = (window as unknown as { Caputchin: { manifests: Record<string, unknown> } }).Caputchin;
-    expect(typeof cap.manifests).toBe('object');
-  });
 });
 
 describe('iframe runtime - bridge.error contract', () => {
