@@ -1,5 +1,7 @@
 # Interface: CaputchinEventMap
 
+Map of every event the Caputchin widget elements emit to its `CustomEvent` type.
+
 ## Properties
 
 | Property | Type |

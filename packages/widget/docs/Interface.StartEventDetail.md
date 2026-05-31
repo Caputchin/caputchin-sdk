@@ -1,5 +1,7 @@
 # Interface: StartEventDetail
 
+Payload (`event.detail`) of the `start` event, fired when verification begins.
+
 ## Properties
 
 | Property | Type | Description |

@@ -2,12 +2,14 @@ import type { ErrorCode, ErrorSeverity } from './errors.js';
 import type { Layout, LayoutAttr, LayoutSource } from './layout.js';
 import type { WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight } from './config/shared.js';
 
+/** Payload (`event.detail`) of the `start` event, fired when verification begins. */
 export interface StartEventDetail {
   /** The game identifier for a game round, or `null` for the plain
    *  verification widget. */
   gameId: string | null;
 }
 
+/** Payload of the `pass` event, fired when verification is released. */
 export interface PassEventDetail {
   /** Wrapped token; null on `caputchin-game` without sitekey (game-only). */
   token: string | null;
@@ -19,11 +21,13 @@ export interface PassEventDetail {
   durationMs: number | null;
 }
 
+/** Payload of the `nickname` event. */
 export interface NicknameEventDetail {
   /** The nickname the visitor entered. */
   nickname: string;
 }
 
+/** Payload of the `error` event, spanning benign config warnings to hard failures. */
 export interface ErrorEventDetail {
   /** Stable code you branch on (for example `invalid-config`,
    *  `verification-failed`, `game-load-failed`). */
@@ -40,18 +44,23 @@ export interface ErrorEventDetail {
   originalCode?: string;
 }
 
+/** Payload of the `dialog-shown` / `dialog-hidden` events (game overlay layouts). */
 export interface DialogVisibilityDetail {
   /** Which overlay layout the dialog uses: `modal` or `fullscreen`. */
   layout: 'modal' | 'fullscreen';
 }
 
+/** Payload of the `layout-resolved` event: the layout the widget settled on and why. */
 export interface LayoutResolvedEventDetail {
+  /** The resolved layout. */
   layout: Layout;
+  /** Where the resolved layout came from (attribute, default, etc.). */
   source: LayoutSource;
 }
 
 export type { Layout, LayoutAttr, LayoutSource, WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight };
 
+/** Map of every event the Caputchin widget elements emit to its `CustomEvent` type. */
 export interface CaputchinEventMap {
   start: CustomEvent<StartEventDetail>;
   pass: CustomEvent<PassEventDetail>;

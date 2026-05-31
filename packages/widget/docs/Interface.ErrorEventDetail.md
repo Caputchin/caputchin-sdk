@@ -1,5 +1,7 @@
 # Interface: ErrorEventDetail
 
+Payload of the `error` event, spanning benign config warnings to hard failures.
+
 ## Properties
 
 | Property | Type | Description |

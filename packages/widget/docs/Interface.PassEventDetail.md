@@ -1,5 +1,7 @@
 # Interface: PassEventDetail
 
+Payload of the `pass` event, fired when verification is released.
+
 ## Properties
 
 | Property | Type | Description |

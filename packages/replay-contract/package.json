@@ -38,11 +38,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
     "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
     "vitest": "^2.0.0",
     "@vitest/coverage-v8": "^2.0.0"
   }

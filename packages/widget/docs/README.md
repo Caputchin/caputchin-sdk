@@ -11,16 +11,16 @@
 
 | Interface | Description |
 | ------ | ------ |
-| [CaputchinEventMap](Interface.CaputchinEventMap.md) | - |
+| [CaputchinEventMap](Interface.CaputchinEventMap.md) | Map of every event the Caputchin widget elements emit to its `CustomEvent` type. |
 | [CaputchinGameShape](Interface.CaputchinGameShape.md) | Public shape of `<caputchin-game>`; game host with optional verification. No `start()`; verification auto-kicks on mount for inline, on first dialog open for modal/fullscreen. |
 | [CaputchinWidgetShape](Interface.CaputchinWidgetShape.md) | Public shape of `<caputchin-widget>`; cap verification only. |
-| [DialogVisibilityDetail](Interface.DialogVisibilityDetail.md) | - |
-| [ErrorEventDetail](Interface.ErrorEventDetail.md) | - |
+| [DialogVisibilityDetail](Interface.DialogVisibilityDetail.md) | Payload of the `dialog-shown` / `dialog-hidden` events (game overlay layouts). |
+| [ErrorEventDetail](Interface.ErrorEventDetail.md) | Payload of the `error` event, spanning benign config warnings to hard failures. |
 | [GameConfig](Interface.GameConfig.md) | Game widget config. Verification (the cap gate) runs when a sitekey is present AND `no-verify` is not set - see shouldVerify. The two concerns are orthogonal: the sitekey is the tenant key that unlocks the bootstrap fetch (overrides + marketplace bundle resolution), while `no-verify` opts out of the gate. So a game-only widget can still supply a sitekey to receive overrides - it just skips the cap solve. With no sitekey there is nothing to verify against, so `no-verify` is implied. When `trigger === 'manual'`, no iframe mounts; customer slots custom game DOM via the default `<slot>` inside the layout shell and drives completion via `pass()` / `fail()`. |
-| [LayoutResolvedEventDetail](Interface.LayoutResolvedEventDetail.md) | - |
-| [NicknameEventDetail](Interface.NicknameEventDetail.md) | - |
-| [PassEventDetail](Interface.PassEventDetail.md) | - |
-| [StartEventDetail](Interface.StartEventDetail.md) | - |
+| [LayoutResolvedEventDetail](Interface.LayoutResolvedEventDetail.md) | Payload of the `layout-resolved` event: the layout the widget settled on and why. |
+| [NicknameEventDetail](Interface.NicknameEventDetail.md) | Payload of the `nickname` event. |
+| [PassEventDetail](Interface.PassEventDetail.md) | Payload of the `pass` event, fired when verification is released. |
+| [StartEventDetail](Interface.StartEventDetail.md) | Payload (`event.detail`) of the `start` event, fired when verification begins. |
 | [WidgetConfig](Interface.WidgetConfig.md) | Cap widget config. The widget has two visual forms: - default: checkbox + brand strip (visible). - `invisible` attribute set: no DOM at all; verification still runs per trigger. |
 
 ## Type Aliases
