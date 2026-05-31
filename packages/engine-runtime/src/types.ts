@@ -19,23 +19,28 @@ import type { Seed } from '@caputchin/replay-contract';
 
 /**
  * What the engine reports when the game ends. `score` is the value the verdict
- * carries; games may keep extra detail in their own state but only `score` (and
- * the harness-derived duration) feed the outcome.
+ * carries; `passed` is the engine's OWN pass/fail decision, read from the
+ * terminal state (e.g. a goal reached, or a threshold the resolved config set).
+ * Pass lives HERE, beside the state it judges, so the headless replay and the
+ * live game share one decision site - never an external gate that one path can
+ * compute differently.
  */
 export interface Result {
   readonly score: number;
+  readonly passed: boolean;
 }
 
 /**
- * Setup handed to `init`. `config` is the resolved gameplay configuration the
- * run executed under (e.g. pass_score, lives, gravity) - an engine input,
- * because it changes gameplay. The run is self-contained and the server does
- * not resolve config, so config is baked into the artifact (or carried in the
- * author's own trace) at the author's discretion.
+ * Setup handed to `init`. `config` is the RAW, server-resolved gameplay config
+ * (the per-site dashboard config), opaque to the platform and possibly `null`
+ * (no config supplied). `init` is the SINGLE place that raw config is
+ * transformed into the engine's internal sim parameters - including resolving
+ * `null` to the engine's own defaults - so the live game and the headless
+ * replay, both calling `init` with the same raw config, cannot diverge.
  */
 export interface EngineSetup<C> {
   readonly seed: Seed;
-  readonly config: C;
+  readonly config: C | null;
 }
 
 /**
@@ -43,13 +48,14 @@ export interface EngineSetup<C> {
  * plain-serializable), `A` = the author's action type, `C` = config shape.
  *
  * Contract:
- * - `init` builds the initial state from the seed + config. Seed the PRNG here
- *   via `cap.rng(setup.seed)` and keep it in state; never read randomness later
- *   from anywhere else.
+ * - `init` resolves the RAW config (`null` -> the engine's defaults) into its
+ *   internal sim parameters and builds the initial state from the seed. Seed the
+ *   PRNG here via `cap.rng(setup.seed)` and keep it in state; never read
+ *   randomness later from anywhere else.
  * - `step` applies one player action (at its logical tick).
  * - `tick` advances exactly one fixed timestep.
  * - `isOver` reports whether the game has ended.
- * - `result` reads the final score off the terminal state.
+ * - `result` reads the final score AND the pass decision off the terminal state.
  *
  * All five MUST be pure and synchronous: no Date / Math.random / crypto / fetch
  * / DOM / async. Use `cap.rng` for randomness and `cap.math` for transcendental
@@ -87,7 +93,7 @@ export interface TickInput<A> {
 /** Inputs to a single replay run. */
 export interface ReplayInput<A, C> {
   readonly seed: Seed;
-  readonly config: C;
+  readonly config: C | null;
   readonly actions: readonly TickInput<A>[];
   /** Upper bound on ticks to run, guarding a non-terminating engine. */
   readonly maxTicks: number;
@@ -96,6 +102,8 @@ export interface ReplayInput<A, C> {
 /** Authoritative outcome of a replay run. */
 export interface ReplayOutcome {
   readonly score: number;
+  /** The engine's pass decision off the terminal state (before the truncated guard). */
+  readonly passed: boolean;
   readonly durationMs: number;
   /** Tick at which the engine reported game-over (or `maxTicks` if it never did). */
   readonly endTick: number;

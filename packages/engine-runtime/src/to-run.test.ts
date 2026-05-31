@@ -11,37 +11,43 @@ interface S {
   rngState: RngState;
   tick: number;
   score: number;
+  passScore: number; // resolved from the raw config INSIDE init
 }
 interface C {
   passScore: number;
 }
 type A = { kind: 'boost' };
 
+const DEFAULT_PASS = 100;
+
+// The engine OWNS config resolution (null -> default) + the pass decision: it
+// stores the resolved passScore in state and reports passed in result. toRun
+// only wires init -> replay -> result; no external defaultConfig / pass gate.
 const engine = defineEngine<S, A, C>({
-  init: ({ seed }) => ({ rngState: rng(seed).state, tick: 0, score: 0 }),
+  init: ({ seed, config }) => ({
+    rngState: rng(seed).state,
+    tick: 0,
+    score: 0,
+    passScore: (config ?? { passScore: DEFAULT_PASS }).passScore,
+  }),
   step: (s, a) => (a.kind === 'boost' ? { ...s, score: s.score + 50 } : s),
   tick: (s) => {
     const r = rngFromState(s.rngState);
     const gained = r.int(10);
-    return { rngState: r.state, tick: s.tick + 1, score: s.score + gained };
+    return { ...s, rngState: r.state, tick: s.tick + 1, score: s.score + gained };
   },
   isOver: (s) => s.tick >= 32,
-  result: (s) => ({ score: s.score }),
+  result: (s) => ({ score: s.score, passed: s.score >= s.passScore }),
 });
 
 const SEED: Seed = [0xabcddcba, 0x10203040, 0x55aa55aa, 0x0badf00d];
-const CONFIG: C = { passScore: 100 };
 const INPUTS: TickInput<A>[] = [
   { tick: 1, action: { kind: 'boost' } },
   { tick: 5, action: { kind: 'boost' } },
 ];
 const TRACE = encodeTrace(INPUTS);
 
-const run = toRun(engine, {
-  defaultConfig: CONFIG,
-  maxTicks: 1000,
-  passed: (o, c) => o.score >= c.passScore,
-});
+const run = toRun(engine, { maxTicks: 1000 });
 
 describe('toRun', () => {
   it('produces an identical verdict across runs (deterministic)', () => {
@@ -56,22 +62,11 @@ describe('toRun', () => {
     expect(v.durationMs).toBe(32 * 16);
   });
 
-  it('applies the pass predicate over the outcome', () => {
-    // two boosts add 100, rng adds >=0 -> score >= passScore (100) -> passes.
+  it('takes the pass decision from the engine (engine resolves null->default; a supplied config moves the gate)', () => {
+    // null -> the engine's default passScore (100); two boosts add 100 -> passes.
     expect(run(SEED, null, TRACE).passed).toBe(true);
-    const strict = toRun(engine, {
-      defaultConfig: CONFIG,
-      maxTicks: 1000,
-      passed: (o) => o.score >= 100_000,
-    });
-    expect(strict(SEED, null, TRACE).passed).toBe(false);
-  });
-
-  it('null config falls back to defaultConfig; a supplied config overrides it', () => {
-    // defaultConfig.passScore = 100 (score ~100 -> passes). A stricter supplied
-    // config raises the bar so the SAME (seed, trace) fails - proving config is a
-    // run input, not baked, and that the gate reads from the server config.
-    expect(run(SEED, null, TRACE).passed).toBe(true);
+    // A stricter supplied config raises the bar so the SAME (seed, trace) fails -
+    // proving config is a run INPUT resolved inside the engine, not baked.
     expect(run(SEED, { passScore: 100_000 }, TRACE).passed).toBe(false);
     // Score + duration are identical regardless of config (config only moves the gate).
     const a = run(SEED, null, TRACE);
@@ -87,15 +82,16 @@ describe('toRun', () => {
     expect(run(SEED, null, new Uint8Array(0))).toEqual(fail);
   });
 
-  it('fails a truncated (non-terminating) run regardless of the predicate', () => {
+  it('fails a truncated (non-terminating) run even when the engine reports passed', () => {
     const never = defineEngine<{ n: number }, A, C>({
       init: () => ({ n: 0 }),
       step: (s) => s,
       tick: (s) => ({ n: s.n + 1 }),
       isOver: () => false,
-      result: (s) => ({ score: s.n }),
+      result: (s) => ({ score: s.n, passed: true }), // engine says pass...
     });
-    const r = toRun(never, { defaultConfig: CONFIG, maxTicks: 50, passed: () => true });
+    const r = toRun(never, { maxTicks: 50 });
+    // ...but the truncated guard in toRun overrides it.
     expect(r(SEED, null, encodeTrace([])).passed).toBe(false);
   });
 });
