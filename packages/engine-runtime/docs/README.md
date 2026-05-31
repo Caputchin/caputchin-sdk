@@ -11,7 +11,7 @@
 | [ReplayOutcome](Interface.ReplayOutcome.md) | Authoritative outcome of a replay run produced by [replay](Function.replay.md). |
 | [Result](Interface.Result.md) | What the engine reports when the game ends. `score` is the value the verdict carries; `passed` is the engine's OWN pass/fail decision, read from the terminal state (e.g. a goal reached, or a threshold the resolved config set). Pass lives HERE, beside the state it judges, so the headless replay and the live game share one decision site - never an external gate that one path can compute differently. |
 | [Rng](Interface.Rng.md) | Deterministic PRNG seeded from a [Seed](TypeAlias.Seed.md). Built on sfc32 (Small Fast Counter, 128-bit state) using only 32-bit integer operations, so the stream is bit-identical across every JS engine and V8 version. |
-| [SelfCheckCase](Interface.SelfCheckCase.md) | One determinism probe: a seed + the opaque trace recorded under it, optionally under a specific server config (defaults to `null` → the run's own defaults). Generic over the run's config shape so a typed `RunFn<C>` self-checks without a cast; defaults to the opaque ReplayConfig. |
+| [SelfCheckCase](Interface.SelfCheckCase.md) | One determinism probe: a seed + the opaque trace recorded under it, optionally under a specific server config (defaults to `null` → the run's own defaults). Generic over the run's config shape so a typed `RunFn<C>` self-checks without a cast; defaults to the opaque [ReplayConfig](TypeAlias.ReplayConfig.md). |
 | [SelfCheckOptions](Interface.SelfCheckOptions.md) | Options for [selfCheck](Function.selfCheck.md). |
 | [SelfCheckReport](Interface.SelfCheckReport.md) | Aggregate result returned by [selfCheck](Function.selfCheck.md). `ok` is a single pass/fail signal; `cases` carries the per-case detail. |
 | [TickInput](Interface.TickInput.md) | One recorded input the replay loop applies: the author's `action`, stamped with the LOGICAL tick it lands on (never wall-clock). This is a structural helper for the kit's loop + codec, generic over the author's action type - it is not a "trace" the platform sees. |
@@ -23,6 +23,7 @@
 
 | Type Alias | Description |
 | ------ | ------ |
+| [ReplayConfig](TypeAlias.ReplayConfig.md) | The server-supplied gameplay config a run executes under. OPAQUE to the platform - each game defines its own shape, so we never type or inspect it, exactly like the trace - and NULLABLE: `null` means "use the run's own internal defaults", mirroring the bootstrap config-override's "empty ⇒ game defaults" semantics. |
 | [RngState](TypeAlias.RngState.md) | Serializable PRNG state: four unsigned 32-bit words. Pass to [rngFromState](Function.rngFromState.md) to resume an exact stream. |
 | [RunFn](TypeAlias.RunFn.md) | The one mandatory contract. A replayable game ships a JS or WASM module exporting a function of this shape under the name [RUN\_EXPORT\_NAME](Variable.RUN_EXPORT_NAME.md): |
 | [Seed](TypeAlias.Seed.md) | The replay seed: the low 128 bits of `SHA-256(sessionId : gameId : roundIndex)`, carried as four unsigned 32-bit words, most-significant word first. |

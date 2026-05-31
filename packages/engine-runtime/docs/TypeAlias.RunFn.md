@@ -10,7 +10,7 @@ run(seed, config, trace) -> { passed, score, durationMs }
 ```
 
 - `seed` is the server-derived per-round [Seed](TypeAlias.Seed.md) (server round-setup).
-- `config` is the server-supplied ReplayConfig (server round-setup,
+- `config` is the server-supplied [ReplayConfig](TypeAlias.ReplayConfig.md) (server round-setup,
   nullable, opaque). seed + config are the round's server-owned setup; the
   trace is the player's input - hence the ordering.
 - `trace` is the OPAQUE blob the customer's client emitted and this function
@@ -29,16 +29,18 @@ shim) is the author's choice; we only host the replay.
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `C` | `ReplayConfig` |
+| `C` | [`ReplayConfig`](TypeAlias.ReplayConfig.md) |
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `seed` | [`Seed`](TypeAlias.Seed.md) |
-| `config` | `C` \| `null` |
-| `trace` | `Uint8Array` \| `string` |
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `seed` | [`Seed`](TypeAlias.Seed.md) | Server-derived per-round [Seed](TypeAlias.Seed.md), issued at `/verify/start` and re-derived at replay. Never client-supplied. |
+| `config` | `C` \| `null` | Server-resolved gameplay config, or `null` when no config is set for the site key. Gate-affecting fields (pass threshold, lives) must come from here, not from the trace. |
+| `trace` | `Uint8Array` \| `string` | Opaque player input blob as emitted by the live game client. Raw bytes or a string; the engine alone interprets it. |
 
 ## Returns
 
 [`Verdict`](Interface.Verdict.md) \| `Promise`\<[`Verdict`](Interface.Verdict.md)\>
+
+A [Verdict](Interface.Verdict.md) (sync or async). The replay host always awaits it.

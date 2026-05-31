@@ -39,5 +39,22 @@ jobs:
 
       - run: pnpm build
 
+      # The committed packages/*/docs/ reference is generated from source TSDoc
+      # by `pnpm run docs`. Regenerate and fail if it drifts, so a TSDoc edit
+      # that wasn't re-generated can't land stale docs. Runs AFTER `pnpm build`:
+      # cross-package re-exports (e.g. engine-runtime re-exporting
+      # replay-contract's ReplayConfig) resolve their TSDoc from the built
+      # `.d.ts`, so docs must regenerate against a fresh dist to match the
+      # committed output deterministically.
+      - name: SDK reference docs are in sync with source
+        run: |
+          pnpm run docs
+          changes="$(git status --porcelain -- packages/*/docs)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::Committed SDK reference docs are stale (modified or new pages above). Run 'pnpm build && pnpm run docs' and commit the result."
+            exit 1
+          fi
+
       - name: Coverage
         run: pnpm coverage

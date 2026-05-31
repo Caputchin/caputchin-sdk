@@ -13,7 +13,7 @@
  */
 
 // Re-export the contract surface so kit consumers have one import site.
-export type { Seed, Verdict, RunFn } from '@caputchin/replay-contract';
+export type { Seed, Verdict, RunFn, ReplayConfig } from '@caputchin/replay-contract';
 export { deriveSeed, parseVerdict, RUN_EXPORT_NAME, RUN_RPC_METHOD } from '@caputchin/replay-contract';
 
 export { SHIM_VERSION } from './version';
