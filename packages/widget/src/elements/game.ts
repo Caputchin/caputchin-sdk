@@ -62,11 +62,14 @@ export class CaputchinGame extends HTMLElement {
       fireError(this, 'invalid-config', 'Light DOM children on <caputchin-game> are ignored unless trigger="manual"');
     }
 
-    // The SERVER resolves one preset per axis (shell + game). When there's no
-    // sitekey (game-only path) there's no server resolution to do - the game
-    // loads via resolveGameUrl and runs its bundled defaults, the shell uses its
-    // bundled fallback.
-    if (state.config.sitekey === null) {
+    // No sitekey = a game-only (no-verify) mount. With a marketplace game id we
+    // still run a KEYLESS bootstrap (sitekey omitted) so the server resolves the
+    // game off the live index: the preferred footprint (sizes the iframe) + one
+    // preset per axis (resolves locale/skin). Only the cap solve is skipped
+    // (run-game's shouldVerify is false without a sitekey). With no id (a bare
+    // game-src the server can't resolve) there's nothing to fetch, so mount the
+    // bundled defaults directly.
+    if (state.config.sitekey === null && state.config.game === null && state.config.games === null) {
       this.completeMount(apiHost, null);
       return;
     }

@@ -11,7 +11,11 @@ import type { BootstrapResponse } from './types.js';
 
 export interface FetchBootstrapInput {
   apiHost: string;
-  sitekey: string;
+  // Null = a KEYLESS bootstrap (no verification): the server resolves the game
+  // by id off the live marketplace index (preferred footprint + presets) with
+  // no tenant/overrides. Used by the game-only mount so a keyless preview still
+  // gets its size + resolved axes.
+  sitekey: string | null;
   game?: string | null;
   /** Client sub-pool hint for a gated key (comma-joined game ids). The server
    *  picks one from `games ∩ pool`; ignored on an ungated key. */
@@ -120,7 +124,9 @@ function buildTimeoutSignal(ms: number): { signal: AbortSignal; cancel: () => vo
 
 export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   const params = new URLSearchParams();
-  params.set('sitekey', input.sitekey);
+  // Omit sitekey entirely when null: the server treats a sitekey-less request
+  // as a keyless live-index resolution.
+  if (input.sitekey) params.set('sitekey', input.sitekey);
   if (input.game) params.set('game', input.game);
   if (input.games) params.set('games', input.games);
   if (input.locale) params.set('locale', input.locale);

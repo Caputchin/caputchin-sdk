@@ -36,6 +36,16 @@ describe('IframeHost', () => {
     return container;
   };
 
+  // kickoff() now waits for the iframe `load` event before sending (so the
+  // runtime's message listener exists first). The test env doesn't auto-fire
+  // `load` for a srcdoc iframe, so fire it + flush the microtask that runs the
+  // queued kickoff dispatch.
+  const fireLoadAndFlush = async (host: IframeHost) => {
+    host.getIframe()?.dispatchEvent(new Event('load'));
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
   it('onGameStarted fires when game-started postMessage arrives (M3)', () => {
     const onGameStarted = vi.fn();
     const host = makeHost();
@@ -60,12 +70,13 @@ describe('IframeHost', () => {
     container.remove();
   });
 
-  it('kickoff-ack timer fires iframe-load-failed after 10s (F5)', () => {
+  it('kickoff-ack timer fires iframe-load-failed after 10s (F5)', async () => {
     const onLoadFailed = vi.fn();
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
     host.kickoff(1);
+    await fireLoadAndFlush(host);
     expect(onLoadFailed).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(10_001);
@@ -75,12 +86,13 @@ describe('IframeHost', () => {
     container.remove();
   });
 
-  it('kickoff-ack timer cleared when game-started arrives', () => {
+  it('kickoff-ack timer cleared when game-started arrives', async () => {
     const onLoadFailed = vi.fn();
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
     host.kickoff(1);
+    await fireLoadAndFlush(host);
     capturedListener?.({ kind: 'game-started', seq: 1 });
     vi.advanceTimersByTime(15_000);
 
@@ -101,12 +113,13 @@ describe('IframeHost', () => {
     container.remove();
   });
 
-  it('dispose clears kickoff-ack timer - no load-failed after dispose', () => {
+  it('dispose clears kickoff-ack timer - no load-failed after dispose', async () => {
     const onLoadFailed = vi.fn();
     const host = makeHost();
     const container = mountHost(host, onLoadFailed);
 
     host.kickoff(1);
+    await fireLoadAndFlush(host);
     host.dispose();
     vi.advanceTimersByTime(15_000);
 
@@ -140,11 +153,12 @@ describe('IframeHost', () => {
   // The game→widget manifest handshake (waitManifest / manifest interception)
   // is removed; the server resolves + sends presets.
 
-  it('kickoff(seq) defaults lang to null in the outbound message', () => {
+  it('kickoff(seq) defaults lang to null in the outbound message', async () => {
     const host = makeHost();
     mountHost(host);
 
     host.kickoff(1);
+    await fireLoadAndFlush(host);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', locale: null }),
@@ -153,12 +167,13 @@ describe('IframeHost', () => {
     host.dispose();
   });
 
-  it('kickoff(seq, lang) forwards the resolved language payload', () => {
+  it('kickoff(seq, lang) forwards the resolved language payload', async () => {
     const host = makeHost();
     mountHost(host);
 
     const lang = { _direction: 'rtl' as const, _lang: 'ar', hello: 'مرحبا' };
     host.kickoff(1, [1, 2, 3, 4], lang);
+    await fireLoadAndFlush(host);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: [1, 2, 3, 4], locale: lang, skin: null, config: null }),
@@ -167,12 +182,13 @@ describe('IframeHost', () => {
     host.dispose();
   });
 
-  it('kickoff(seq, lang, skin) forwards the resolved skin payload', () => {
+  it('kickoff(seq, lang, skin) forwards the resolved skin payload', async () => {
     const host = makeHost();
     mountHost(host);
 
     const skin = { _theme: 'dark' as const, primary: '#4E9B65', leaf_img: 'https://example.com/leaf.png' };
     host.kickoff(1, null, null, skin);
+    await fireLoadAndFlush(host);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: null, locale: null, skin, config: null }),
@@ -181,12 +197,13 @@ describe('IframeHost', () => {
     host.dispose();
   });
 
-  it('kickoff(seq, lang, skin, config) forwards the resolved config payload', () => {
+  it('kickoff(seq, lang, skin, config) forwards the resolved config payload', async () => {
     const host = makeHost();
     mountHost(host);
 
     const config = { show_high_score: true, difficulty: 'hard' };
     host.kickoff(1, null, null, null, config);
+    await fireLoadAndFlush(host);
     expect(sendSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ kind: 'kickoff', seq: 1, gameId: 'g1', seed: null, locale: null, skin: null, config }),

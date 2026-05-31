@@ -19,6 +19,13 @@ export class IframeHost {
   private unlisten: (() => void) | null = null;
   private kickoffAckTimer: ReturnType<typeof setTimeout> | null = null;
   private onLoadFailed: ((code: 'iframe-load-failed', message: string) => void) | null = null;
+  // Resolves on the iframe document's `load` event (set up in build()). kickoff
+  // waits on it so the runtime's message listener (and the game factory) exist
+  // before the kickoff postMessage is sent. Otherwise a synchronous kickoff
+  // (the no-verify / no-sitekey mount, which skips the bootstrap round trip that
+  // would otherwise delay it) races ahead of the srcdoc parse and the message is
+  // dropped. srcdoc iframes ALWAYS fire `load` (see top), so this never hangs.
+  private frameLoaded: Promise<void> | null = null;
 
   constructor(
     gameUrl: string | null,
@@ -43,6 +50,11 @@ export class IframeHost {
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.style.border = 'none';
     iframe.style.display = 'block';
+    // Capture the document `load` before setting srcdoc/appending so the event
+    // can't be missed. kickoff() awaits this.
+    this.frameLoaded = new Promise<void>((resolve) => {
+      iframe.addEventListener('load', () => resolve(), { once: true });
+    });
     iframe.srcdoc = buildSrcdoc({
       gameId: this.gameId,
       gameUrl: this.gameUrl,
@@ -127,21 +139,31 @@ export class IframeHost {
     config: ResolvedConfig | null = null,
   ): void {
     if (!this.iframe) return;
-    send(this.iframe, {
-      kind: 'kickoff',
-      seq,
-      gameId: this.gameId,
-      seed,
-      locale,
-      skin,
-      config,
-    });
 
-    // Start ack timer after kickoff is sent; waiting for game-started postMessage.
-    this.kickoffAckTimer = setTimeout(() => {
-      this.kickoffAckTimer = null;
-      this.onLoadFailed?.('iframe-load-failed', 'Game did not send game-started within 10s');
-    }, KICKOFF_ACK_TIMEOUT_MS);
+    const dispatch = (): void => {
+      if (!this.iframe) return;
+      send(this.iframe, {
+        kind: 'kickoff',
+        seq,
+        gameId: this.gameId,
+        seed,
+        locale,
+        skin,
+        config,
+      });
+
+      // Start ack timer after kickoff is sent; waiting for game-started postMessage.
+      this.kickoffAckTimer = setTimeout(() => {
+        this.kickoffAckTimer = null;
+        this.onLoadFailed?.('iframe-load-failed', 'Game did not send game-started within 10s');
+      }, KICKOFF_ACK_TIMEOUT_MS);
+    };
+
+    // Wait for the iframe document `load` so the runtime listener + game factory
+    // are present before kickoff (see frameLoaded). Falls through synchronously
+    // if the frame somehow has no load promise (build() always sets one).
+    if (this.frameLoaded) void this.frameLoaded.then(dispatch);
+    else dispatch();
   }
 
   private clearKickoffAckTimer(): void {
