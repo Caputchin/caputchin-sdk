@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { resolveGameUrl } from '../../../src/verify/run-game.js';
+import { resolveGameUrl, runGame } from '../../../src/verify/run-game.js';
 import type { GameConfig } from '../../../src/config/game.js';
+import type { WidgetState } from '../../../src/verify/state.js';
 
 // resolveGameUrl is the seam where the game-load path either reuses the
 // mount-time bootstrap's bundle (single round trip) or falls back to a
@@ -75,5 +76,36 @@ describe('resolveGameUrl - bootstrap-bundle reuse', () => {
     const r = await resolveGameUrl(el(), cfg({ gameSrc: 'https://host.test/g.js' }), 'https://api', vi.fn(), null);
     expect(r.url).toBe('https://host.test/g.js');
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('runGame - escaped-throw backstop (errors never swallowed)', () => {
+  // A throw inside the runner (here: gamePresentation.setState) escapes the
+  // runners' own fireError paths. Every trigger consumes runVerification as
+  // `.catch(() => {})`, so without the backstop it would vanish.
+  function stateThatThrows(over: Partial<WidgetState<GameConfig>> = {}): WidgetState<GameConfig> {
+    return {
+      config: cfg({ game: 'o/r', sitekey: 'k' }), // shouldVerify → true
+      gamePresentation: { setState: () => { throw new Error('boom'); } },
+      gameBundle: null,
+      gameErrored: false,
+      ...over,
+    } as unknown as WidgetState<GameConfig>;
+  }
+
+  it('surfaces an escaped throw as a verification-failed error event', async () => {
+    const host = el();
+    const details: { code?: string; message?: string }[] = [];
+    host.addEventListener('error', (e) => details.push((e as CustomEvent).detail));
+    await runGame(host, stateThatThrows(), 'https://api');
+    expect(details.some((d) => d.code === 'verification-failed' && (d.message || '').includes('boom'))).toBe(true);
+  });
+
+  it('does NOT double-fire when a specific error already set gameErrored', async () => {
+    const host = el();
+    const details: unknown[] = [];
+    host.addEventListener('error', (e) => details.push((e as CustomEvent).detail));
+    await runGame(host, stateThatThrows({ gameErrored: true } as Partial<WidgetState<GameConfig>>), 'https://api');
+    expect(details).toHaveLength(0);
   });
 });

@@ -41,7 +41,16 @@ export async function installGameFrame(
     return;
   }
 
-  host.mount(slot, onLoadFailed, onGameStarted);
+  try {
+    // build() (via mount) throws synchronously on an invalid game URL
+    // (e.g. a non-HTTPS, non-loopback src) or a bad srcdoc interpolation.
+    // Surface it as game-load-failed instead of letting it bubble into the
+    // trigger's fire-and-forget catch and vanish.
+    host.mount(slot, onLoadFailed, onGameStarted);
+  } catch (err) {
+    onLoadFailed('iframe-load-failed', err instanceof Error ? err.message : String(err));
+    return;
+  }
 
   const iframe = host.getIframe();
   if (!iframe) {

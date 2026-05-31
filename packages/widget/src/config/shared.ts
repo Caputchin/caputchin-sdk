@@ -47,8 +47,23 @@ export function validateGameUrl(url: string): string | null {
   } catch {
     return `game-src is not a valid URL: "${url}"`;
   }
-  if (parsed.protocol !== 'https:') return `game-src must be HTTPS: "${url}"`;
-  return null;
+  if (parsed.protocol === 'https:') return null;
+  // Loopback over http is a browser "potentially trustworthy" origin (secure
+  // context), so allow it: this is the local-dev path (the platform serves
+  // vendored artifacts from http://localhost during dev, and a customer may
+  // point game-src at their own localhost build). Production bundles are always
+  // https, so this never widens the prod surface.
+  // URL.hostname returns the IPv6 loopback bracketed (`[::1]`) for every form,
+  // so the bracketed token is the one to match.
+  if (
+    parsed.protocol === 'http:' &&
+    (parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '[::1]')
+  ) {
+    return null;
+  }
+  return `game-src must be HTTPS: "${url}"`;
 }
 
 export function canonicalizeGameUrl(url: string): string {

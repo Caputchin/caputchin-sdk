@@ -23,10 +23,21 @@ export async function runGame(el: HTMLElement, state: WidgetState<GameConfig>, a
   // Run the cap gate only when verification applies (sitekey + not no-verify).
   // The no-verify path still mounts + runs the game and resolves the bundle
   // (via the sitekey-backed bootstrap), it just skips the cap solve.
-  if (shouldVerify(state.config)) {
-    await runGameWithVerify(el, state, apiHost);
-  } else {
-    await runGameOnly(el, state, apiHost);
+  try {
+    if (shouldVerify(state.config)) {
+      await runGameWithVerify(el, state, apiHost);
+    } else {
+      await runGameOnly(el, state, apiHost);
+    }
+  } catch (err) {
+    // Backstop: every trigger consumes runVerification() as fire-and-forget
+    // (`.catch(() => {})`), so an error that escapes the runners' own
+    // fireError paths would otherwise vanish silently. Surface it on the
+    // `error` event. Skip if a more specific error was already reported
+    // (game-load-failed / game-error-relayed set gameErrored).
+    if (!state.gameErrored) {
+      fireError(el, 'verification-failed', err instanceof Error ? err.message : String(err));
+    }
   }
 }
 
