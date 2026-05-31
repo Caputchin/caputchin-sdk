@@ -20,8 +20,8 @@
 | ------ | ------ |
 | [RUN\_EXPORT\_NAME](Variable.RUN_EXPORT_NAME.md) | The named export the artifact module MUST provide. The replay host looks up exactly this name on the loaded module. |
 | [RUN\_RPC\_METHOD](Variable.RUN_RPC_METHOD.md) | The RPC method name the host `WorkerEntrypoint` exposes for invoking the loaded `run`. `apps/replay` calls `stub[RUN_RPC_METHOD](seed, config, trace)`; the load-time wrapper defines a method of this name that forwards to the module's [RUN\_EXPORT\_NAME](Variable.RUN_EXPORT_NAME.md) export. Sharing the constant keeps the host wrapper and the caller in lockstep. |
-| [SEED\_BYTES](Variable.SEED_BYTES.md) | Bytes in a [Seed](TypeAlias.Seed.md) (128 bits). |
-| [SEED\_WORDS](Variable.SEED_WORDS.md) | Words in a [Seed](TypeAlias.Seed.md) (128 bits / 32). |
+| [SEED\_BYTES](Variable.SEED_BYTES.md) | Byte length of a [Seed](TypeAlias.Seed.md) (128 bits). |
+| [SEED\_WORDS](Variable.SEED_WORDS.md) | Number of 32-bit words in a [Seed](TypeAlias.Seed.md) (128 bits / 32). |
 
 ## Functions
 

@@ -1,9 +1,11 @@
 import pkg from '../package.json';
 
-// The kit's deterministic-environment version. It IS the package version:
-// cap.rng / cap.math / shim are versioned together as one atomic execution
-// environment, so a behavioral change to any of them is a package
-// release and a new SHIM_VERSION. The kit's trace codec stamps it so a recorded
-// run can be replayed through the matching environment. Sourced from
-// package.json (release-please owns the bump) so it cannot drift.
+/**
+ * Version of the kit's deterministic execution environment. Equals the
+ * package version: `cap.rng`, `cap.math`, and the neutralization shim are
+ * released together as one atomic environment, so any behavioral change to any
+ * of them produces a new `SHIM_VERSION`. The trace codec stamps this value so
+ * a recorded run can be matched to the environment that produced it. Sourced
+ * from `package.json` so it cannot drift from the published package version.
+ */
 export const SHIM_VERSION: string = pkg.version;

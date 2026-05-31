@@ -34,10 +34,12 @@ import type { ResolvedAxes } from '../bootstrap/types.js';
  *     / `fail` drive the lifecycle.
  */
 export class CaputchinGame extends HTMLElement {
+  /** @internal Custom Element observed attributes. */
   static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
+  /** @internal Custom Element lifecycle; the browser calls this on mount. */
   connectedCallback(): void {
     const state = this.state;
     state.connected = true;
@@ -237,6 +239,7 @@ export class CaputchinGame extends HTMLElement {
     // on this widget; pass() / fail() drive completion in manual mode.
   }
 
+  /** @internal Custom Element lifecycle; the browser calls this on removal. */
   disconnectedCallback(): void {
     const s = this.state;
     s.trigger?.deactivate();
@@ -260,6 +263,7 @@ export class CaputchinGame extends HTMLElement {
     this.state = createInitialState<GameConfig>();
   }
 
+  /** @internal Custom Element lifecycle; attributes are read once at mount. */
   attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
     if (this.state.connected && oldValue !== null) {
       console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);

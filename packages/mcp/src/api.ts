@@ -9,20 +9,38 @@
  * var. Base URL: `CAPUTCHIN_API_HOST` (default https://caputchin.com).
  * The MCP endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`.
  */
+/**
+ * Resolved configuration for the platform Management API client. Built by
+ * {@link readManagementConfig} from environment variables; pass to the
+ * `mcp*` functions in this module.
+ */
 export type ManagementApiConfig = {
+  /** Platform base URL (no trailing slash), e.g. `"https://caputchin.com"`. */
   baseUrl: string;
+  /** Management API token (`cpt_pat_...`), sourced from `CAPUTCHIN_TOKEN`. */
   token: string;
 };
 
 /**
- * Resolve the platform host: `CAPUTCHIN_API_HOST` env override, else the public
- * apex. Trailing slashes stripped. Shared by the API client and the offline
- * snippet tools so a staging / self-hosted MCP points everything at one host.
+ * Resolve the platform host from the environment. Uses `CAPUTCHIN_API_HOST`
+ * when set, otherwise defaults to `https://caputchin.com`. Trailing slashes
+ * are stripped. Shared by the API client and the offline snippet tools so a
+ * staging or self-hosted MCP points everything at one host.
+ *
+ * @param env - Process environment. Defaults to `process.env`.
+ * @returns Base URL with no trailing slash, e.g. `"https://caputchin.com"`.
  */
 export function resolveApiHost(env: NodeJS.ProcessEnv = process.env): string {
   return (env.CAPUTCHIN_API_HOST ?? 'https://caputchin.com').replace(/\/+$/, '');
 }
 
+/**
+ * Read and validate the Management API config from the environment.
+ * Throws if `CAPUTCHIN_TOKEN` is absent.
+ *
+ * @param env - Process environment. Defaults to `process.env`.
+ * @returns Resolved {@link ManagementApiConfig}.
+ */
 export function readManagementConfig(env: NodeJS.ProcessEnv = process.env): ManagementApiConfig {
   const baseUrl = resolveApiHost(env);
   const token = env.CAPUTCHIN_TOKEN;
@@ -87,9 +105,16 @@ async function postRpc(cfg: ManagementApiConfig, method: string, params?: Record
   return parsed;
 }
 
+/**
+ * One tool entry as returned by the platform's `tools/list` response, ready
+ * for direct passthrough into an MCP `tools/list` reply.
+ */
 export type RemoteTool = {
+  /** MCP tool name (snake_case). */
   name: string;
+  /** Human-readable description as defined on the platform. */
   description: string;
+  /** JSON Schema-shaped input descriptor for the tool's arguments. */
   inputSchema: Record<string, unknown>;
 };
 
@@ -148,10 +173,14 @@ export async function mcpToolsList(cfg: ManagementApiConfig): Promise<RemoteTool
   return tools;
 }
 
+/**
+ * Result of a `tools/call` forwarded to the platform. Shape matches the MCP
+ * spec content-block response so `createServer` can return it as-is.
+ */
 export type RemoteToolCallResult = {
-  /** `true` when the platform handler returned isError, OR when the HTTP layer surfaced a non-RPC error wrapped to the client. */
+  /** `true` when the platform handler returned `isError`, or when the HTTP or JSON-RPC layer surfaced an error. */
   isError: boolean;
-  /** MCP-spec content blocks. Already in the shape the SDK can return as-is. */
+  /** MCP-spec content blocks. Token strings are redacted before this is returned to the caller. */
   content: Array<{ type: 'text'; text: string }>;
 };
 

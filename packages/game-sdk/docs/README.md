@@ -4,7 +4,7 @@
 
 | Interface | Description |
 | ------ | ------ |
-| [Bridge](Interface.Bridge.md) | - |
+| [Bridge](Interface.Bridge.md) | The control surface the widget hands your game factory (second argument). Use it to report a completed round, surface an error, or resize the frame. The widget owns the verification flow; the bridge is how your game talks back to it. |
 | [ConfigPreset](Interface.ConfigPreset.md) | One configuration preset declared in `caputchin.json` under `configurations.presets`. Underscore-prefixed keys are metadata; every other key is a typed value. Unlike skins / langs, the value can be a boolean or a number (not just a string). |
 | [GameContext](Interface.GameContext.md) | Per-session context the widget passes to the game factory as a third arg. |
 | [GameManifest](Interface.GameManifest.md) | The full package manifest the game ships in `caputchin.json`. This is the author + marketplace-indexer source of truth: the indexer reads the FILE server-side (preferred size, locale/skin/config presets, run artifact) and the server resolves + ships those down to the widget at runtime. It is NOT passed to `register`; the SDK never reads the manifest in the browser. |
@@ -24,8 +24,8 @@
 | [ConfigSchemaEntry](TypeAlias.ConfigSchemaEntry.md) | Schema entry for a single configuration key. Three legal shapes: |
 | [ConfigurationsFile](TypeAlias.ConfigurationsFile.md) | Contents of `.caputchin/configurations.json` (the `configurations` block of [GameManifest](Interface.GameManifest.md)). |
 | [ConfigValueType](TypeAlias.ConfigValueType.md) | Value type a configuration key may carry. Drives the resolver's per-value validator (URL parse for `link`, finite-number check for `number` / `range`, enum-membership for `list`, literal `true`/`false` for `boolean`, non-empty for `string`). |
-| [GameFactory](TypeAlias.GameFactory.md) | - |
-| [Layout](TypeAlias.Layout.md) | - |
+| [GameFactory](TypeAlias.GameFactory.md) | The function you hand to [register](Function.register.md). The widget calls it once per mount with the `container` element to render into, the [Bridge](Interface.Bridge.md) control surface, and the per-session [GameContext](Interface.GameContext.md) (seed, locale, skin, config). Return an optional cleanup function the widget calls when the round tears down. |
+| [Layout](TypeAlias.Layout.md) | How the widget presents the game: `inline` (an in-flow panel), `modal` (an overlay dialog), or `fullscreen` (a full-viewport overlay). |
 | [LocalesFile](TypeAlias.LocalesFile.md) | Contents of `.caputchin/locales.json` (the `locales` block of [GameManifest](Interface.GameManifest.md)). |
 | [Seed](TypeAlias.Seed.md) | The replay seed: the low 128 bits of `SHA-256(sessionId : gameId : roundIndex)`, carried as four unsigned 32-bit words, most-significant word first. |
 | [SkinSchemaEntry](TypeAlias.SkinSchemaEntry.md) | Schema entry for a single skin key. Bare type string short-form (`"main_color": "color"`) and full descriptor (`{ type, name, description }`) are both legal in the same `skins.schema` block. |

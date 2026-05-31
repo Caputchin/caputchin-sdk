@@ -20,16 +20,32 @@ export type GameTrigger = 'manual' | null;
  *  game DOM via the default `<slot>` inside the layout shell and drives
  *  completion via `pass()` / `fail()`. */
 export interface GameConfig {
+  /** Your public site key. Unlocks the bootstrap fetch (overrides plus
+   *  marketplace bundle resolution) and, unless `no-verify` is set, the cap
+   *  gate. `null` runs the game with no verification (game-only). */
   sitekey: string | null;
   /** Boolean `no-verify` attribute: skip the cap gate but keep everything
    *  else (bootstrap overrides, marketplace resolve, the game itself).
    *  Implied true when there's no sitekey. */
   noVerify: boolean;
+  /** Only `manual` is settable here: you slot custom game DOM as children and
+   *  drive completion via `pass()` / `fail()`. Every other trigger is derived
+   *  from the layout, so this is `null` unless manual. */
   trigger: GameTrigger;
+  /** Frame width: `auto` (size to content), `full` (span the parent), or a
+   *  positive pixel number. */
   width: WidgetWidth;
+  /** Frame height: omitted/`null` (auto), `full` (span the parent), or a
+   *  positive pixel number. */
   height: WidgetHeight;
+  /** The `game` attribute: a single marketplace game id (`owner/repo`, or
+   *  `owner/repo/leaf`), resolved to a bundle server-side. */
   game: string | null;
+  /** The `games` attribute: a comma-separated list of marketplace game ids;
+   *  the widget picks one at random per session. */
   games: string | null;
+  /** The `game-src` attribute: a URL to a game bundle you host yourself
+   *  (HTTPS, or http loopback in local dev), bypassing marketplace resolution. */
   gameSrc: string | null;
   /** Default `auto`; defers to manifest/breakpoint. `inline | modal | fullscreen` are explicit. */
   layout: LayoutAttr;

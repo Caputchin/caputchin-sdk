@@ -13,6 +13,14 @@ import type { EngineDef, ReplayInput, ReplayOutcome } from './types';
 // flagged via `truncated`). Duration is derived from the tick the engine
 // ACTUALLY ended on, not from any client-claimed value.
 
+/**
+ * Re-run a recorded round under the fixed-step loop: start `engine` from its
+ * seeded initial state, apply each recorded action on the tick it was recorded
+ * for (preserving order within a tick), and return the {@link ReplayOutcome}.
+ * This is the same deterministic loop that drives live play, so a
+ * {@link toRun}-wrapped engine reproduces the live result exactly under the
+ * issued seed (live score equals replay score by construction).
+ */
 export function replay<S, A, C, V = S>(
   engine: EngineDef<S, A, C, V>,
   input: ReplayInput<A, C>,

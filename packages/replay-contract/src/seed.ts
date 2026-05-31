@@ -12,10 +12,10 @@
  */
 export type Seed = readonly [number, number, number, number];
 
-/** Words in a {@link Seed} (128 bits / 32). */
+/** Number of 32-bit words in a {@link Seed} (128 bits / 32). */
 export const SEED_WORDS = 4;
 
-/** Bytes in a {@link Seed} (128 bits). */
+/** Byte length of a {@link Seed} (128 bits). */
 export const SEED_BYTES = 16;
 
 const FIELD_SEPARATOR = ':';
@@ -48,6 +48,13 @@ function assertField(name: string, value: string): void {
  * This packing is the canonical wire form. The server re-derives it bit-for-bit
  * at replay, so any drift here silently breaks every replay; the test pins it
  * against an independent SHA-256.
+ *
+ * @param sessionId - Server-issued session token. Must be non-empty and must
+ *   not contain `':'`.
+ * @param gameId - Game identifier slug (e.g. `"dino-runner"`). Must be
+ *   non-empty and must not contain `':'`.
+ * @param roundIndex - Zero-based round counter for this session. Must be a
+ *   non-negative integer.
  */
 export async function deriveSeed(
   sessionId: string,

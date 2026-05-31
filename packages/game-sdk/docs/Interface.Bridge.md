@@ -1,5 +1,10 @@
 # Interface: Bridge
 
+The control surface the widget hands your game factory (second argument).
+ Use it to report a completed round, surface an error, or resize the frame.
+ The widget owns the verification flow; the bridge is how your game talks
+ back to it.
+
 ## Properties
 
 | Property | Modifier | Type |

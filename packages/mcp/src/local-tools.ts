@@ -8,10 +8,23 @@ import { resolveApiHost } from './api.js';
  * Caputchin into a page or backend.
  */
 
+/**
+ * Descriptor for one local (offline) MCP tool. Registered in
+ * {@link LOCAL_TOOLS} and served by `createServer` without any API call.
+ */
 export type LocalTool = {
+  /** MCP tool name (snake_case, e.g. `"caputchin_widget_snippet"`). */
   name: string;
+  /** Human-readable description surfaced in MCP `tools/list` responses. */
   description: string;
+  /** Zod schema used to validate the tool's input arguments before calling `handler`. */
   inputSchema: z.ZodTypeAny;
+  /**
+   * Execute the tool.
+   * @param args - Raw (unvalidated) arguments from the MCP caller. The
+   *   implementation is responsible for parsing via `inputSchema`.
+   * @returns Rendered text content to return as the tool result.
+   */
   handler: (args: Record<string, unknown>) => Promise<string>;
 };
 
@@ -130,6 +143,12 @@ export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleIn
   ].join('\n');
 }
 
+/**
+ * All offline (no-auth) MCP tools bundled with this package. `createServer`
+ * registers every entry here regardless of whether `CAPUTCHIN_TOKEN` is set.
+ * Currently includes `caputchin_widget_snippet` (HTML mount snippet) and
+ * `caputchin_siteverify_example` (backend verification code sample).
+ */
 export const LOCAL_TOOLS: LocalTool[] = [
   {
     name: 'caputchin_widget_snippet',

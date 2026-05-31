@@ -33,12 +33,14 @@ shim) is the author's choice; we only host the replay.
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `seed` | [`Seed`](TypeAlias.Seed.md) |
-| `config` | `C` \| `null` |
-| `trace` | `Uint8Array` \| `string` |
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `seed` | [`Seed`](TypeAlias.Seed.md) | Server-derived per-round [Seed](TypeAlias.Seed.md), issued at `/verify/start` and re-derived at replay. Never client-supplied. |
+| `config` | `C` \| `null` | Server-resolved gameplay config, or `null` when no config is set for the site key. Gate-affecting fields (pass threshold, lives) must come from here, not from the trace. |
+| `trace` | `Uint8Array` \| `string` | Opaque player input blob as emitted by the live game client. Raw bytes or a string; the engine alone interprets it. |
 
 ## Returns
 
 [`Verdict`](Interface.Verdict.md) \| `Promise`\<[`Verdict`](Interface.Verdict.md)\>
+
+A [Verdict](Interface.Verdict.md) (sync or async). The replay host always awaits it.

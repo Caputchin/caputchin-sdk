@@ -26,7 +26,13 @@ import type { Seed } from '@caputchin/replay-contract';
  * compute differently.
  */
 export interface Result {
+  /** Game-defined final score. Any finite number; not bounded by the platform. */
   readonly score: number;
+  /**
+   * The engine's own pass decision from the terminal state (e.g. a score
+   * threshold or goal reached). `toRun` ANDs this with the non-truncated
+   * guard before emitting the {@link Verdict}.
+   */
   readonly passed: boolean;
 }
 
@@ -39,7 +45,13 @@ export interface Result {
  * replay, both calling `init` with the same raw config, cannot diverge.
  */
 export interface EngineSetup<C> {
+  /** Server-derived per-round seed. Seed your PRNG here via `cap.rng(setup.seed)` and store it in state. */
   readonly seed: Seed;
+  /**
+   * Raw server-resolved gameplay config, or `null` when no config is
+   * configured for the site key. `init` is responsible for resolving `null`
+   * to the engine's own defaults.
+   */
   readonly config: C | null;
 }
 
@@ -62,10 +74,34 @@ export interface EngineSetup<C> {
  * math (the shim also swaps `Math.*`, but importing `cap.math` is clearer).
  */
 export interface EngineDef<S, A = unknown, C = unknown, V = S> {
+  /**
+   * Build the initial engine state from `setup.seed` and `setup.config`.
+   * This is the ONLY place raw config is resolved to sim parameters; call
+   * `cap.rng(setup.seed)` here and keep the `Rng` in state.
+   */
   init(setup: EngineSetup<C>): S;
+  /**
+   * Apply one player action at its logical tick. Must be pure and synchronous.
+   * @param state - Current engine state.
+   * @param action - Player action to apply.
+   */
   step(state: S, action: A): S;
+  /**
+   * Advance the simulation by exactly one fixed timestep (`FIXED_TIMESTEP_MS`).
+   * Must be pure and synchronous.
+   * @param state - Current engine state.
+   */
   tick(state: S): S;
+  /**
+   * Returns `true` when the game has ended and the replay loop should stop.
+   * @param state - Current engine state.
+   */
   isOver(state: S): boolean;
+  /**
+   * Read the final score and pass decision from the terminal state. Called
+   * once after {@link isOver} returns `true`. Must be pure.
+   * @param state - Terminal engine state.
+   */
   result(state: S): Result;
   /**
    * OPTIONAL render projection. The live driver hands the renderer the result
@@ -86,27 +122,34 @@ export interface EngineDef<S, A = unknown, C = unknown, V = S> {
  * is not a "trace" the platform sees.
  */
 export interface TickInput<A> {
+  /** Logical tick index at which this action lands. Zero-based, matching the loop counter in {@link replay}. */
   readonly tick: number;
+  /** The player action to pass to `engine.step` at this tick. */
   readonly action: A;
 }
 
 /** Inputs to a single replay run. */
 export interface ReplayInput<A, C> {
+  /** Per-round seed the engine's `init` receives to initialize its PRNG and starting state. */
   readonly seed: Seed;
+  /** Server-resolved gameplay config passed straight to `init`. `null` means use the engine's own defaults. */
   readonly config: C | null;
+  /** Tick-stamped player inputs to apply during replay, in recorded order. */
   readonly actions: readonly TickInput<A>[];
-  /** Upper bound on ticks to run, guarding a non-terminating engine. */
+  /** Maximum ticks before the loop stops and marks the run as {@link ReplayOutcome.truncated}. Guards against a non-terminating engine. */
   readonly maxTicks: number;
 }
 
-/** Authoritative outcome of a replay run. */
+/** Authoritative outcome of a replay run produced by {@link replay}. */
 export interface ReplayOutcome {
+  /** Final score read from the engine's terminal state via `engine.result`. */
   readonly score: number;
-  /** The engine's pass decision off the terminal state (before the truncated guard). */
+  /** The engine's own pass decision from the terminal state (before the `truncated` guard is ANDed in). */
   readonly passed: boolean;
+  /** Play duration in milliseconds, derived as `endTick * FIXED_TIMESTEP_MS`. */
   readonly durationMs: number;
-  /** Tick at which the engine reported game-over (or `maxTicks` if it never did). */
+  /** Tick at which the engine reported game-over, or `maxTicks` if it never terminated. */
   readonly endTick: number;
-  /** True if the engine hit `maxTicks` without ending - a rejectable run. */
+  /** `true` if the engine reached `maxTicks` without reporting game-over. A truncated run is always rejectable. */
   readonly truncated: boolean;
 }
