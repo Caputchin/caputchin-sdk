@@ -58,6 +58,13 @@ describe('buildSrcdoc', () => {
       .toThrow();
   });
 
+  it('accepts http loopback game URL (local-dev secure context)', () => {
+    const html = buildSrcdoc({ ...base, gameUrl: 'http://localhost:3000/api/local/marketplace-artifacts/x/bundle.js', gameId: 'g1' });
+    expect(html).toContain('http://localhost:3000/api/local/marketplace-artifacts/x/bundle.js');
+    // but a non-loopback http host is still rejected
+    expect(() => buildSrcdoc({ ...base, gameUrl: 'http://127.0.0.2/game.js', gameId: 'g1' })).toThrow();
+  });
+
   it('includes integrity attribute for valid sha384', () => {
     const integrity = 'sha384-' + 'A'.repeat(64);
     const html = buildSrcdoc({

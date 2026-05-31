@@ -57,6 +57,21 @@ describe('installGameFrame', () => {
     expect(k.locale).toBeNull();
     expect(k.config).toBeNull();
   });
+
+  it('routes a synchronous mount/build throw to onLoadFailed (never swallowed) + no kickoff', async () => {
+    const host = mockHost();
+    host.mount = vi.fn(() => { throw new Error('game-src must be HTTPS: "http://evil.test/x.js"'); });
+    const onLoadFailed = vi.fn();
+    await installGameFrame(
+      document.createElement('div'), mockGp() as never, cfg({}), host as never,
+      onLoadFailed, () => {}, null, null, async () => null,
+    );
+    expect(onLoadFailed).toHaveBeenCalledTimes(1);
+    expect(onLoadFailed.mock.calls[0][0]).toBe('iframe-load-failed');
+    expect(onLoadFailed.mock.calls[0][1]).toContain('must be HTTPS');
+    // bailed before kickoff — a failed frame never starts.
+    expect(host.kickoff).not.toHaveBeenCalled();
+  });
 });
 
 describe('applyIframeSize', () => {
