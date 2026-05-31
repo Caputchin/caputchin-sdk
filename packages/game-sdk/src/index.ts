@@ -2,8 +2,14 @@ import type { Seed } from '@caputchin/replay-contract';
 
 export type { Seed } from '@caputchin/replay-contract';
 
+/** How the widget presents the game: `inline` (an in-flow panel), `modal` (an
+ *  overlay dialog), or `fullscreen` (a full-viewport overlay). */
 export type Layout = 'inline' | 'modal' | 'fullscreen';
 
+/** The control surface the widget hands your game factory (second argument).
+ *  Use it to report a completed round, surface an error, or resize the frame.
+ *  The widget owns the verification flow; the bridge is how your game talks
+ *  back to it. */
 export interface Bridge {
   /**
    * Signal a completed round by handing the widget the OPAQUE TRACE of the
@@ -328,6 +334,11 @@ export type SkinsFile = NonNullable<GameManifest['skins']>;
 /** Contents of `.caputchin/configurations.json` (the `configurations` block of {@link GameManifest}). */
 export type ConfigurationsFile = NonNullable<GameManifest['configurations']>;
 
+/** The function you hand to {@link register}. The widget calls it once per
+ *  mount with the `container` element to render into, the {@link Bridge}
+ *  control surface, and the per-session {@link GameContext} (seed, locale,
+ *  skin, config). Return an optional cleanup function the widget calls when the
+ *  round tears down. */
 export type GameFactory = (
   container: HTMLElement,
   bridge: Bridge,

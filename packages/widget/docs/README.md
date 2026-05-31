@@ -27,11 +27,11 @@
 
 | Type Alias | Description |
 | ------ | ------ |
-| [ErrorCode](TypeAlias.ErrorCode.md) | - |
-| [ErrorSeverity](TypeAlias.ErrorSeverity.md) | - |
-| [Layout](TypeAlias.Layout.md) | - |
-| [LayoutAttr](TypeAlias.LayoutAttr.md) | - |
-| [LayoutSource](TypeAlias.LayoutSource.md) | - |
+| [ErrorCode](TypeAlias.ErrorCode.md) | Stable code on the `error` event's `detail.code`, the value you branch on. `invalid-config` (a rejected attribute) and `invalid-call` (a method called when not valid) are graceful warnings; `verification-failed`, `game-load-failed`, `gate-unavailable`, and `game-error-relayed` are hard failures. Each has a default [ErrorSeverity](TypeAlias.ErrorSeverity.md). |
+| [ErrorSeverity](TypeAlias.ErrorSeverity.md) | Severity on the `error` event's `detail.severity`: `warn` (the widget degraded but kept running) or `error` (something actually broke). Read it to filter the two without hardcoding a code-to-severity table. |
+| [Layout](TypeAlias.Layout.md) | How the widget presents the game: `inline` (an in-flow panel), `modal` (an overlay dialog), or `fullscreen` (a full-viewport overlay). |
+| [LayoutAttr](TypeAlias.LayoutAttr.md) | Accepted values of the `layout` attribute: a concrete [Layout](TypeAlias.Layout.md), or `auto` to defer to the game's preferred layout and then a breakpoint default. |
+| [LayoutSource](TypeAlias.LayoutSource.md) | Where the resolved layout came from, reported on the `layout-resolved` event: the embed `attr`, the game `manifest`, or the built-in `default`. |
 | [WidgetHeight](TypeAlias.WidgetHeight.md) | `null` means "auto" - defer to the game's preferredHeight (if any) or the widget default. `'full'` spans the parent (and, for game widgets in overlay layouts, stretches the iframe vertically inside the dialog). A positive number is an explicit pixel value. |
 | [WidgetSize](TypeAlias.WidgetSize.md) | Visual density of the checkbox widget. `normal` is the standard size; `compact` is a smaller variant. |
 | [WidgetTrigger](TypeAlias.WidgetTrigger.md) | When the widget starts verification. `auto`: on mount. `click`: when the visitor activates the checkbox. `form-submit`: when the enclosing `<form>` submits. `manual`: only when you call `start()`. |

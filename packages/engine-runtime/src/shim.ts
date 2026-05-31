@@ -1,3 +1,11 @@
+/**
+ * @module shim
+ *
+ * Neutralization shim for the IEEE-754 + JS engine path. Apply once at the
+ * top of the engine's execution scope via {@link applyShim} to make the
+ * environment determinism-safe for both live play and server replay.
+ */
+
 // The neutralization shim - an OPTIONAL kit helper for the IEEE-754 + JS path.
 // Run once at the top of the engine's execution scope; applying the
 // SAME shim live and on replay keeps those two environments from drifting via a

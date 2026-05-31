@@ -46,6 +46,15 @@ export type ReplayConfig = unknown;
  * server isolate: identical `(seed, config, trace)` MUST yield an identical
  * verdict in both. How (fixed-point, WASM-spec floats, or IEEE-754 + the optional
  * shim) is the author's choice; we only host the replay.
+ *
+ * @param seed - Server-derived per-round {@link Seed}, issued at
+ *   `/verify/start` and re-derived at replay. Never client-supplied.
+ * @param config - Server-resolved gameplay config, or `null` when no config
+ *   is set for the site key. Gate-affecting fields (pass threshold, lives)
+ *   must come from here, not from the trace.
+ * @param trace - Opaque player input blob as emitted by the live game client.
+ *   Raw bytes or a string; the engine alone interprets it.
+ * @returns A {@link Verdict} (sync or async). The replay host always awaits it.
  */
 export type RunFn<C = ReplayConfig> = (
   seed: Seed,

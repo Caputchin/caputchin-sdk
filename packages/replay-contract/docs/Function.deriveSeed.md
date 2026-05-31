@@ -16,11 +16,11 @@ against an independent SHA-256.
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `sessionId` | `string` |
-| `gameId` | `string` |
-| `roundIndex` | `number` |
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `sessionId` | `string` | Server-issued session token. Must be non-empty and must not contain `':'`. |
+| `gameId` | `string` | Game identifier slug (e.g. `"dino-runner"`). Must be non-empty and must not contain `':'`. |
+| `roundIndex` | `number` | Zero-based round counter for this session. Must be a non-negative integer. |
 
 ## Returns
 

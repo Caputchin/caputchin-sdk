@@ -45,8 +45,16 @@ function zodToWireSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   return { type: 'object' };
 }
 
+/**
+ * Options for {@link createServer}.
+ */
 export type CreateServerOptions = {
-  /** When true, omit the remote-catalogue fetch and skip reading `CAPUTCHIN_TOKEN`. Only the local-only tools register. */
+  /**
+   * When `true`, skip the remote-catalogue fetch and do not read
+   * `CAPUTCHIN_TOKEN` from the environment. Only the local-only tools
+   * ({@link LOCAL_TOOLS}) register; management tools are unavailable. Useful
+   * for offline development or when no Caputchin account is needed.
+   */
   localOnly?: boolean;
 };
 
@@ -62,19 +70,25 @@ type CatalogueCache = {
 /**
  * Compose the MCP server.
  *
- * The SDK no longer holds its own tool catalogue. At
- * server creation it captures the env config and registers two
- * top-level handlers (`tools/list`, `tools/call`); both merge:
+ * The SDK no longer holds its own tool catalogue. At server creation it
+ * captures the env config and registers two top-level handlers
+ * (`tools/list`, `tools/call`); both merge:
  *
- *  - Local-only tools (`local-tools.ts`): offline snippet generators
- *    that need no Caputchin account.
- *  - Remote tools fetched from the platform's `/api/mcp` endpoint
- *    (the canonical management-surface catalogue).
+ * - Local-only tools ({@link LOCAL_TOOLS}): offline snippet generators
+ *   that need no Caputchin account.
+ * - Remote tools fetched lazily from the platform's `/api/mcp` endpoint
+ *   (the canonical management-surface catalogue) on the first `tools/list`
+ *   call.
  *
- * The remote fetch is lazy (first `tools/list` call triggers it). If
- * the platform is unreachable the local tools still work; the bridge
- * tools surface as absent with an explanatory message on a no-arg-call
- * to `caputchin_remote_unavailable`.
+ * If the platform is unreachable the local tools still work; remote tools
+ * surface as absent with an explanatory `caputchin_remote_unavailable` entry.
+ *
+ * @param env - Process environment to read `CAPUTCHIN_TOKEN` and
+ *   `CAPUTCHIN_API_HOST` from. Defaults to `process.env`.
+ * @param options - Optional {@link CreateServerOptions}. Pass
+ *   `{ localOnly: true }` to skip the remote catalogue entirely.
+ * @returns A configured `@modelcontextprotocol/sdk` `Server` instance ready
+ *   to connect to a transport.
  */
 export function createServer(
   env: NodeJS.ProcessEnv = process.env,

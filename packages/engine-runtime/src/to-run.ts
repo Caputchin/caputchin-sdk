@@ -9,12 +9,24 @@ import { decodeTrace } from './trace-codec';
 import type { EngineDef, TickInput } from './types';
 import type { Seed, Verdict } from '@caputchin/replay-contract';
 
+/**
+ * Options for {@link toRun}.
+ */
 export interface ToRunOptions<A> {
-  /** Upper bound on ticks; a run that exceeds it is truncated and fails. */
+  /**
+   * Maximum number of fixed timesteps the replay loop may advance before
+   * declaring the run truncated and returning `passed: false`. Prevents a
+   * non-terminating engine from hanging the server isolate. Set this to a
+   * value safely above the longest legitimate play session; a typical
+   * 30-second game at {@link FIXED_TIMESTEP_MS} fits in ~1875 ticks.
+   */
   readonly maxTicks: number;
   /**
-   * Decode the opaque trace into recorded inputs. Defaults to the kit's
-   * {@link decodeTrace}; supply your own to read a custom trace format.
+   * Decode the opaque trace bytes into recorded inputs before replaying.
+   * Defaults to the kit's built-in {@link decodeTrace} (matches the widget's
+   * built-in encoder); supply your own function to read a custom trace format.
+   * @param trace - Raw trace blob as emitted by the live game.
+   * @returns Ordered array of tick-stamped inputs to feed the replay loop.
    */
   decode?(trace: Uint8Array | string): readonly TickInput<A>[];
 }

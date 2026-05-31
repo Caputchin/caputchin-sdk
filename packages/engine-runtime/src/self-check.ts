@@ -37,8 +37,15 @@ export interface SelfCheckCase<C = ReplayConfig> {
   readonly label?: string;
 }
 
+/**
+ * Options for {@link selfCheck}.
+ */
 export interface SelfCheckOptions {
-  /** Identical re-runs used for the stability probe (default 8). */
+  /**
+   * Number of identical re-runs used for the stability probe. A higher value
+   * catches flaky non-determinism more reliably at the cost of runtime.
+   * Defaults to `8`; minimum enforced is `2`.
+   */
   readonly repeats?: number;
 }
 
@@ -53,23 +60,44 @@ export type ViolationKind =
   | 'invalid-verdict' // run returned a value that is not a Verdict
   | 'threw'; // run threw under the clean environment (not an ambient ban)
 
+/**
+ * A single determinism violation found during {@link selfCheck}. `kind`
+ * identifies which invariant failed; `detail` names the exact surface or
+ * symptom for the error message.
+ */
 export interface Violation {
+  /** Which determinism invariant the run violated. */
   readonly kind: ViolationKind;
+  /** Human-readable description, naming the surface or symptom (e.g. `"run accessed 'Date'"`). */
   readonly detail: string;
 }
 
+/**
+ * Self-check result for one {@link SelfCheckCase}. `deterministic` is `true`
+ * only when `violations` is empty.
+ */
 export interface CaseReport {
+  /** Human label for the case (the `label` field from {@link SelfCheckCase}, or `"case #n"`). */
   readonly label: string;
+  /** `true` when the case passed all probes with no violations. */
   readonly deterministic: boolean;
-  /** The verdict observed under the clean environment, or null if the run threw
-   *  / returned a non-Verdict (see violations for which). */
+  /**
+   * Verdict observed under the clean environment, or `null` if the run threw
+   * or returned a non-Verdict. See `violations` for which kind applied.
+   */
   readonly verdict: Verdict | null;
+  /** All violations found for this case. Empty when `deterministic` is `true`. */
   readonly violations: readonly Violation[];
 }
 
+/**
+ * Aggregate result returned by {@link selfCheck}. `ok` is a single pass/fail
+ * signal; `cases` carries the per-case detail.
+ */
 export interface SelfCheckReport {
-  /** True iff every case is deterministic. */
+  /** `true` only when every case in `cases` is deterministic (no violations). */
   readonly ok: boolean;
+  /** Per-case reports, one entry per element of the `cases` input array. */
   readonly cases: readonly CaseReport[];
 }
 

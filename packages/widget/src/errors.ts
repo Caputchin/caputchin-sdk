@@ -1,3 +1,8 @@
+/** Stable code on the `error` event's `detail.code`, the value you branch on.
+ *  `invalid-config` (a rejected attribute) and `invalid-call` (a method called
+ *  when not valid) are graceful warnings; `verification-failed`,
+ *  `game-load-failed`, `gate-unavailable`, and `game-error-relayed` are hard
+ *  failures. Each has a default {@link ErrorSeverity}. */
 export type ErrorCode =
   | 'invalid-config'
   | 'invalid-call'
@@ -6,6 +11,9 @@ export type ErrorCode =
   | 'gate-unavailable'
   | 'game-error-relayed';
 
+/** Severity on the `error` event's `detail.severity`: `warn` (the widget
+ *  degraded but kept running) or `error` (something actually broke). Read it
+ *  to filter the two without hardcoding a code-to-severity table. */
 export type ErrorSeverity = 'warn' | 'error';
 
 /** Default severity per code. Customers can key off `event.detail.severity`

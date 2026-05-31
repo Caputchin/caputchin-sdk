@@ -12,25 +12,56 @@ import type { Seed } from './types';
 // (no closures cross the worker boundary). Resume an exact stream with
 // `rngFromState`.
 
-/** Serializable PRNG state: four unsigned 32-bit words. */
+/** Serializable PRNG state: four unsigned 32-bit words. Pass to {@link rngFromState} to resume an exact stream. */
 export type RngState = readonly [number, number, number, number];
 
+/**
+ * Deterministic PRNG seeded from a {@link Seed}. Built on sfc32 (Small Fast
+ * Counter, 128-bit state) using only 32-bit integer operations, so the stream
+ * is bit-identical across every JS engine and V8 version.
+ *
+ * Keep the `Rng` instance (or its {@link RngState}) in your engine state so
+ * the stream survives structured-clone serialization across the worker
+ * boundary. Create with {@link rng}; resume a saved stream with
+ * {@link rngFromState}.
+ */
 export interface Rng {
-  /** Next float in [0, 1). */
+  /** Next float in `[0, 1)`. */
   next(): number;
-  /** Integer in [0, maxExclusive). */
+  /**
+   * Random integer in `[0, maxExclusive)`.
+   * @param maxExclusive - Upper bound, exclusive. Must be positive.
+   */
   int(maxExclusive: number): number;
-  /** Integer in [min, maxInclusive]. */
+  /**
+   * Random integer in `[min, maxInclusive]`.
+   * @param min - Lower bound, inclusive.
+   * @param maxInclusive - Upper bound, inclusive.
+   */
   intBetween(min: number, maxInclusive: number): number;
-  /** Float in [min, max). */
+  /**
+   * Random float in `[min, max)`.
+   * @param min - Lower bound, inclusive.
+   * @param max - Upper bound, exclusive.
+   */
   range(min: number, max: number): number;
-  /** True with probability p (default 0.5). */
+  /**
+   * Returns `true` with probability `p`.
+   * @param p - Probability in `[0, 1]`. Defaults to `0.5`.
+   */
   bool(p?: number): boolean;
-  /** A uniformly chosen element. */
+  /**
+   * Uniformly selects one element from `arr`. Throws if `arr` is empty.
+   * @param arr - Non-empty array to pick from.
+   */
   pick<T>(arr: readonly T[]): T;
-  /** A new array, Fisher-Yates shuffled (input untouched). */
+  /**
+   * Returns a new array that is a Fisher-Yates shuffle of `arr`. The input
+   * array is not mutated.
+   * @param arr - Array to shuffle.
+   */
   shuffle<T>(arr: readonly T[]): T[];
-  /** Current internal state as a plain serializable tuple. */
+  /** Current PRNG state as a plain serializable tuple. Store in engine state to resume the exact stream later via {@link rngFromState}. */
   readonly state: RngState;
 }
 

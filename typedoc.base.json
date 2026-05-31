@@ -5,6 +5,7 @@
   "githubPages": false,
   "hideGenerator": true,
   "excludeExternals": true,
+  "excludeInternal": true,
   "skipErrorChecking": true,
   "disableSources": true,
   "flattenOutputFiles": true,
