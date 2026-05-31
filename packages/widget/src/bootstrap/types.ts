@@ -7,7 +7,7 @@
 // RESOLVED presets; the widget applies them. There is no client-side
 // resolution and no override preset banks on the wire.
 
-import type { ResolvedConfig, ResolvedLocale, ResolvedSkin } from '@caputchin/game-sdk';
+import type { Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin } from '@caputchin/game-sdk';
 
 /** One resolved preset per axis. A null axis means the server resolved nothing
  *  (e.g. the game declares no presets for that axis) - the widget/game falls
@@ -30,9 +30,11 @@ export interface BootstrapGameBlock {
   runUrl: string | null;
   runIntegrity: string | null;
   runModules: { name: string; url: string; integrity: string; type: string }[] | null;
-  // The game's preferred presentation footprint (from its manifest). Replaces
-  // the deleted game->widget ManifestMessage that used to carry it.
-  preferred: { width?: number; height?: number } | null;
+  // The game's preferred presentation (footprint + layout) from its manifest.
+  // Replaces the deleted game->widget ManifestMessage that used to carry it.
+  // `layout` is the game's preferred shell; the widget honors it only when the
+  // embed leaves `layout` unset (default `auto`).
+  preferred: { width?: number; height?: number; layout?: Layout } | null;
   resolved: ResolvedAxes;
 }
 

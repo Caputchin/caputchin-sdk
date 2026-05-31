@@ -1,6 +1,8 @@
 import { inspectGameConfig, shouldVerify } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
+import type { Layout } from '@caputchin/game-sdk';
 import type { LayoutAttr } from '../layout.js';
+import { isLayout } from '../layout.js';
 import { fireError, type ErrorCode } from '../errors.js';
 import { buildWidgetShell } from '../locale/widget-shell.js';
 import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
@@ -135,7 +137,12 @@ export class CaputchinGame extends HTMLElement {
     if (!shadow) return;
 
     const isManual = state.config.trigger === 'manual';
-    const layout: 'inline' | 'modal' | 'fullscreen' = resolveLayout(state.config.layout);
+    // Shell pick: an explicit embed `layout` wins; otherwise (default `auto`)
+    // fall back to the game's preferred layout from bootstrap, then `inline`.
+    // The preferred layout rides the bootstrap `game` block, so it is only
+    // present for platform-resolved games (marketplace / keyless-with-id); a
+    // customer-hosted game-src bundle has no preferred here and stays `inline`.
+    const layout: Layout = resolveLayout(state.config.layout, state.gamePreferred?.layout ?? null);
     const derivedTrigger: WidgetTrigger = layout === 'inline' ? 'auto' : 'click';
 
     // Gated key: the server requires one of its installed games. Manual mode
@@ -260,6 +267,10 @@ export class CaputchinGame extends HTMLElement {
   }
 }
 
-function resolveLayout(attr: LayoutAttr): 'inline' | 'modal' | 'fullscreen' {
-  return attr === 'auto' ? 'inline' : attr;
+function resolveLayout(attr: LayoutAttr, preferred: Layout | null): Layout {
+  // Embed attribute is authoritative when set to a concrete layout. Only the
+  // default `auto` defers to the game's preferred layout; an untrusted manifest
+  // value that is not a real layout falls through to `inline`.
+  if (attr !== 'auto') return attr;
+  return preferred !== null && isLayout(preferred) ? preferred : 'inline';
 }
