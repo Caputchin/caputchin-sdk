@@ -46,7 +46,7 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "docs": "typedoc"
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
   },
   "dependencies": {
     "@cap.js/widget": "~0.1.53"

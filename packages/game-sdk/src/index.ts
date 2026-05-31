@@ -220,7 +220,7 @@ export interface PreferredPresentation {
  *  author + marketplace-indexer source of truth: the indexer reads the FILE
  *  server-side (preferred size, locale/skin/config presets, run artifact) and
  *  the server resolves + ships those down to the widget at runtime. It is NOT
- *  passed to `register` — the SDK never reads the manifest in the browser.
+ *  passed to `register`; the SDK never reads the manifest in the browser.
  *
  *  The nested `marketplace` block is optional; games that only run on customer
  *  sites omit it. The `entry`/`npm` distribution fields support marketplace

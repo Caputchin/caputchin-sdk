@@ -1,0 +1,5 @@
+# Variable: SEED\_WORDS
+
+> `const` **SEED\_WORDS**: `4` = `4`
+
+Words in a [Seed](TypeAlias.Seed.md) (128 bits / 32).

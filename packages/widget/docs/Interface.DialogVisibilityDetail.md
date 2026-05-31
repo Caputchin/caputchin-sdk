@@ -1,5 +1,7 @@
 # Interface: DialogVisibilityDetail
 
+Payload of the `dialog-shown` / `dialog-hidden` events (game overlay layouts).
+
 ## Properties
 
 | Property | Type | Description |

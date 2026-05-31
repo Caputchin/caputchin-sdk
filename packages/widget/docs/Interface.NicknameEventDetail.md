@@ -1,5 +1,7 @@
 # Interface: NicknameEventDetail
 
+Payload of the `nickname` event.
+
 ## Properties
 
 | Property | Type | Description |
