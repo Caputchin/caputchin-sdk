@@ -1,0 +1,25 @@
+{
+  "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "typedoc-plugin-frontmatter",
+    "./typedoc-fumadocs.mjs"
+  ],
+  "out": "docs-dist",
+  "readme": "none",
+  "githubPages": false,
+  "hideGenerator": true,
+  "excludeExternals": true,
+  "skipErrorChecking": true,
+  "disableSources": true,
+  "flattenOutputFiles": true,
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "useCustomAnchors": true,
+  "entryFileName": "index",
+  "frontmatterGlobals": {
+    "type": "reference"
+  }
+}
