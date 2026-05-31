@@ -2,12 +2,8 @@
   "$schema": "https://typedoc-plugin-markdown.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "tsconfig": "tsconfig.json",
-  "plugin": [
-    "typedoc-plugin-markdown",
-    "typedoc-plugin-frontmatter",
-    "./typedoc-fumadocs.mjs"
-  ],
-  "out": "docs-dist",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "docs",
   "readme": "none",
   "githubPages": false,
   "hideGenerator": true,
@@ -18,8 +14,10 @@
   "hidePageHeader": true,
   "hideBreadcrumbs": true,
   "useCustomAnchors": true,
-  "entryFileName": "index",
-  "frontmatterGlobals": {
-    "type": "reference"
-  }
+  "parametersFormat": "table",
+  "propertiesFormat": "table",
+  "enumMembersFormat": "table",
+  "typeDeclarationFormat": "table",
+  "indexFormat": "table",
+  "entryFileName": "README"
 }

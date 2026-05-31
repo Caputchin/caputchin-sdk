@@ -7,7 +7,12 @@ export type WidgetWidth = 'auto' | 'full' | number;
  *  overlay layouts, stretches the iframe vertically inside the dialog).
  *  A positive number is an explicit pixel value. */
 export type WidgetHeight = 'full' | number | null;
+/** Visual density of the checkbox widget. `normal` is the standard size;
+ *  `compact` is a smaller variant. */
 export type WidgetSize = 'normal' | 'compact';
+/** When the widget starts verification. `auto`: on mount. `click`: when the
+ *  visitor activates the checkbox. `form-submit`: when the enclosing `<form>`
+ *  submits. `manual`: only when you call `start()`. */
 export type WidgetTrigger = 'auto' | 'click' | 'form-submit' | 'manual';
 
 export interface ConfigIssue {

@@ -8,11 +8,25 @@ import { parseCommonAttrs } from './shared.js';
  *  There is no enum-style `mode` attribute; `invisible` is a boolean HTML
  *  attribute (same shape as `<input disabled>` / `<details open>`). */
 export interface WidgetConfig {
+  /** Your public site key. Required: without it the widget stays inert and
+   *  emits a `warn`-severity `error` event. This is the public key, not your
+   *  API secret. */
   sitekey: string;
+  /** When present, the widget renders no visible UI; verification still runs
+   *  per `trigger`. The default visible form is a checkbox with a brand strip. */
   invisible: boolean;
+  /** When verification begins: `auto` on mount, `click` on the checkbox,
+   *  `form-submit` when the enclosing form submits, or `manual` when you call
+   *  `start()` yourself. */
   trigger: WidgetTrigger;
+  /** Widget width: `auto` sizes to content, `full` spans the parent, or a
+   *  positive pixel number fixes it. */
   width: WidgetWidth;
+  /** Widget height: omitted/`null` is auto, `full` spans the parent, or a
+   *  positive pixel number fixes it. */
   height: WidgetHeight;
+  /** Visual density of the checkbox widget: `normal` (standard) or `compact`
+   *  (smaller). */
   size: WidgetSize;
   /** Raw `locale` attribute value. Resolved against the widget's bundled
    *  shell presets at mount. On this shell widget the attribute is a
