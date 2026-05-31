@@ -104,35 +104,60 @@ describe('fetchBootstrap', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns parsed response on 200 OK', async () => {
+  it('returns kind:ok with the parsed response on 200 OK', async () => {
     const body = { widget: { overrides: { locale: null, skin: null, configuration: null } }, game: null };
     fetchSpy.mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ ...body, requiresGame: false });
+    expect(out).toEqual({ kind: 'ok', response: { ...body, requiresGame: false } });
   });
 
-  it('returns null on non-2xx response', async () => {
+  it('degrades on a transient 5xx (bundled fallback, no hard error)', async () => {
     fetchSpy.mockResolvedValue(new Response('boom', { status: 500 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toBeNull();
+    expect(out).toEqual({ kind: 'degrade' });
   });
 
-  it('returns null on network error', async () => {
+  it('degrades on network error', async () => {
     fetchSpy.mockRejectedValue(new TypeError('network'));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toBeNull();
+    expect(out).toEqual({ kind: 'degrade' });
   });
 
-  it('returns null on invalid JSON body', async () => {
+  it('degrades on invalid JSON body', async () => {
     fetchSpy.mockResolvedValue(new Response('not-json', { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toBeNull();
+    expect(out).toEqual({ kind: 'degrade' });
   });
 
-  it('returns null on malformed top-level shape', async () => {
+  it('degrades on malformed top-level shape', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: 'bogus', game: null }), { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toBeNull();
+    expect(out).toEqual({ kind: 'degrade' });
+  });
+
+  it('surfaces an authoritative 409 gate-game-not-installed as kind:gate with code + message', async () => {
+    const body = { error: 'gate-game-not-installed', message: 'Game "x/y" is not in this site key\'s pool.', game: 'x/y' };
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify(body), { status: 409 }));
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', game: 'x/y' });
+    expect(out).toEqual({ kind: 'gate', error: { code: 'gate-game-not-installed', message: body.message } });
+  });
+
+  it('surfaces a 409 gate-misconfigured as kind:gate (empty message tolerated)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'gate-misconfigured' }), { status: 409 }));
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
+    expect(out).toEqual({ kind: 'gate', error: { code: 'gate-misconfigured', message: '' } });
+  });
+
+  it('degrades on a 409 carrying an UNKNOWN error code (not an authoritative gate code)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'something-else' }), { status: 409 }));
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
+    expect(out).toEqual({ kind: 'degrade' });
+  });
+
+  it('degrades on a 409 with a non-JSON body', async () => {
+    fetchSpy.mockResolvedValue(new Response('nope', { status: 409 }));
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
+    expect(out).toEqual({ kind: 'degrade' });
   });
 
   it('passes AbortSignal.timeout to fetch (caller cannot extend the window)', async () => {

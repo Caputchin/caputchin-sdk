@@ -69,8 +69,8 @@ describe('invisible widget presentation', () => {
 // signals to /bootstrap and APPLIES the resolved presets. Resolution +
 // validation (unknown preset, inline JSON rejection) is gated by the platform's
 // relocated golden tests, not here.
-function stubBootstrap(body: unknown): ReturnType<typeof vi.fn> {
-  const fn = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+function stubBootstrap(body: unknown, status = 200): ReturnType<typeof vi.fn> {
+  const fn = vi.fn(async () => new Response(JSON.stringify(body), { status }));
   vi.stubGlobal('fetch', fn);
   return fn;
 }
@@ -174,6 +174,28 @@ describe('widget brand link wiring', () => {
     const tag = el.shadowRoot!.querySelector('[part="simple-brand-tag"]') as HTMLAnchorElement;
     expect(home.href).toBe('https://caputchin.com/');
     expect(tag.href).toBe('https://caputchin.com/legal');
+    el.remove();
+  });
+});
+
+// Cap-only <caputchin-widget> on a gated key whose pool can't supply a game:
+// the server returns an authoritative 409. The element can't host a game, so
+// it surfaces gate-unavailable (the loud signal pointing at <caputchin-game>);
+// verification still fails closed server-side at /verify/start.
+describe('cap-only widget on a gated key (gate-unavailable)', () => {
+  it('fires gate-unavailable with the server message + originalCode on a 409', async () => {
+    stubBootstrap({ error: 'gate-misconfigured', message: 'No replay-eligible game is installed on this site key.' }, 409);
+    const el = getWidget({ sitekey: 'cpt_pub_x', trigger: 'click' });
+    const details: { code?: string; message?: string; originalCode?: string }[] = [];
+    el.addEventListener('error', (e) => {
+      const d = (e as CustomEvent).detail as { code?: string; message?: string; originalCode?: string };
+      if (d?.code === 'gate-unavailable') details.push(d);
+    });
+    document.body.appendChild(el);
+    await flushMount();
+    expect(details).toHaveLength(1);
+    expect(details[0]?.message).toContain('replay-eligible');
+    expect(details[0]?.originalCode).toBe('gate-misconfigured');
     el.remove();
   });
 });

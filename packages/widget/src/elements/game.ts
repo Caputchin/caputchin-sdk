@@ -1,7 +1,7 @@
 import { inspectGameConfig, shouldVerify } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { LayoutAttr } from '../layout.js';
-import { fireError } from '../errors.js';
+import { fireError, type ErrorCode } from '../errors.js';
 import { buildWidgetShell } from '../locale/widget-shell.js';
 import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
@@ -78,8 +78,25 @@ export class CaputchinGame extends HTMLElement {
       games: state.config.games ?? null,
       locale: resolveLocaleSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
-    }).then((bootstrap) => {
+    }).then((result) => {
       if (!this.state.connected || !this.state.config) return;
+      // Authoritative gate rejection (409): the server says this key+game can't
+      // make a valid round. Mount the error presentation + fire the `error`
+      // event; do NOT proceed into a bundled round (it would dead-end at
+      // /verify/start with no ticket). Transient failures (timeout / 5xx /
+      // network / malformed) arrive as kind:'degrade' and fall through to the
+      // bundled mount below.
+      if (result.kind === 'gate') {
+        const reason = result.error.message
+          || 'This site key requires a game to verify, but the server could not supply one.';
+        this.completeMount(apiHost, null, {
+          code: 'gate-unavailable',
+          message: reason,
+          originalCode: result.error.code,
+        });
+        return;
+      }
+      const bootstrap = result.kind === 'ok' ? result.response : null;
       // The server-resolved GAME axes + preferred footprint ride to the iframe
       // via state; the shell AROUND the game consumes the widget block.
       this.state.gameResolved = bootstrap?.game?.resolved ?? null;
@@ -104,7 +121,11 @@ export class CaputchinGame extends HTMLElement {
     });
   }
 
-  private completeMount(apiHost: string, resolved: ResolvedAxes | null): void {
+  private completeMount(
+    apiHost: string,
+    resolved: ResolvedAxes | null,
+    gateError?: { code: ErrorCode; message: string; originalCode?: string },
+  ): void {
     const state = this.state;
     if (!state.config) return;
     const shadow = this.shadowRoot;
@@ -162,6 +183,18 @@ export class CaputchinGame extends HTMLElement {
     });
     state.gamePresentation = gp;
     gp.mount();
+
+    // Authoritative gate rejection from bootstrap: show the error presentation
+    // + fire the `error` event (dev-facing message also logged), then stop. We
+    // never wire the verify trigger - there's no ticket, so a round here would
+    // only dead-end at /verify/start. The visitor sees the errored shield, not
+    // the raw dev message.
+    if (gateError) {
+      console.warn(`[caputchin] ${gateError.message}`);
+      fireError(this, gateError.code, gateError.message, gateError.originalCode);
+      gp.setState('error');
+      return;
+    }
 
     // Game-only path (no verification gate): mount + run, no trigger axis.
     // Covers both no-sitekey and explicit `no-verify` (with a sitekey, whose

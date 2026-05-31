@@ -22,7 +22,8 @@ export interface ErrorEventDetail {
   message: string;
   /** `warn` for graceful-degradation paths (invalid-config, invalid-call);
    *  `error` for hard failures (verification-failed, game-load-failed,
-   *  game-error-relayed). Customers filter via this without keying off codes. */
+   *  gate-unavailable, game-error-relayed). Customers filter via this without
+   *  keying off codes. */
   severity: ErrorSeverity;
   originalCode?: string;
 }

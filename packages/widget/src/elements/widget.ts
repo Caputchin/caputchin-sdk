@@ -57,11 +57,23 @@ export class CaputchinWidget extends HTMLElement {
       sitekey: state.config.sitekey,
       locale: resolveLocaleSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
-    }).then((bootstrap) => {
+    }).then((result) => {
       // Disconnect race: element removed from DOM during the bootstrap
       // wait. The new state bag from disconnectedCallback has no config,
       // so the guard fires and the mount is skipped.
       if (!this.state.connected || !this.state.config) return;
+      // Authoritative gate rejection (409): the gated key's pool can't supply a
+      // game - and this cap-only element couldn't host one anyway. Surface the
+      // server's reason; verification still fails closed at /verify/start.
+      if (result.kind === 'gate') {
+        const reason = result.error.message
+          || 'This site key requires a game to verify, but the server could not supply one.';
+        console.warn(`[caputchin] ${reason}`);
+        fireError(this, 'gate-unavailable', reason, result.error.code);
+        this.completeMount(apiHost, null);
+        return;
+      }
+      const bootstrap = result.kind === 'ok' ? result.response : null;
       // This cap-only element can't host a game, but the site key is
       // gated (requires a game). Surface a loud config error; verification
       // fails closed at /verify/start (no ticket). Use <caputchin-game> on a

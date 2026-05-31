@@ -3,6 +3,7 @@ export type ErrorCode =
   | 'invalid-call'
   | 'verification-failed'
   | 'game-load-failed'
+  | 'gate-unavailable'
   | 'game-error-relayed';
 
 export type ErrorSeverity = 'warn' | 'error';
@@ -15,6 +16,9 @@ const DEFAULT_SEVERITY: Record<ErrorCode, ErrorSeverity> = {
   'invalid-call': 'warn',
   'verification-failed': 'error',
   'game-load-failed': 'error',
+  // Server gave an authoritative 409 at bootstrap (the gated key cannot supply
+  // a valid game). The widget cannot run a round, so this is a hard error.
+  'gate-unavailable': 'error',
   'game-error-relayed': 'error',
 };
 
