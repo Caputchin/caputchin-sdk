@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { CaputchinGame } from '../../src/elements/game.js';
 import { installCustomFetch } from '../../src/cap/custom-fetch.js';
 import { getGame } from '../fixtures/test-element.js';
@@ -60,6 +60,58 @@ describe('CaputchinGame - layout integration', () => {
     const layoutErr = errors.find((e) => (e.detail as { message: string }).message.includes('layout="bogus"'));
     expect(layoutErr).toBeDefined();
     expect((layoutErr!.detail as { code: string }).code).toBe('invalid-config');
+    el.remove();
+  });
+});
+
+describe('CaputchinGame - preferred layout from bootstrap', () => {
+  // Make the bootstrap fetch return a `game.preferred.layout` so the element
+  // resolves the shell against it. Only the bootstrap response is mocked;
+  // everything downstream (shell build) runs for real.
+  function stubBootstrap(preferred: Record<string, unknown> | null): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ game: { preferred }, requiresGame: false }), { status: 200 }),
+      ),
+    );
+  }
+
+  afterEach(() => {
+    // Restore the suite-wide empty-bootstrap default for any later tests.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+  });
+
+  it('uses preferred.layout="modal" when the embed leaves layout unset', async () => {
+    stubBootstrap({ layout: 'modal' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"][data-layout="modal"]')).not.toBeNull();
+    });
+    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).toBeNull();
+    el.remove();
+  });
+
+  it('embed layout="inline" overrides preferred.layout="modal"', async () => {
+    stubBootstrap({ layout: 'modal' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
+    el.remove();
+  });
+
+  it('falls back to inline when preferred.layout is not a real layout', async () => {
+    stubBootstrap({ layout: 'sidebar' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
     el.remove();
   });
 });

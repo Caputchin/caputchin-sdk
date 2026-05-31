@@ -193,19 +193,27 @@ export interface MarketplaceMetadata {
   };
 }
 
-/** The game's preferred presentation footprint, declared under `preferred`
- *  in `caputchin.json`. Both keys are hints the host MAY honor, not hard
- *  requirements: the widget sizes the iframe to `width` / `height` when the
- *  customer leaves the embed's `width` / `height` unset (a `full` customer
- *  value stretches that axis instead). Omit to fall back to the widget's
- *  built-in default footprint.
+/** The game's preferred presentation, declared under `preferred` in
+ *  `caputchin.json`. Every key is an advisory hint the host MAY honor, not a
+ *  hard requirement.
  *
- *  NOTE: a preferred *layout* (inline / modal / fullscreen) is intentionally
- *  NOT part of this MVP surface - honoring it needs a pre-mount channel the
- *  widget does not have today. That capability is designed and deferred. */
+ *  `width` / `height`: the widget sizes the iframe to these when the customer
+ *  leaves the embed's `width` / `height` unset (a `full` customer value
+ *  stretches that axis instead). Omit to fall back to the widget's built-in
+ *  default footprint.
+ *
+ *  `layout`: the shell the widget builds around the game (an inline panel, a
+ *  modal dialog, or a fullscreen overlay). The widget uses it only when the
+ *  embed leaves `layout` unset (the default `auto`); an explicit embed
+ *  `layout` overrides it. Resolution order: embed `layout` attribute, then this
+ *  preferred layout, then `inline`. Honored only for games the platform
+ *  resolves server-side (marketplace games, or a game id given without a site
+ *  key); a customer-hosted `game-src` bundle the platform cannot read ahead of
+ *  mount ignores this hint, the same way it ignores the preferred footprint. */
 export interface PreferredPresentation {
   width?: number;
   height?: number;
+  layout?: Layout;
 }
 
 /** The full package manifest the game ships in `caputchin.json`. This is the

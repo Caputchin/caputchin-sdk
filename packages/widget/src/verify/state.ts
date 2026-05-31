@@ -5,6 +5,7 @@ import type { IframeHost } from '../iframe/host.js';
 import type { Presentation } from '../modes/index.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
+import type { Layout } from '@caputchin/game-sdk';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /** Per-mount mutable state. Generic in the config shape so both element
@@ -31,9 +32,10 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  there's no bootstrap (no sitekey + no keyless game) or it timed out → the
    *  game runs its bundled defaults. */
   gameResolved?: ResolvedAxes | null;
-  /** The game's preferred footprint from the bootstrap `game` block (was the
-   *  deleted manifest message's preferredWidth/Height). */
-  gamePreferred?: { width?: number; height?: number } | null;
+  /** The game's preferred presentation (footprint + layout) from the bootstrap
+   *  `game` block (was the deleted manifest message's preferredWidth/Height).
+   *  `layout` feeds the shell pick when the embed leaves `layout` unset. */
+  gamePreferred?: { width?: number; height?: number; layout?: Layout } | null;
   /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
    *  `game` block, so the game-load path reuses that one round trip instead
    *  of a second `/widget/bootstrap` call.
