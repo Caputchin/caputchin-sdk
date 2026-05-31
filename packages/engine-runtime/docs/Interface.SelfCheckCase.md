@@ -3,13 +3,13 @@
 One determinism probe: a seed + the opaque trace recorded under it, optionally
  under a specific server config (defaults to `null` → the run's own defaults).
  Generic over the run's config shape so a typed `RunFn<C>` self-checks without
- a cast; defaults to the opaque ReplayConfig.
+ a cast; defaults to the opaque [ReplayConfig](TypeAlias.ReplayConfig.md).
 
 ## Type Parameters
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `C` | `ReplayConfig` |
+| `C` | [`ReplayConfig`](TypeAlias.ReplayConfig.md) |
 
 ## Properties
 

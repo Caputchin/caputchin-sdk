@@ -1,7 +1,7 @@
 # Interface: GameConfig
 
 Game widget config. Verification (the cap gate) runs when a sitekey is
- present AND `no-verify` is not set - see shouldVerify. The two
+ present AND `no-verify` is not set. The two
  concerns are orthogonal: the sitekey is the tenant key that unlocks the
  bootstrap fetch (overrides + marketplace bundle resolution), while
  `no-verify` opts out of the gate. So a game-only widget can still supply a
@@ -24,5 +24,5 @@ Game widget config. Verification (the cap gate) runs when a sitekey is
 | <a id="noverify"></a> `noVerify` | `boolean` | Boolean `no-verify` attribute: skip the cap gate but keep everything else (bootstrap overrides, marketplace resolve, the game itself). Implied true when there's no sitekey. |
 | <a id="sitekey"></a> `sitekey` | `string` \| `null` | Your public site key. Unlocks the bootstrap fetch (overrides plus marketplace bundle resolution) and, unless `no-verify` is set, the cap gate. `null` runs the game with no verification (game-only). |
 | <a id="skin"></a> `skin` | `string` \| `null` | Raw `skin` attribute value (un-resolved). Sent to the server as this mount's skin signal and resolved there against the game's manifest skins plus the scope's overrides; like locale, the game also accepts an inline JSON object (the shell does not). Also drives the widget shell's skin (the shell consumes only `_theme`). Null when omitted or empty. |
-| <a id="trigger"></a> `trigger` | `GameTrigger` | Only `manual` is settable here: you slot custom game DOM as children and drive completion via `pass()` / `fail()`. Every other trigger is derived from the layout, so this is `null` unless manual. |
+| <a id="trigger"></a> `trigger` | [`GameTrigger`](TypeAlias.GameTrigger.md) | Only `manual` is settable here: you slot custom game DOM as children and drive completion via `pass()` / `fail()`. Every other trigger is derived from the layout, so this is `null` unless manual. |
 | <a id="width"></a> `width` | [`WidgetWidth`](TypeAlias.WidgetWidth.md) | Frame width: `auto` (size to content), `full` (span the parent), or a positive pixel number. |

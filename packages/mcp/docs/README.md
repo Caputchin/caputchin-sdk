@@ -5,6 +5,7 @@
 | Type Alias | Description |
 | ------ | ------ |
 | [CreateServerOptions](TypeAlias.CreateServerOptions.md) | Options for [createServer](Function.createServer.md). |
+| [LocalTool](TypeAlias.LocalTool.md) | Descriptor for one local (offline) MCP tool. Registered in [LOCAL\_TOOLS](Variable.LOCAL_TOOLS.md) and served by `createServer` without any API call. |
 
 ## Variables
 

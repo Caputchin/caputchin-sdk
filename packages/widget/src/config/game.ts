@@ -10,7 +10,7 @@ import { isLayoutAttr } from '../layout.js';
 export type GameTrigger = 'manual' | null;
 
 /** Game widget config. Verification (the cap gate) runs when a sitekey is
- *  present AND `no-verify` is not set - see {@link shouldVerify}. The two
+ *  present AND `no-verify` is not set. The two
  *  concerns are orthogonal: the sitekey is the tenant key that unlocks the
  *  bootstrap fetch (overrides + marketplace bundle resolution), while
  *  `no-verify` opts out of the gate. So a game-only widget can still supply a

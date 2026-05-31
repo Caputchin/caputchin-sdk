@@ -1,6 +1,6 @@
 # Variable: LOCAL\_TOOLS
 
-> `const` **LOCAL\_TOOLS**: `LocalTool`[]
+> `const` **LOCAL\_TOOLS**: [`LocalTool`](TypeAlias.LocalTool.md)[]
 
 All offline (no-auth) MCP tools bundled with this package. `createServer`
 registers every entry here regardless of whether `CAPUTCHIN_TOKEN` is set.

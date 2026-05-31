@@ -194,4 +194,4 @@ async function runLocalTool(local: LocalTool, args: Record<string, unknown>): Pr
   }
 }
 
-export { LOCAL_TOOLS } from './local-tools.js';
+export { LOCAL_TOOLS, type LocalTool } from './local-tools.js';
