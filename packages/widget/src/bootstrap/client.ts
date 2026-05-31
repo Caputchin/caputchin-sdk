@@ -29,23 +29,79 @@ export interface FetchBootstrapInput {
 
 export const BOOTSTRAP_DEFAULT_TIMEOUT_MS = 2000;
 
-export async function fetchBootstrap(input: FetchBootstrapInput): Promise<BootstrapResponse | null> {
+/** The server's authoritative gate codes (409). These mean the configuration
+ *  can NEVER produce a valid round - distinct from a transient blip. */
+const GATE_ERROR_CODES: ReadonlySet<string> = new Set([
+  'gate-misconfigured',
+  'gate-game-not-installed',
+]);
+
+/** An authoritative gate rejection from /widget/bootstrap (HTTP 409). */
+export interface BootstrapGateError {
+  /** Server error code (e.g. `gate-game-not-installed`). */
+  code: string;
+  /** Human-readable, DEV-facing reason from the server. May be empty. */
+  message: string;
+}
+
+/** Three outcomes the widget must distinguish:
+ *  - `ok`      - resolved presets + (gated) ticket; mount normally.
+ *  - `gate`    - authoritative 409; surface an error, do NOT mount a round.
+ *  - `degrade` - transient (timeout / network / 5xx / malformed); fall back to
+ *                bundled-only rendering. The old "everything is null" behavior,
+ *                now scoped to NON-authoritative failures. */
+export type BootstrapResult =
+  | { kind: 'ok'; response: BootstrapResponse }
+  | { kind: 'gate'; error: BootstrapGateError }
+  | { kind: 'degrade' };
+
+export async function fetchBootstrap(input: FetchBootstrapInput): Promise<BootstrapResult> {
   const timeoutMs = input.timeoutMs ?? BOOTSTRAP_DEFAULT_TIMEOUT_MS;
   const url = buildBootstrapUrl(input);
   const { signal, cancel } = buildTimeoutSignal(timeoutMs);
   try {
     const res = await fetch(url, { signal });
-    if (!res.ok) return null;
-    const raw: unknown = await res.json();
-    return validateBootstrapResponse(raw);
+    if (res.ok) {
+      const raw: unknown = await res.json();
+      const response = validateBootstrapResponse(raw);
+      // Malformed-but-200 stays a degrade (bundled fallback), as before.
+      return response ? { kind: 'ok', response } : { kind: 'degrade' };
+    }
+    // Authoritative gate rejection: a 409 carrying a known gate code. The
+    // server says this key+game can't make a valid round, so degrading into a
+    // bundled mount would just dead-end at /verify/start (no ticket). Surface
+    // it instead. Any OTHER non-2xx (5xx, unexpected 4xx) is transient.
+    if (res.status === 409) {
+      const gate = await parseGateError(res);
+      if (gate) return { kind: 'gate', error: gate };
+    }
+    return { kind: 'degrade' };
   } catch {
     // AbortError on timeout, TypeError on network failure, SyntaxError on
-    // invalid JSON, anything else - uniform null result. The widget reads
-    // null as "no overrides, mount with bundled".
-    return null;
+    // invalid JSON, anything else - uniform degrade. The widget reads degrade
+    // as "no overrides, mount with bundled".
+    return { kind: 'degrade' };
   } finally {
     cancel();
   }
+}
+
+/** Parse a 409 body into a gate error. Returns null when the body is missing /
+ *  malformed or the code isn't an authoritative gate code (caller then treats
+ *  the 409 as a transient degrade rather than a hard error). */
+async function parseGateError(res: Response): Promise<BootstrapGateError | null> {
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return null;
+  }
+  if (typeof body !== 'object' || body === null) return null;
+  const obj = body as Record<string, unknown>;
+  const code = obj['error'];
+  if (typeof code !== 'string' || !GATE_ERROR_CODES.has(code)) return null;
+  const message = typeof obj['message'] === 'string' ? (obj['message'] as string) : '';
+  return { code, message };
 }
 
 // AbortSignal.timeout is the natural fit but is not available in every
