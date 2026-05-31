@@ -57,20 +57,27 @@ export interface ResolvedLocale {
   [key: string]: string;
 }
 
-/** Value type a skin key may carry. Drives the resolver's per-value validator
- *  (allow-list of formats / mimetypes) and the widget shell's authoring
- *  tooling. `color` accepts hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) and
- *  functional `rgb(...)` / `rgba(...)`. Asset types accept absolute URLs,
- *  bundle-relative paths (resolved against the package's bundle base, like
- *  `game-src`), and `data:` URIs whose MIME prefix is on the allow-list. */
-export type SkinValueType = 'color' | 'image' | 'audio' | 'video';
+/** Value type a skin key may carry. Drives the resolver's per-value validator.
+ *  `color` accepts hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) and functional
+ *  `rgb(...)` / `rgba(...)`. Asset types (`image` / `audio` / `video`) accept
+ *  absolute URLs, bundle-relative paths (resolved against the package's bundle
+ *  base, like `game-src`), and `data:` URIs whose MIME prefix is on the
+ *  allow-list. The scalar types (`boolean` / `number` / `range` / `list`)
+ *  behave exactly like their configuration counterparts and resolve to the
+ *  typed value (a `boolean` stays `true`, a `number` stays `8`). */
+export type SkinValueType = 'color' | 'image' | 'audio' | 'video' | 'boolean' | 'number' | 'range' | 'list';
 
-/** Schema entry for a single skin key. Bare type string short-form
- *  (`"main_color": "color"`) and full descriptor (`{ type, name, description }`)
- *  are both legal in the same `skins.schema` block. */
+/** Schema entry for a single skin key. Mirrors {@link ConfigSchemaEntry}:
+ *  a bare type string (`"main_color": "color"`), an array-literal enum
+ *  (`"pattern": ["dots","stripes"]`, short-form for `list`), or a full
+ *  descriptor. `range` and `list` REQUIRE the full descriptor because they
+ *  carry constraint data (bounds, enum); the others accept the bare descriptor. */
 export type SkinSchemaEntry =
-  | SkinValueType
-  | { type: SkinValueType; name?: string; description?: string };
+  | 'color' | 'image' | 'audio' | 'video' | 'boolean' | 'number'
+  | readonly string[]
+  | { type: 'color' | 'image' | 'audio' | 'video' | 'boolean' | 'number'; name?: string; description?: string }
+  | { type: 'list'; values: readonly string[]; name?: string; description?: string }
+  | { type: 'range'; min: number; max: number; step?: number; name?: string; description?: string };
 
 /** One skin preset declared in `caputchin.json` under `skins.presets`.
  *  Underscore-prefixed keys are metadata; every other key is a typed value
@@ -90,19 +97,22 @@ export interface SkinPreset {
   _theme?: 'light' | 'dark' | 'any';
   _default?: boolean;
   _extends?: string;
-  [key: string]: string | boolean | undefined;
+  [key: string]: string | boolean | number | undefined;
 }
 
-/** Final skin object the widget hands the game. `_extends` and `_default`
- *  are stripped during resolution; the flattened typed keys survive. Asset
- *  URLs are already resolved to absolute form (bundle-base relative paths
- *  joined; `data:` URIs verbatim). `_theme` here is always the concrete mode
- *  the skin was resolved for (`light` or `dark`, never `any`): an `any`
- *  preset reports the visitor's actual mode so the surrounding chrome stays
- *  in step. */
+/** Final skin object the widget hands the game (as `ctx.skin`). `_extends` and
+ *  `_default` are stripped during resolution; the flattened typed keys survive.
+ *  Color values are strings and asset URLs are already resolved to absolute form
+ *  (bundle-base relative paths joined; `data:` URIs verbatim). Scalar keys
+ *  (`boolean` / `number` / `range` / `list`) arrive as their typed value, the
+ *  same as `ResolvedConfig` (a `boolean` is `true`, a `number` is `8`); hence
+ *  the value union widens to `string | boolean | number`. `_theme` is always the
+ *  concrete mode the skin was resolved for (`light` or `dark`, never `any`): an
+ *  `any` preset reports the visitor's actual mode so the surrounding chrome
+ *  stays in step. */
 export interface ResolvedSkin {
   _theme: 'light' | 'dark';
-  [key: string]: string;
+  [key: string]: string | boolean | number;
 }
 
 /** Value type a configuration key may carry. Drives the resolver's per-value
