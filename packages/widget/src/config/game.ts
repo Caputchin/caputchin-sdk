@@ -33,20 +33,25 @@ export interface GameConfig {
   gameSrc: string | null;
   /** Default `auto`; defers to manifest/breakpoint. `inline | modal | fullscreen` are explicit. */
   layout: LayoutAttr;
-  /** Raw `locale` attribute value (un-resolved). The widget resolves it after
-   *  the manifest postMessage arrives (presets live in the game's manifest).
+  /** Raw `locale` attribute value (un-resolved). Sent to the server as this
+   *  mount's language signal; the server resolves it against the game's
+   *  manifest presets plus the scope's overrides and returns the resolved
+   *  preset. Unlike the shell, the game also accepts an inline JSON object
+   *  here, which the server parses and layers on top of the resolved presets.
    *  Null when omitted or empty. */
   locale: string | null;
-  /** Raw `skin` attribute value (un-resolved). Drives BOTH the game's skin
-   *  context AND the widget shell's skin (the shell consumes only `_theme`).
-   *  Resolved against the game's manifest skins after the manifest
-   *  postMessage arrives. Null when omitted or empty. */
+  /** Raw `skin` attribute value (un-resolved). Sent to the server as this
+   *  mount's skin signal and resolved there against the game's manifest skins
+   *  plus the scope's overrides; like locale, the game also accepts an inline
+   *  JSON object (the shell does not). Also drives the widget shell's skin (the
+   *  shell consumes only `_theme`). Null when omitted or empty. */
   skin: string | null;
   // No `config` attribute: gameplay config is server-authoritative. A
-  // client-authored config can't be reproduced at replay (→ false-reject) and
-  // is tamperable, so the game's config comes only from the server (the bootstrap
-  // override bank, empty at MVP → the game's own defaults; per-site config is a
-  // deferred phase). skin + locale stay client attributes (render-only).
+  // client-authored config can't be reproduced at replay (a false-reject) and
+  // is tamperable, so the game's config comes only from the server (the
+  // bootstrap-resolved preset, minted into the gate ticket). locale + skin ARE
+  // client attributes, but they are signals the server resolves and returns
+  // (it sends back the resolved presets), not values the client renders raw.
 }
 
 /**
