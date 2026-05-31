@@ -44,9 +44,10 @@ export function replay<S, A, C, V = S>(
   }
 
   const endTick = tick;
-  const { score } = engine.result(state);
+  const { score, passed } = engine.result(state);
   return {
     score,
+    passed,
     durationMs: endTick * FIXED_TIMESTEP_MS,
     endTick,
     truncated,

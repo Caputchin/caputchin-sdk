@@ -43,7 +43,7 @@ const toy = defineEngine<ToyState, ToyAction, ToyConfig>({
     return state.tick >= 64;
   },
   result(state) {
-    return { score: state.score };
+    return { score: state.score, passed: state.score > 0 };
   },
 });
 
@@ -65,6 +65,8 @@ describe('harness.replay', () => {
     expect(a.endTick).toBe(64);
     expect(a.durationMs).toBe(64 * FIXED_TIMESTEP_MS);
     expect(a.truncated).toBe(false);
+    // replay surfaces the engine's pass decision (score > 0 here).
+    expect(a.passed).toBe(true);
   });
 
   it('matches a hand-driven live loop (live == replay by construction)', () => {
@@ -110,7 +112,7 @@ describe('harness.replay', () => {
       step: (s) => s,
       tick: (s) => ({ n: s.n + 1 }),
       isOver: () => false,
-      result: (s) => ({ score: s.n }),
+      result: (s) => ({ score: s.n, passed: false }),
     });
     const out = replay(never, { seed: SEED, config: CONFIG, actions: [], maxTicks: 500 });
     expect(out.truncated).toBe(true);

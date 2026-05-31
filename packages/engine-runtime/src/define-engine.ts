@@ -8,13 +8,15 @@ import type { EngineDef } from './types';
  *
  * ```ts
  * const engine = defineEngine<MyState, MyAction, MyConfig>({
- *   init({ seed, config }) { ... },
+ *   // config is the RAW server config (or null); resolve it -> sim params here.
+ *   init({ seed, config }) { const cfg = resolve(config); ... },
  *   step(state, action) { ... },
  *   tick(state) { ... },
  *   isOver(state) { ... },
- *   result(state) { return { score: state.score }; },
+ *   // result reports BOTH the score and the engine's own pass decision.
+ *   result(state) { return { score: state.score, passed: state.score >= state.cfg.goal }; },
  * });
- * export const run = toRun(engine, { config, maxTicks, passed });
+ * export const run = toRun(engine, { maxTicks });
  * ```
  */
 export function defineEngine<S, A = unknown, C = unknown, V = S>(

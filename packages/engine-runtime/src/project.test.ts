@@ -16,7 +16,7 @@ const withoutView = defineEngine<S, { kind: string }, unknown>({
   step: (s) => s,
   tick: (s) => ({ ...s, tick: s.tick + 1, score: s.score + 1 }),
   isOver: (s) => s.tick >= 3,
-  result: (s) => ({ score: s.score }),
+  result: (s) => ({ score: s.score, passed: true }),
 });
 
 const withView = defineEngine<S, { kind: string }, unknown, { score: number }>({
