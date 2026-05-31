@@ -7,7 +7,3 @@ coverage/
 .env
 qa-notes.md
 qa-notes/
-
-# Generated TypeDoc markdown (emitted by `pnpm docs`; the package source +
-# TSDoc comments are the source of truth, regenerated on every docs run).
-docs-dist/

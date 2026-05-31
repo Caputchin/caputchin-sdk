@@ -3,32 +3,45 @@ import type { Layout, LayoutAttr, LayoutSource } from './layout.js';
 import type { WidgetTrigger, WidgetWidth, WidgetSize, WidgetHeight } from './config/shared.js';
 
 export interface StartEventDetail {
+  /** The game identifier for a game round, or `null` for the plain
+   *  verification widget. */
   gameId: string | null;
 }
 
 export interface PassEventDetail {
   /** Wrapped token; null on `caputchin-game` without sitekey (game-only). */
   token: string | null;
+  /** Client-reported score, for analytics only. May be `null`. Never a trust
+   *  signal: the gate is the server's replay, not this value. */
   score: number | null;
+  /** Client-reported solve duration in milliseconds, for analytics only. May
+   *  be `null`. */
   durationMs: number | null;
 }
 
 export interface NicknameEventDetail {
+  /** The nickname the visitor entered. */
   nickname: string;
 }
 
 export interface ErrorEventDetail {
+  /** Stable code you branch on (for example `invalid-config`,
+   *  `verification-failed`, `game-load-failed`). */
   code: ErrorCode;
+  /** Human-readable description of what happened. */
   message: string;
   /** `warn` for graceful-degradation paths (invalid-config, invalid-call);
    *  `error` for hard failures (verification-failed, game-load-failed,
    *  gate-unavailable, game-error-relayed). Customers filter via this without
    *  keying off codes. */
   severity: ErrorSeverity;
+  /** Present when `code` is a generalization of a more specific internal
+   *  reason; carries that raw reason for diagnostics only. */
   originalCode?: string;
 }
 
 export interface DialogVisibilityDetail {
+  /** Which overlay layout the dialog uses: `modal` or `fullscreen`. */
   layout: 'modal' | 'fullscreen';
 }
 
