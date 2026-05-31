@@ -282,6 +282,44 @@ export interface GameManifest {
   };
 }
 
+/* ---------------------------------------------------------------------------
+ * Split shell files: the optional `.caputchin/` folder
+ *
+ * The three shell axes (`locales`, `skins`, `configurations`) dominate a game's
+ * `caputchin.json` (11 locale presets alone push it past 500 lines). As a
+ * leaner authoring alternative, any of them may instead live in its own file
+ * under a `.caputchin/` folder at the game root:
+ *
+ *   .caputchin/locales.json         <- the `locales` block
+ *   .caputchin/skins.json           <- the `skins` block
+ *   .caputchin/configurations.json  <- the `configurations` block
+ *
+ * Each file's top-level object IS the axis block (`{ schema?, presets }`). All
+ * three are optional; none, one, or more may exist, and `caputchin.json` stays
+ * fully valid with the axes inline.
+ *
+ * Precedence is whole-axis replace, `caputchin.json` wins: if an axis is
+ * declared in BOTH `caputchin.json` and `.caputchin/<axis>.json`, the inline
+ * block is used and the file is ignored entirely (the publish flow surfaces a
+ * warning so you know the file was dead). An axis therefore lives entirely in
+ * one place; do not split a single axis across both (schema inline + presets in
+ * the file is unsupported).
+ *
+ * Author a split file with a `satisfies` import for type-checking, e.g.
+ *
+ *   import type { LocalesFile } from '@caputchin/game-sdk';
+ *   export default { schema: { ... }, presets: { ... } } satisfies LocalesFile;
+ * ------------------------------------------------------------------------- */
+
+/** Contents of `.caputchin/locales.json` (the `locales` block of {@link GameManifest}). */
+export type LocalesFile = NonNullable<GameManifest['locales']>;
+
+/** Contents of `.caputchin/skins.json` (the `skins` block of {@link GameManifest}). */
+export type SkinsFile = NonNullable<GameManifest['skins']>;
+
+/** Contents of `.caputchin/configurations.json` (the `configurations` block of {@link GameManifest}). */
+export type ConfigurationsFile = NonNullable<GameManifest['configurations']>;
+
 export type GameFactory = (
   container: HTMLElement,
   bridge: Bridge,
