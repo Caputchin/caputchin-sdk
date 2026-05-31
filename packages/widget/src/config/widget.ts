@@ -15,14 +15,23 @@ export interface WidgetConfig {
   height: WidgetHeight;
   size: WidgetSize;
   /** Raw `locale` attribute value. Resolved against the widget's bundled
-   *  shell presets at mount. Inline JSON is rejected (the widget shell
-   *  only accepts preset names + ISO codes); omitted/empty means browser
-   *  auto. */
+   *  shell presets at mount. On this shell widget the attribute is a
+   *  selector only: preset names + ISO codes are accepted, inline JSON is
+   *  rejected. This is a shell-specific choice (resolver flag
+   *  `rejectInlineJson`), NOT a global widget rule; the game widget
+   *  (`<caputchin-game>`) deliberately accepts inline-JSON locale so authors
+   *  can hand-author a custom game locale on the attribute. The shell pushes
+   *  custom authoring to CSS / server-served overrides instead. Omitted/empty
+   *  means browser auto. */
   locale: string | null;
   /** Raw `skin` attribute value. Resolved against the widget's bundled
-   *  skin presets at mount. Inline JSON is rejected; only `<mode>` /
-   *  `auto` / `<skin-name>` are accepted. Omitted/empty means auto
-   *  (honors `prefers-color-scheme`). */
+   *  skin presets at mount. Selector only on this shell widget: `<mode>` /
+   *  `auto` / `<skin-name>` are accepted, inline JSON is rejected
+   *  (`rejectInlineJson`). Same shell-specific scope as `locale` above: the
+   *  game widget accepts inline-JSON skin, the shell does not, since the
+   *  shell chrome is already CSS-styleable (`--cpt-skin-*` + `::part()`) and
+   *  white-labelable. Omitted/empty means auto (honors
+   *  `prefers-color-scheme`). */
   skin: string | null;
   // No `config` attribute: shell configuration (brand-strip links, etc.) is
   // server-authoritative - it comes from the bootstrap override bank, falling
