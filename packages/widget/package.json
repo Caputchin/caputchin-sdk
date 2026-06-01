@@ -26,10 +26,14 @@
     ".": {
       "types": "./dist/widget.d.ts",
       "import": "./dist/widget.mjs"
+    },
+    "./jsx": {
+      "types": "./jsx.d.ts"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "jsx.d.ts"
   ],
   "sideEffects": [
     "./dist/widget.mjs",
