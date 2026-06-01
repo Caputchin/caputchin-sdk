@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v2.1.0...game-sdk-v3.0.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **game-sdk:** allow scalar skin field types (boolean/number/range/list), resolved typed
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg
+* marketplace.author block supersedes author_email
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069)
+
+### Features
+
+* **game-sdk:** allow scalar skin field types (boolean/number/range/list), resolved typed ([6abaace](https://github.com/Caputchin/caputchin-sdk/commit/6abaace7f204000f53ace128f9657343420d5ff4))
+* **game-sdk:** export LocalesFile/SkinsFile/ConfigurationsFile types for .caputchin/ split files ([5d2ad95](https://github.com/Caputchin/caputchin-sdk/commit/5d2ad956256c1eaf8fcc7aa91deae6c5e4041176))
+* **game-sdk:** optional marketplace.author_email for verification-fail notifications ([7bd5594](https://github.com/Caputchin/caputchin-sdk/commit/7bd5594b115d863c02438cc728b5099ea1c407e4))
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg ([a0a95ad](https://github.com/Caputchin/caputchin-sdk/commit/a0a95addcb73784649836cf7241aa2b80723eab1))
+* **game-sdk:** support _theme "any" for skins that work in both light and dark ([7bc20d1](https://github.com/Caputchin/caputchin-sdk/commit/7bc20d1630e2fac0aa5ca1b5353bb635d34a2bae))
+* **game-sdk:** type the optional run + run.modules block on GameManifest ([a44c2c6](https://github.com/Caputchin/caputchin-sdk/commit/a44c2c623597e566fbe1afae6b7c4dec3dad03b6))
+* marketplace.author block supersedes author_email ([a688f68](https://github.com/Caputchin/caputchin-sdk/commit/a688f68e2a629adcc61186784c52a04df512843b))
+* **sdk:** honor game manifest preferred.layout in widget when embed layout unset ([303cad3](https://github.com/Caputchin/caputchin-sdk/commit/303cad33f5363f551154bdd3a8e492e123a25d28))
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069) ([54a9e2c](https://github.com/Caputchin/caputchin-sdk/commit/54a9e2c25b9ccae8d9b7ef50fe7f26424499a1ce))
+* **widget:** honor preferred.width/height "full" footprint from caputchin.json ([559e68c](https://github.com/Caputchin/caputchin-sdk/commit/559e68c67785c58df79f9df135ad09b6204e6a53))
+
 ## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v2.0.0...game-sdk-v2.1.0) (2026-05-24)
 
 

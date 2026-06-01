@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.3.0...widget-v3.0.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg
+* **widget:** consume server-resolved presets, drop resolvers + config attr + manifest handshake
+* **widget:** remove client config attribute; config is server-authoritative
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069)
+
+### Features
+
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg ([a0a95ad](https://github.com/Caputchin/caputchin-sdk/commit/a0a95addcb73784649836cf7241aa2b80723eab1))
+* **sdk:** honor game manifest preferred.layout in widget when embed layout unset ([303cad3](https://github.com/Caputchin/caputchin-sdk/commit/303cad33f5363f551154bdd3a8e492e123a25d28))
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069) ([54a9e2c](https://github.com/Caputchin/caputchin-sdk/commit/54a9e2c25b9ccae8d9b7ef50fe7f26424499a1ce))
+* **widget:** allow game-src on gated key when server picked a custom-replayable id (P13 slice 2) ([e617d7a](https://github.com/Caputchin/caputchin-sdk/commit/e617d7aa6f0129c66d3c2c4555eaf80273d0bd21))
+* **widget:** allow wasm-unsafe-eval in the game-iframe CSP for WASM game engines ([2606f3e](https://github.com/Caputchin/caputchin-sdk/commit/2606f3e234099f338997d3c7cfb0806d355fb7e5))
+* **widget:** consume server-resolved presets, drop resolvers + config attr + manifest handshake ([55bc414](https://github.com/Caputchin/caputchin-sdk/commit/55bc414598de62f9d4e54f822892cd2f62747dbe))
+* **widget:** game-gate ticket plumbing; reject game-src/manual on gated keys (Phase 11) ([3eca619](https://github.com/Caputchin/caputchin-sdk/commit/3eca6194b2edcfcf7b4369ffadcc4f1ed76b3a74))
+* **widget:** honor preferred.width/height "full" footprint from caputchin.json ([559e68c](https://github.com/Caputchin/caputchin-sdk/commit/559e68c67785c58df79f9df135ad09b6204e6a53))
+* **widget:** pre-resolve locale + skin signals client-side before bootstrap ([4c9bae9](https://github.com/Caputchin/caputchin-sdk/commit/4c9bae9e361b5e362eacb9b9afe868979b6a4a1a))
+* **widget:** remove client config attribute; config is server-authoritative ([c4dbc58](https://github.com/Caputchin/caputchin-sdk/commit/c4dbc580083ef7f80d6745cdc2adcc88b2e80fc9))
+* **widget:** surface bootstrap 409 gate rejects as a gate-unavailable error instead of silently degrading ([87be9a7](https://github.com/Caputchin/caputchin-sdk/commit/87be9a789ead42d17c7ea38588803fc8bf89f7ac))
+
+
+### Bug Fixes
+
+* **sdk:** resolve internal package types from source via central tsconfig paths ([8eb3e4c](https://github.com/Caputchin/caputchin-sdk/commit/8eb3e4c7f9b39d94ff0867c93ebee2a156fa60e5))
+* **widget:** allow loopback game-src URLs + surface game-load/build failures via the error event instead of swallowing ([fc988d1](https://github.com/Caputchin/caputchin-sdk/commit/fc988d1552d84745b1fbf8c6ccc15cf4b6f4a3a7))
+* **widget:** close iframe kickoff/register race that intermittently fired game-not-registered ([812fd2f](https://github.com/Caputchin/caputchin-sdk/commit/812fd2ff4e99137fede0f011615d43f0c4b9ef8c))
+* **widget:** drop redeems for disposed widgets + remove cap-widget element on dispose ([a801100](https://github.com/Caputchin/caputchin-sdk/commit/a801100b6a8e745ddfebb19eb14eb7b5f647ba08))
+* **widget:** ignore repeat game passes, record one round per session ([9100cbc](https://github.com/Caputchin/caputchin-sdk/commit/9100cbc510210b7092848209860d226b1687d8e6))
+* **widget:** keyless game mounts now bootstrap for preferred size + presets; gate kickoff on iframe load ([c205938](https://github.com/Caputchin/caputchin-sdk/commit/c2059384eaa32c43413b583b2cfd75d52b3ce535))
+* **widget:** silence post-dispose noise via widget.error override + state.connected guards ([d6da1c0](https://github.com/Caputchin/caputchin-sdk/commit/d6da1c0bedb2d76ca2d9745c74c0b1b0c9566e6b))
+
 ## [2.3.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.2.0...widget-v2.3.0) (2026-05-24)
 
 
