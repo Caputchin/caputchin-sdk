@@ -169,7 +169,11 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
 
 async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
   const cfg = state.config!;
-  const resolved = await resolveGameUrl(el, cfg, apiHost, () => { /* game-only has no presentation state to flip */ }, state.gameBundle ?? null);
+  const resolved = await resolveGameUrl(el, cfg, apiHost, () => {
+    // Bundle resolve failed: flip to error so the no-verify widget reflects it
+    // (parity with runGameWithVerify + the iframe-load-failed path below).
+    state.gamePresentation?.setState('error');
+  }, state.gameBundle ?? null);
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
@@ -177,6 +181,13 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
     console.warn('[caputchin] game widget mounted without sitekey + without game configured; widget is inert');
     return;
   }
+
+  // No cap solve runs on this path, but the iframe still loads + the game runs.
+  // Show the verifying state for that in-flight window so the visitor gets the
+  // same progress indicator the cap path shows (parity with runGameWithVerify +
+  // runManual). Flips to verified on game-pass, error on game-error / load-fail.
+  // Set after the inert guard so a misconfigured gameless mount stays idle.
+  state.gamePresentation?.setState('verifying');
 
   const dispatchStart = (): void => {
     if (state.gameStartedEmitted) return;

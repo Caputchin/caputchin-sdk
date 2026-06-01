@@ -1,4 +1,4 @@
-import { inspectGameConfig, shouldVerify } from '../config/game.js';
+import { inspectGameConfig } from '../config/game.js';
 import type { WidgetTrigger } from '../config/shared.js';
 import type { Layout } from '@caputchin/game-sdk';
 import type { LayoutAttr } from '../layout.js';
@@ -213,15 +213,17 @@ export class CaputchinGame extends HTMLElement {
       return;
     }
 
-    // Game-only path (no verification gate): mount + run, no trigger axis.
-    // Covers both no-sitekey and explicit `no-verify` (with a sitekey, whose
-    // overrides were still fetched above). Modal/fullscreen fall through to
-    // the trigger so the game opens on click - it just won't run the gate.
-    if (!shouldVerify(state.config) && !isManual) {
-      runGame(this, state, apiHost).catch(() => {});
-      return;
-    }
-
+    // Verification trigger axis. The no-verify / no-sitekey game-only path runs
+    // through the SAME trigger as the gated path - runGame branches to the
+    // game-only runner internally (via shouldVerify), so it never runs the cap
+    // gate. Routing it through the trigger (instead of running on mount) keeps
+    // layout behavior uniform with the gated path:
+    //   - inline → auto trigger → the game loads + the verifying indicator
+    //     shows on mount (the iframe is visible immediately).
+    //   - modal / fullscreen → click trigger → the game loads (and verifying
+    //     shows) only when the user opens the dialog, never on mount. Showing
+    //     verifying on a closed overlay's entry before any interaction was the
+    //     bug this replaced.
     state.trigger = createTriggerStrategy(derivedTrigger);
     state.triggerCtx = {
       el: this,

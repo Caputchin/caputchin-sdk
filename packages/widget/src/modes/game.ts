@@ -249,9 +249,11 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   // (re-opens after a close-mid-verify) just open the dialog; they must not
   // re-fire the trigger callbacks that start a second verification session.
   let firstActivationFired = false;
-  // Mirrors the most recent state passed to setState. Used in close() to
-  // decide whether to revert the simple-shield back to clickable idle when
-  // the user dismisses the dialog before the game finishes.
+  // Mirrors the most recent state passed to setState. close() uses it to show
+  // the entry as clickable idle when the user dismisses the dialog mid-verify;
+  // open() uses it to restore the verifying indicator on re-entry. The session
+  // (game + cap) keeps running while the dialog is hidden, so the state must
+  // survive a dismissal - it is only masked on the entry, never discarded.
   let logicalState: PresentationState = 'idle';
 
   function fireActivate(): void {
@@ -318,8 +320,11 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       // (especially manual mode where their slotted game needs to know).
       dialog.addEventListener('close', () => {
         signalVisibility(iframeSlot, false);
+        // Dismissed mid-verify: mask the entry as clickable idle so the user
+        // can re-open. Do NOT clear logicalState - the game + cap keep running
+        // in the background while hidden; open() re-asserts 'verifying' on
+        // re-entry so the indicator never stays stuck at idle (start state).
         if (logicalState === 'verifying') {
-          logicalState = 'idle';
           subSimple?.setState('idle');
         }
         emitDialogHidden(host, layout as 'modal' | 'fullscreen');
@@ -411,6 +416,10 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         });
         backdropWired = true;
       }
+      // Restore the in-flight indicator on re-entry: a mid-verify dismissal
+      // masked the entry as idle (clickable), but the session never stopped.
+      // Terminal states (verified / error) are left as-is.
+      if (logicalState === 'verifying') subSimple?.setState('verifying');
       signalVisibility(iframeSlot, true);
       emitDialogShown(host, layout as 'modal' | 'fullscreen');
     },
