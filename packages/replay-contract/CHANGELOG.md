@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-contract-v0.2.0...replay-contract-v0.3.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sdk:** server-supplied config in the replay run contract (seed, config, trace)
+
+### Features
+
+* **replay-contract:** add @caputchin/replay-contract (run/seed/verdict contract for game replay) ([7547432](https://github.com/Caputchin/caputchin-sdk/commit/75474327fc12ebbbea0089e05b3d436ef7ebe351))
+* **sdk:** server-supplied config in the replay run contract (seed, config, trace) ([eb55f94](https://github.com/Caputchin/caputchin-sdk/commit/eb55f94810c6a2c0addfa5193a6d743e543d6ac6))
+
 ## [0.2.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-contract-v0.1.0...replay-contract-v0.2.0) (2026-06-01)
 
 

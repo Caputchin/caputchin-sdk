@@ -1,5 +1,41 @@
 # Changelog
 
+## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.1...mcp-v3.0.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler per ADR-0052
+* **mcp:** rename plan tiers free→solo, paid→alpha (BREAKING)
+* **mcp:** drop ratelimit_duration_ms from cap-config tool (platform-locked at 1 minute)
+
+### Features
+
+* **backend:** scaffold @caputchin/mcp skeleton with stdio MCP server ([cb95812](https://github.com/Caputchin/caputchin-sdk/commit/cb95812b55520ad3717c746e549bde364c3c27ef))
+* **mcp:** add caputchin_get_site_cap_config + caputchin_update_site_cap_config tools ([9d02bde](https://github.com/Caputchin/caputchin-sdk/commit/9d02bde2af3fb60459c4107c57de1f2633ed986f))
+* **mcp:** add local-only snippet tools, tests, README ([5dfc0bd](https://github.com/Caputchin/caputchin-sdk/commit/5dfc0bdda5a0d8d9b32e3ee1753d3eaac5cb02b0))
+* **mcp:** add me/* tools — get_account, change_email, list_sessions, revoke_session ([1d3f7a2](https://github.com/Caputchin/caputchin-sdk/commit/1d3f7a2ebc31faca243bf1bc0d9c22bae57ca373))
+* **mcp:** drop allowed_domains from create/update site tools (cap-side cors_origins is SoT) ([dc50509](https://github.com/Caputchin/caputchin-sdk/commit/dc50509bce14c93c44a33de03dec023855d718fb))
+* **mcp:** drop ratelimit_duration_ms from cap-config tool (platform-locked at 1 minute) ([8b9f3c0](https://github.com/Caputchin/caputchin-sdk/commit/8b9f3c0cab26c1ad2b21ad82b9eb9ea6d39ee7a4))
+* **mcp:** drop webhook secret from hosted-verification, add test delivery tool ([c634671](https://github.com/Caputchin/caputchin-sdk/commit/c6346717c6c5b9cc3968bc905e0b443c78c6a7ce))
+* **mcp:** proxy /api/mcp catalogue, drop bundled tools.ts and bridgeHandler per ADR-0052 ([3d3ab0f](https://github.com/Caputchin/caputchin-sdk/commit/3d3ab0f7cdcb8d0ff04bb2a2d71023a671a5b427))
+* **mcp:** refresh ratelimit_max description (per-second window, plan-capped) ([d5669e2](https://github.com/Caputchin/caputchin-sdk/commit/d5669e260fe9909301448a8c530efcd5e6595b47))
+* **mcp:** rename plan tiers free→solo, paid→alpha (BREAKING) ([882d359](https://github.com/Caputchin/caputchin-sdk/commit/882d3597414fa0b71c580a5510525a8a6016af32))
+* **mcp:** wire management tools (sites, tokens, hosted-verification) ([fc52497](https://github.com/Caputchin/caputchin-sdk/commit/fc524976fc58e435156fca51637b354f25b1803e))
+
+
+### Bug Fixes
+
+* **mcp:** address QA minors M9 M10 M11 in README and tools tests ([01ee659](https://github.com/Caputchin/caputchin-sdk/commit/01ee6592b73fd8aa4aece47c76b22ee2a6a2b582))
+* **mcp:** consolidate tests, rename env var, redact tokens, catch network errors ([779489b](https://github.com/Caputchin/caputchin-sdk/commit/779489be462d8bbcc50df5dfbcb2e306b15ad461))
+* **mcp:** default to the apex host and derive siteverify snippets from one env-overridable host ([26fda14](https://github.com/Caputchin/caputchin-sdk/commit/26fda145f380feb939059d658cb8f2c8d07708af))
+* **mcp:** type fetchSpy with MockInstance + add workspace verify script ([5e99e31](https://github.com/Caputchin/caputchin-sdk/commit/5e99e317de1375c43adfe86bb17824f73b984f4f))
+
+
+### Reverts
+
+* release-please PR [#10](https://github.com/Caputchin/caputchin-sdk/issues/10) due to broken title pattern config ([e0d7ef0](https://github.com/Caputchin/caputchin-sdk/commit/e0d7ef0ed6e781463588508226678a9d19528037))
+
 ## [2.0.1](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.0...mcp-v2.0.1) (2026-05-24)
 
 

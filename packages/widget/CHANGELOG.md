@@ -1,5 +1,166 @@
 # Changelog
 
+## [4.0.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.0.0...widget-v4.0.0) (2026-06-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg
+* **widget:** consume server-resolved presets, drop resolvers + config attr + manifest handshake
+* **widget:** remove client config attribute; config is server-authoritative
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069)
+* **game-sdk:** nest manifest preferred footprint as {width,height}, drop flat fields
+* **widget:** adopt locale axis and skin theme rename across resolver, elements, protocol
+* **game-sdk:** rename language axis to locale and skin _mode to _theme
+* **widget:** override-first default-selection — customer marked default wins its group over bundled (ADR-0059)
+* **widget:** marketplace lookup goes through /widget/bootstrap (ADR-0059, sitekey required)
+* **widget:** call /games/resolve with game query param (ADR-0058)
+* **sdk:** derive registry key from data-game-id; drop required manifest.id (ADR-0058)
+* **sdk:** languages presets pipeline (game-sdk 2.0 + widget 2.0)
+* **widget:** drop mode attribute on <caputchin-widget>; invisible becomes a boolean HTML attribute (was mode="invisible"|"simple")
+* **widget:** drop start() from <caputchin-game>; default build to localhost api host; pass()/fail() guard premature calls
+* **widget:** drop size from <caputchin-game> (implicit per layout); drop setNickname from <caputchin-widget>
+* **widget:** drop trigger from <caputchin-game> (implicit per layout); add height to <caputchin-widget>; dialog close keeps iframe alive with audio mute
+* **widget:** split into <caputchin-widget> (cap) and <caputchin-game> (game host)
+* **widget:** rebuild public API to mode/trigger split with graceful validation
+* **sdk:** rename bridge.complete to bridge.pass for success-only semantics
+
+### Features
+
+* **ci:** add CI workflow with codecov coverage upload ([727ad0d](https://github.com/Caputchin/caputchin-sdk/commit/727ad0dd8c7f1d98d4945269a906636b2c76da52))
+* **frontend:** scaffold @caputchin/widget and @caputchin/game-sdk skeleton packages ([ef9d444](https://github.com/Caputchin/caputchin-sdk/commit/ef9d44434bd76a4168df6cb4f9ac99b8666bc579))
+* **game-sdk:** nest manifest preferred footprint as {width,height}, drop flat fields ([ca8a1ac](https://github.com/Caputchin/caputchin-sdk/commit/ca8a1ac448f807a0f819814cbc3b1b95bcce639c))
+* **game-sdk:** register() takes only the factory; drop the vestigial manifest arg ([0d28eed](https://github.com/Caputchin/caputchin-sdk/commit/0d28eed32557655477eb60502026c52d51225abc))
+* **game-sdk:** rename language axis to locale and skin _mode to _theme ([2bd672c](https://github.com/Caputchin/caputchin-sdk/commit/2bd672c5c761e7ea92b60472efbc0b872d820ef5))
+* **sdk:** add optional languages.schema for per-key docs + tokens ([4d04124](https://github.com/Caputchin/caputchin-sdk/commit/4d04124cbd822dc32be7f3cfc7d344c747c97446))
+* **sdk:** derive registry key from data-game-id; drop required manifest.id (ADR-0058) ([79c6123](https://github.com/Caputchin/caputchin-sdk/commit/79c61231899ce9a07db18101373b1eec517daea5))
+* **sdk:** honor game manifest preferred.layout in widget when embed layout unset ([487ecd6](https://github.com/Caputchin/caputchin-sdk/commit/487ecd6601c076c36f858c2d876e8ea040f3584a))
+* **sdk:** languages presets pipeline (game-sdk 2.0 + widget 2.0) ([0df53ac](https://github.com/Caputchin/caputchin-sdk/commit/0df53ac520e4fac7d11dfb23c0a2e74bdcb909f2))
+* **sdk:** seed-in/trace-out replay contract across game-sdk + widget (ADR-0069) ([27733ce](https://github.com/Caputchin/caputchin-sdk/commit/27733ce81ce16e781a5c4d5e4e3fc56dd201e1e2))
+* **widget,game-sdk:** auto-measure game's first-rendered child via ResizeObserver + bridge.setSize(w,h) escape hatch; widget re-applies iframe size from dimensions-measured message ([e500aeb](https://github.com/Caputchin/caputchin-sdk/commit/e500aebfe503881982519af119060225429051a9))
+* **widget:** "see no data" tagline (three-wise-monkeys riff on the Caputchin brand) ([b58f2de](https://github.com/Caputchin/caputchin-sdk/commit/b58f2de7ad30fdbea2ef296885757aa09b557c95))
+* **widget:** &lt;caputchin-widget&gt; lang attr; chrome→shell; inline JSON shell signals; height=full ([973807d](https://github.com/Caputchin/caputchin-sdk/commit/973807d9b8696afe7c18ed7a39192a787d25000d))
+* **widget:** add 3-layout system (inline/modal/fullscreen) with auto resolution and trigger checkbox ([faa27c5](https://github.com/Caputchin/caputchin-sdk/commit/faa27c50bf18cd4765d04b0b3dcd9d0acdbee215))
+* **widget:** add game-only mode (skips Cap, hosts game iframe only) ([57abb99](https://github.com/Caputchin/caputchin-sdk/commit/57abb992c7f0b6f8005dda81b01408dd93ddf253))
+* **widget:** add no-verify attribute decoupling game-only from sitekey absence (ADR-0049) ([173930a](https://github.com/Caputchin/caputchin-sdk/commit/173930aff4398159dbcd6922a5963e7877f6adbf))
+* **widget:** add size="normal"|"compact" attribute + ensure every inner element has a `part` ([d50fe44](https://github.com/Caputchin/caputchin-sdk/commit/d50fe44eedb8b6f2f5da04bc481943506e6e1d11))
+* **widget:** add width="auto"|"full" attribute (default auto = fit-content) ([8dfa77f](https://github.com/Caputchin/caputchin-sdk/commit/8dfa77fd46ac6c308f94ffbcae291690e2ac4101))
+* **widget:** adopt locale axis and skin theme rename across resolver, elements, protocol ([4a81e5b](https://github.com/Caputchin/caputchin-sdk/commit/4a81e5b63475d18ddcb27c7d64244002e0cdeda9))
+* **widget:** allow customer-configured skin asset origins in the game frame CSP ([80a174f](https://github.com/Caputchin/caputchin-sdk/commit/80a174f75ef9d190a4d9174203fe699d9facd2a1))
+* **widget:** allow game-src on gated key when server picked a custom-replayable id (P13 slice 2) ([bd3cd4d](https://github.com/Caputchin/caputchin-sdk/commit/bd3cd4dc3b1f81ed22d5229f0fdd7048c6b797b4))
+* **widget:** allow wasm-unsafe-eval in the game-iframe CSP for WASM game engines ([f6b836b](https://github.com/Caputchin/caputchin-sdk/commit/f6b836b72fdc3fc9ec8f2f0f5cecf915aceeb447))
+* **widget:** animate modal/fullscreen dialog show + hide via [@starting-style](https://github.com/starting-style) + allow-discrete (with reduced-motion fallback) ([44df6fe](https://github.com/Caputchin/caputchin-sdk/commit/44df6fee95a75d137c84f7d5de69a59915e6f9ab))
+* **widget:** apply per-game override banks to the game iframe at runtime (ADR-0059) ([0e101aa](https://github.com/Caputchin/caputchin-sdk/commit/0e101aafaead624b4de93c1d47e460902c522ecc))
+* **widget:** bootstrap client + two-layer cascade override (ADR-0059) ([c771f35](https://github.com/Caputchin/caputchin-sdk/commit/c771f359c271cd23bdab9f253e09e714ec6439ae))
+* **widget:** brand link hovers green with underline on the Caputchin wordmark ([d1ded63](https://github.com/Caputchin/caputchin-sdk/commit/d1ded63ebea1c2ef03c1c8342868611e015286ef))
+* **widget:** call /games/resolve with game query param (ADR-0058) ([f7d8376](https://github.com/Caputchin/caputchin-sdk/commit/f7d8376e4dc55be37444c438d1ea2924e9658fbf))
+* **widget:** center the game iframe inside modal + fullscreen dialogs (drop iframe stretch in fullscreen) ([1cea8d0](https://github.com/Caputchin/caputchin-sdk/commit/1cea8d00f6ffc029b5999c222d1a3fe74ead56d2))
+* **widget:** configurations axis with valibot-backed type validation + brand link wiring ([407c979](https://github.com/Caputchin/caputchin-sdk/commit/407c9798059125da3390e2b3a044c8c2c1314fde))
+* **widget:** consume server-resolved presets, drop resolvers + config attr + manifest handshake ([1d3c03f](https://github.com/Caputchin/caputchin-sdk/commit/1d3c03fd6f2f43e711538970ddd24eedff0f44f9))
+* **widget:** drop checkbox; shield is the only indicator (clickable shields get chevron hint + breathing pulse) ([222837c](https://github.com/Caputchin/caputchin-sdk/commit/222837cb559f4671069c9217bea1def6512e1ac4))
+* **widget:** drop mode attribute on &lt;caputchin-widget&gt;; invisible becomes a boolean HTML attribute (was mode="invisible"|"simple") ([28db5be](https://github.com/Caputchin/caputchin-sdk/commit/28db5be76f1ff075b1649efc276ffcc91e0c25fa))
+* **widget:** drop size from &lt;caputchin-game&gt; (implicit per layout); drop setNickname from &lt;caputchin-widget&gt; ([9c97e35](https://github.com/Caputchin/caputchin-sdk/commit/9c97e353d4ceece5b1d01ca5291e18ad8b087e74))
+* **widget:** drop start() from &lt;caputchin-game&gt;; default build to localhost api host; pass()/fail() guard premature calls ([ecbff3a](https://github.com/Caputchin/caputchin-sdk/commit/ecbff3a4fce9d9cceb48fa5d00e4839ea2b726de))
+* **widget:** drop trigger from &lt;caputchin-game&gt; (implicit per layout); add height to &lt;caputchin-widget&gt;; dialog close keeps iframe alive with audio mute ([93145fb](https://github.com/Caputchin/caputchin-sdk/commit/93145fb8d503d1adecb9b2c58821df09bee1fd71))
+* **widget:** expose author bridge.error code via error.detail.originalCode ([f42bf0c](https://github.com/Caputchin/caputchin-sdk/commit/f42bf0cf13d3f503824aae82984641356768ec92))
+* **widget:** game modal/fullscreen — simple checkbox opens dialog with iframe inside ([3819ac8](https://github.com/Caputchin/caputchin-sdk/commit/3819ac8592dca3cba4919bd4310e8f93fe302fd0))
+* **widget:** game preferred dimensions in manifest; width/height attrs accept px to override ([570a986](https://github.com/Caputchin/caputchin-sdk/commit/570a9869653dc6eea3d3f5c52647c16f66ed14ef))
+* **widget:** game-gate ticket plumbing; reject game-src/manual on gated keys (Phase 11) ([46b3dcc](https://github.com/Caputchin/caputchin-sdk/commit/46b3dccb3a58033783284e75e4cd91cf916efcd2))
+* **widget:** grid layout for brand — logo centered col 1, wordmark+tag stacked col 2 ([95a00c6](https://github.com/Caputchin/caputchin-sdk/commit/95a00c6d0263b1262c1eb93a27f663a5fd6fa25a))
+* **widget:** hide checkbox label on narrow viewports (icon + brand carry the meaning) ([2296f59](https://github.com/Caputchin/caputchin-sdk/commit/2296f59cd7f0535926f5085a2ea53c7b24c31ccf))
+* **widget:** honor preferred.width/height "full" footprint from caputchin.json ([0865de1](https://github.com/Caputchin/caputchin-sdk/commit/0865de15d6cb1630c810455cc696f2212c1f164e))
+* **widget:** implement Cap client, element, modes — full verification pipeline ([d225646](https://github.com/Caputchin/caputchin-sdk/commit/d2256461a05eda2755003a2ac40e0aef8120b9ed))
+* **widget:** implement iframe layer — srcdoc builder, runtime bootstrap, IframeHost ([502f8ec](https://github.com/Caputchin/caputchin-sdk/commit/502f8ecc4fea2c64dffd32f00d285599b727a0b8))
+* **widget:** implement pure modules — config, errors, types, pool, token, resolver, protocol ([2abe118](https://github.com/Caputchin/caputchin-sdk/commit/2abe118f9c4b3128df40927365dac0c75f17f739))
+* **widget:** inline game frame — bordered iframe + brand strip below as one panel ([3172c3e](https://github.com/Caputchin/caputchin-sdk/commit/3172c3eceb2b55112d533dae1f3f50585cfb5b40))
+* **widget:** inline real Caputchin logo in brand block (replaces C-disc placeholder) ([249cf52](https://github.com/Caputchin/caputchin-sdk/commit/249cf5292fd759e3aed900427f5927633f2b3b93))
+* **widget:** isolate simple presentation in shadow DOM; ::part is the sole styling surface ([9cef44f](https://github.com/Caputchin/caputchin-sdk/commit/9cef44f473efe61f9d23228f18b211786149b793))
+* **widget:** isolate widgets via URL-routed custom-fetch — drop solveQueue + _activeSolvingEl ([100fc7f](https://github.com/Caputchin/caputchin-sdk/commit/100fc7f785bf5f81ae9db5184b89489b31b29d84))
+* **widget:** localize widget shell to the 11 official languages ([39eb3e4](https://github.com/Caputchin/caputchin-sdk/commit/39eb3e41362b9635a877ccc995bf1a41d374dfcb))
+* **widget:** manual mode supports multi-round pass() — first call releases cap gate, subsequent calls fire /verify/pass with locked token ([7764148](https://github.com/Caputchin/caputchin-sdk/commit/7764148e1aa857b7e4cfb042e61d93c6f3efff43))
+* **widget:** marketplace lookup goes through /widget/bootstrap (ADR-0059, sitekey required) ([3ac951e](https://github.com/Caputchin/caputchin-sdk/commit/3ac951e58319059995de7c54d9b49553b874178d))
+* **widget:** multi-round — subsequent bridge.pass fires pass event with locked token + new score ([da7acda](https://github.com/Caputchin/caputchin-sdk/commit/da7acda749efc5831855a51c9e5b945dff964219))
+* **widget:** pill mode = branded badge with status replacing tag (Turnstile-style) ([bb6dc6b](https://github.com/Caputchin/caputchin-sdk/commit/bb6dc6b180d5454f096a997252386c7660ff873a))
+* **widget:** pre-resolve locale + skin signals client-side before bootstrap ([652a8f8](https://github.com/Caputchin/caputchin-sdk/commit/652a8f807f95b64d899baa907e20581494a414f4))
+* **widget:** rebuild public API to mode/trigger split with graceful validation ([b248e8d](https://github.com/Caputchin/caputchin-sdk/commit/b248e8d77f71d59baa3459b0e26c3eb2692a58c2))
+* **widget:** remove client config attribute; config is server-authoritative ([a984732](https://github.com/Caputchin/caputchin-sdk/commit/a984732cf4fb5f8092db421ebd58c19690558803))
+* **widget:** resolve marketplace game bundles without a sitekey ([5a52712](https://github.com/Caputchin/caputchin-sdk/commit/5a52712248a23d8c5676c09dc0ecd009996afe81))
+* **widget:** responsive simple panel — flex-wrap, fit-content width, mobile media query ([6aad8d0](https://github.com/Caputchin/caputchin-sdk/commit/6aad8d0982974c9b934b3ccf2de8620714398047))
+* **widget:** restore always-on iframe auto-measure observers (ResizeObserver + MutationObserver) with grow-only guard so post-game UI shifts re-flow the iframe up but never down ([21fe0ed](https://github.com/Caputchin/caputchin-sdk/commit/21fe0ede4236e02ca9ad366e8475d9ecdfaadf87))
+* **widget:** scaffold package — Cap dep, vitest, two-pass tsup build, env vars ([aee9f49](https://github.com/Caputchin/caputchin-sdk/commit/aee9f49b74a2727c3493b258bf60814c126ba712))
+* **widget:** SDK auto-sizes iframe from document.documentElement scrollWidth/Height (works for CSS-percentage layouts, not just intrinsic-sized roots) — single-shot, disconnects after 2 RAFs ([c59f4fe](https://github.com/Caputchin/caputchin-sdk/commit/c59f4fec85030b64f8a97e46ac16e1d551e75ecc))
+* **widget:** ship cap.js wasm + pako in dist, point cap.js at them same-origin (no jsDelivr) ([cd4d6c4](https://github.com/Caputchin/caputchin-sdk/commit/cd4d6c4b1839907c26fbc8325595ce875e0dc4a8))
+* **widget:** simple-mode brand is a single link to /legal, drop fake Privacy/Terms labels ([f9caae4](https://github.com/Caputchin/caputchin-sdk/commit/f9caae48198ee365276458416fd1e458eea623f2))
+* **widget:** size="compact" now flattens to a single inline row (logo · checkbox · brand · tag) ([cf83a28](https://github.com/Caputchin/caputchin-sdk/commit/cf83a28114644dd0b966055f4908561c9e48c86e))
+* **widget:** skin axis with built-in light/dark + typed asset validation + ctx.skin ([6518157](https://github.com/Caputchin/caputchin-sdk/commit/6518157607e33222d4fbe3444fa390688d57d33c))
+* **widget:** split into &lt;caputchin-widget&gt; (cap) and &lt;caputchin-game&gt; (game host) ([5c4fbfc](https://github.com/Caputchin/caputchin-sdk/commit/5c4fbfc1f68b66ccf28529317ee29cfd82183c76))
+* **widget:** status-pill UI for simple form-submit/manual + two-link brand block ([b4d01c8](https://github.com/Caputchin/caputchin-sdk/commit/b4d01c841dd29845dc8cc102c367721190f50106))
+* **widget:** surface bootstrap 409 gate rejects as a gate-unavailable error instead of silently degrading ([381c7c8](https://github.com/Caputchin/caputchin-sdk/commit/381c7c8e29bb9451ff0b1715f5508e65aea631c8))
+* **widget:** trigger=manual on &lt;caputchin-game&gt; (slot pattern, pass/fail methods, dialog visibility events, severity field on errors) ([2521849](https://github.com/Caputchin/caputchin-sdk/commit/25218494b88c0b374f34551f41f28dbf6a467c88))
+* **widget:** unify simple presentation across triggers; state-text label replaces 'I'm not a robot'; demo gains reload button + optional form input ([e244524](https://github.com/Caputchin/caputchin-sdk/commit/e24452433603cbbe1a68bf5e273c05cb0e152ea8))
+* **widget:** width/height on &lt;caputchin-game&gt; sizes the outer chrome (inline frame OR modal/fullscreen entry checkbox), not the iframe; modal dialog shrink-wraps to game ([b98b637](https://github.com/Caputchin/caputchin-sdk/commit/b98b637f79500d43a1225b2fe733164cce75683c))
+
+
+### Bug Fixes
+
+* **ci:** align coverage thresholds; add permissions+concurrency to ci.yml; fix codecov target ([f648c2c](https://github.com/Caputchin/caputchin-sdk/commit/f648c2ccf9bc4ce8555cdfc82265ba8c3c401f5e))
+* **sdk:** resolve internal package types from source via central tsconfig paths ([57685e8](https://github.com/Caputchin/caputchin-sdk/commit/57685e85a96e814d314103a05813c2f8b0e92f57))
+* **widget:** accept same-origin absolute paths for game-src ([4ed4be5](https://github.com/Caputchin/caputchin-sdk/commit/4ed4be5bc3313b8405c614d11145f4c4a984a2b0))
+* **widget:** address M1-M6 phase-1 minor findings ([86077fb](https://github.com/Caputchin/caputchin-sdk/commit/86077fb557a0ca0bcf6155dbb711f87a3a14758f))
+* **widget:** address QA cycle-1 findings F1-F9 ([9f08de8](https://github.com/Caputchin/caputchin-sdk/commit/9f08de8d8b26c57952cfb7468ea09a79bbf9da5b))
+* **widget:** align game-sdk bridge contract — shared types, error/complete shape, code forwarding ([eb532d8](https://github.com/Caputchin/caputchin-sdk/commit/eb532d8707cb5067bf75de678be138ca883cb09a))
+* **widget:** allow loopback game-src URLs + surface game-load/build failures via the error event instead of swallowing ([453d809](https://github.com/Caputchin/caputchin-sdk/commit/453d809713863a045b43eb58e3345c5c8ddf1e6c))
+* **widget:** bigger logo (28px), fix tag-link hover underline (specificity) ([9943dae](https://github.com/Caputchin/caputchin-sdk/commit/9943dae5096f942607a5b21d6842736938276dec))
+* **widget:** bump narrow-viewport breakpoint to 28rem so common phones (360-414px) trigger it ([d318359](https://github.com/Caputchin/caputchin-sdk/commit/d318359187dbef2df3223cb445f5d3b2c1de5d50))
+* **widget:** close iframe kickoff/register race that intermittently fired game-not-registered ([71126c6](https://github.com/Caputchin/caputchin-sdk/commit/71126c62d034cc17bd5d815218669b671709fb65))
+* **widget:** default api host back to https://caputchin.com (was api.caputchin.com); build:prod matches ([e167089](https://github.com/Caputchin/caputchin-sdk/commit/e16708988d59eb167f172303ef3a0663402e4d31))
+* **widget:** drop redeems for disposed widgets + remove cap-widget element on dispose ([7d32588](https://github.com/Caputchin/caputchin-sdk/commit/7d32588222a076cb507083a9bb1160ae76428449))
+* **widget:** forward platform.sessionId from /verify/start to /verify/pass ([dfb841e](https://github.com/Caputchin/caputchin-sdk/commit/dfb841ec0e2ceef18410fc5cbae92e6a469996ba))
+* **widget:** game error aborts verification — no pass event, no token, suppress duplicate error ([66279c8](https://github.com/Caputchin/caputchin-sdk/commit/66279c8d8e8ca9da0fa00d24811232a21f477323))
+* **widget:** game-frame — top border on badge slot; embedded pill border fully suppressed ([a983031](https://github.com/Caputchin/caputchin-sdk/commit/a9830317dbb522b2dcaecd5ca2be5efadbe7c577))
+* **widget:** host shrink-wrap with width="auto" + reset iframe body margin ([b766060](https://github.com/Caputchin/caputchin-sdk/commit/b7660602093589894978c1e221070ce1dd918aa2))
+* **widget:** ignore repeat game passes, record one round per session ([8329a32](https://github.com/Caputchin/caputchin-sdk/commit/8329a32ae33f5085dca5c76c98d1a3159be39615))
+* **widget:** import Cap as default, mock per-suite, reorder demo listeners ([e4a9f6e](https://github.com/Caputchin/caputchin-sdk/commit/e4a9f6ea4490db9d273a438609e5f0e23891f687))
+* **widget:** inline game frame — game-only also gets the brand strip; remove top-border separator ([2f8c33e](https://github.com/Caputchin/caputchin-sdk/commit/2f8c33eb075513ca439940f89d45d74cbc6c5d6f))
+* **widget:** inline game frame — game-only stays at idle brand, not verifying ([4ebaa63](https://github.com/Caputchin/caputchin-sdk/commit/4ebaa63cba2112a60feba8a1ac537246fa1313ce))
+* **widget:** keep iframe auto-measure observer alive for round lifetime so post-game UI changes (replay button, score panel) re-flow the iframe; cleaned up on dispose ([23e2bb7](https://github.com/Caputchin/caputchin-sdk/commit/23e2bb7199ce100c2a36c6503f17fe7881598a25))
+* **widget:** keyless game mounts now bootstrap for preferred size + presets; gate kickoff on iframe load ([5ac9820](https://github.com/Caputchin/caputchin-sdk/commit/5ac9820e0eff6c11903c8b9eb4cff8ab655f8b59))
+* **widget:** lock simple label width across state changes; passive triggers render shield instead of checkbox ([7a7b06c](https://github.com/Caputchin/caputchin-sdk/commit/7a7b06c9449846d45f19ac657d85ff8442f6ed38))
+* **widget:** modal/fullscreen dialog dismissal mid-verify reverts shield to clickable idle (covers Esc/backdrop/button paths) ([e63ed80](https://github.com/Caputchin/caputchin-sdk/commit/e63ed8063b7f9fed94fc0d5cb8775cac665482ab))
+* **widget:** move checkbox sizing to shadow stylesheet so compact CSS override applies ([8be6a73](https://github.com/Caputchin/caputchin-sdk/commit/8be6a73476e24ae7c7eed34c66645f8300071ce3))
+* **widget:** move compact separator to wordmark::after so it's not part of the tag link ([62ded29](https://github.com/Caputchin/caputchin-sdk/commit/62ded29ff97fbe8c6d55a0d03bff811e69fa4773))
+* **widget:** only the checkbox itself is clickable, not the whole simple panel ([075cce4](https://github.com/Caputchin/caputchin-sdk/commit/075cce4036992a343f78aec0d95e1f74d64e41db))
+* **widget:** override-first default-selection — customer marked default wins its group over bundled (ADR-0059) ([555b4d9](https://github.com/Caputchin/caputchin-sdk/commit/555b4d9affe4d5c7af797a45c263d000be9cd2cf))
+* **widget:** pass-event score/durationMs read from request payload (server doesn't echo them) ([b091949](https://github.com/Caputchin/caputchin-sdk/commit/b0919494d2bcc5cc5bebb0eea29f49d782b2358f))
+* **widget:** postMessage targetOrigin must be "*" — "null" is silently dropped, broke iframe kickoff ([2246977](https://github.com/Caputchin/caputchin-sdk/commit/2246977fb4e0db135d16094e119f7cc56df20d1c))
+* **widget:** raise branches threshold to 80 (M7 monotonic floor) ([6d585ad](https://github.com/Caputchin/caputchin-sdk/commit/6d585add7dec86686e57c794f30b157e05450b46))
+* **widget:** redeem reads platform.wrappedToken, not cap's top-level token ([1d6e50a](https://github.com/Caputchin/caputchin-sdk/commit/1d6e50a249bdb07458793f49703c8acbf969d8b2))
+* **widget:** rename ESM to .mjs and IIFE to widget.js for CDN script-tag compatibility ([1240c7d](https://github.com/Caputchin/caputchin-sdk/commit/1240c7d4cd913e727db7b3f61cec283ef25a9c52))
+* **widget:** resolve @caputchin/game-sdk via tsconfig paths so typecheck works without dist ([7066206](https://github.com/Caputchin/caputchin-sdk/commit/7066206123c183db107728b893881f5bdcd90282))
+* **widget:** revert iframe auto-measure to documentElement.scrollWidth/Height (body measurement death-spirals as iframe shrinks); doc the grow-only limitation ([163456f](https://github.com/Caputchin/caputchin-sdk/commit/163456f3a1d5c34e533e53d8977ea25b04314260))
+* **widget:** set the cap.js wasm override before cap.js inits so the bundled wasm is used, not jsDelivr ([3357bda](https://github.com/Caputchin/caputchin-sdk/commit/3357bdaf165a4cc3a1ecfa8b9a6282146376c32a))
+* **widget:** shrink compact size further (checkbox 0.85rem, logo 14px, tighter padding) ([65f9395](https://github.com/Caputchin/caputchin-sdk/commit/65f9395118c17e20a67c8831b825bea265519495))
+* **widget:** silence post-dispose noise via widget.error override + state.connected guards ([395ca14](https://github.com/Caputchin/caputchin-sdk/commit/395ca149a877153a29bf101b916c0b7e3e369366))
+* **widget:** tighter logo/text gap + center wordmark and tag in col 2 ([808a0d5](https://github.com/Caputchin/caputchin-sdk/commit/808a0d562b9a073798d3e26b923cd5c6f01f8487))
+* **widget:** tighter padding on compact (0.15rem 0.35rem) for a flatter strip ([fd9fdf9](https://github.com/Caputchin/caputchin-sdk/commit/fd9fdf9f282b52d007e125f36948f2eaa29a3747))
+* **widget:** tighter padding on normal simple panel (0.5rem 0.75rem) ([c535ffb](https://github.com/Caputchin/caputchin-sdk/commit/c535ffba8fdb68db0e17a576724cb721779dc4cb))
+* **widget:** width="full" expands the inline host element, not just the inner panel ([cf222fe](https://github.com/Caputchin/caputchin-sdk/commit/cf222fee5446cc9b53c64470122ae54c6fa5f34d))
+
+
+### Performance Improvements
+
+* **widget:** reuse mount-time bootstrap bundle for game load, dropping the second resolve call (ADR-0059) ([e9140f9](https://github.com/Caputchin/caputchin-sdk/commit/e9140f914ab34a3aa866908685c1084d04ec4883))
+
+
+### Reverts
+
+* release-please PR [#10](https://github.com/Caputchin/caputchin-sdk/issues/10) due to broken title pattern config ([e0d7ef0](https://github.com/Caputchin/caputchin-sdk/commit/e0d7ef0ed6e781463588508226678a9d19528037))
+
+
+### Code Refactoring
+
+* **sdk:** rename bridge.complete to bridge.pass for success-only semantics ([fc384c5](https://github.com/Caputchin/caputchin-sdk/commit/fc384c586203d7dc47f34e3417ef814c601662ce))
+
 ## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.3.0...widget-v3.0.0) (2026-06-01)
 
 

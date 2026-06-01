@@ -1,7 +1,7 @@
 {
-  "packages/replay-contract": "0.2.0",
-  "packages/engine-runtime": "0.2.0",
-  "packages/game-sdk": "3.0.0",
-  "packages/widget": "3.0.0",
-  "packages/mcp": "2.0.1"
+  "packages/replay-contract": "0.3.0",
+  "packages/engine-runtime": "0.3.0",
+  "packages/game-sdk": "4.0.0",
+  "packages/widget": "4.0.0",
+  "packages/mcp": "3.0.0"
 }
