@@ -34,7 +34,7 @@ export interface BootstrapGameBlock {
   // Replaces the deleted game->widget ManifestMessage that used to carry it.
   // `layout` is the game's preferred shell; the widget honors it only when the
   // embed leaves `layout` unset (default `auto`).
-  preferred: { width?: number; height?: number; layout?: Layout } | null;
+  preferred: { width?: number | 'full'; height?: number | 'full'; layout?: Layout } | null;
   resolved: ResolvedAxes;
 }
 

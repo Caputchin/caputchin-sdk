@@ -25,8 +25,9 @@ export async function installGameFrame(
   // Server-resolved game axes (locale / skin / config) from bootstrap.game.resolved.
   resolved: ResolvedAxes | null,
   // The game's preferred footprint from bootstrap.game.preferred (was the
-  // manifest message's preferredWidth/Height).
-  preferred: { width?: number; height?: number } | null,
+  // manifest message's preferredWidth/Height). Each axis is a pixel count or the
+  // literal 'full' (stretch to fill the parent).
+  preferred: { width?: number | 'full'; height?: number | 'full' } | null,
   // Resolves with the per-round seed (from /verify/start, fired by the cap solve
   // the caller starts in parallel). Absent → no-verify mount, seed stays null.
   awaitSeed?: () => Promise<Seed | null>,
@@ -74,13 +75,17 @@ export async function installGameFrame(
  * Size the iframe by the game's preferred footprint (or defaults). The
  * customer's `width` / `height` attributes apply to the OUTER shell instead;
  * `width="full"` / `height="full"` stretch the iframe to 100% along that axis.
+ * A preferred `"full"` does the same, but only when the customer left that axis
+ * unset (width `'auto'`, height `null`) - an explicit customer value wins.
  */
 export function applyIframeSize(
   host: IframeHost,
   config: GameConfig,
-  preferred: { width?: number; height?: number } | null,
+  preferred: { width?: number | 'full'; height?: number | 'full' } | null,
 ): void {
-  const widthCss: number | '100%' = config.width === 'full' ? '100%' : (preferred?.width ?? DEFAULT_W);
-  const heightCss: number | '100%' = config.height === 'full' ? '100%' : (preferred?.height ?? DEFAULT_H);
+  const fullW = config.width === 'full' || (config.width === 'auto' && preferred?.width === 'full');
+  const fullH = config.height === 'full' || (config.height === null && preferred?.height === 'full');
+  const widthCss: number | '100%' = fullW ? '100%' : (typeof preferred?.width === 'number' ? preferred.width : DEFAULT_W);
+  const heightCss: number | '100%' = fullH ? '100%' : (typeof preferred?.height === 'number' ? preferred.height : DEFAULT_H);
   host.setSize(widthCss, heightCss);
 }
