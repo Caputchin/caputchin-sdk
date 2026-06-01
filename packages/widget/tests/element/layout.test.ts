@@ -144,6 +144,33 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     el.remove();
   });
 
+  it('inline: width/height="full" tag the slot and inject clamping (min+max:100%) fill rules', async () => {
+    stubBootstrap({ width: 'full', height: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    let slot: HTMLElement | null = null;
+    await vi.waitFor(() => {
+      slot = el.shadowRoot?.querySelector('[part="game-iframe-slot"]') as HTMLElement | null;
+      expect(slot).not.toBeNull();
+    });
+    // Per-axis fill flags drive the clamp rules below.
+    expect(slot!.dataset.fillX).toBe('true');
+    expect(slot!.dataset.fillY).toBe('true');
+    // The fill rules clamp (min AND max) so the iframe tracks a definite slot
+    // in BOTH directions and reflows a too-big game into it instead of the old
+    // floor-only behavior that let the grow-only auto-measure overflow the box.
+    const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
+      .map((s) => s.textContent ?? '')
+      .join('');
+    expect(css).toContain(
+      '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;max-width:100%',
+    );
+    expect(css).toContain(
+      '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;max-height:100%',
+    );
+    el.remove();
+  });
+
   it('overlay: preferred.width/height="full" set the dialog fill flags', async () => {
     stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });

@@ -140,13 +140,14 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       if (isFullWidth) {
         host.style.display = 'block';
         host.style.width = '100%';
-        // Mirror isFullHeight's per-axis floor approach (data-fill-y). The
-        // iframe-runtime's auto-measure overwrites the initial `width:100%`
-        // inline style with a content-pixel value, so without a `min-width`
-        // floor the iframe collapses to game content size. data-fill-x
-        // resolves to `min-width: 100%` of slot, leaving inline-style
-        // width to auto-measure (grow-only). Net effect: iframe width =
-        // max(slot, content).
+        // data-fill-x clamps the iframe to the slot when the slot has a
+        // DEFINITE width, but lets it grow to content when the slot is
+        // auto-sized (see the data-fill-x CSS for the min+max:100% mechanism).
+        // A responsive game in a definite-but-narrower slot reflows INTO the
+        // slot instead of overflowing it: the grow-only auto-measure can't
+        // push the iframe past the container, and a container resize is
+        // tracked in BOTH directions (a shrunk box no longer leaves a stale-
+        // wide iframe clipped by the frame's overflow:hidden).
         iframeSlot.dataset.fillX = 'true';
       } else if (pxWidth !== null) {
         host.style.display = 'block';
@@ -165,17 +166,19 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         host.style.width = '';
       }
       if (isFullHeight) {
-        // height="full" in inline mode means "fill the parent vertically
-        // if the parent has a definite height, else stay content-sized".
-        // The pxHeight branch below uses `data-fill="true"` (height:100%
-        // !important) which would CAP the iframe at the parent height -
-        // wrong when the parent is content-sized (collapses to the iframe
-        // default 150px and the game scrolls). Instead use a per-axis
-        // `data-fill-y` that resolves to `min-height: 100%`: a floor when
-        // the parent has size, no constraint when the parent is auto.
-        // The iframe-runtime's grow-only auto-measure then fills inline-
-        // style `height` with the game's actual content size, so the
-        // iframe ends up at `max(parent, content)` either way.
+        // height="full" in inline mode means "fit the parent vertically when
+        // the parent has a definite height, else grow to content". The
+        // pxHeight branch below uses `data-fill="true"` (height:100%
+        // !important) which HARD-caps the iframe - wrong when the parent is
+        // content-sized (collapses to the iframe default 150px and the game
+        // scrolls). Instead use a per-axis `data-fill-y` (min+max:100%):
+        // against a definite parent it clamps the iframe to the parent in
+        // BOTH directions (fills when content is shorter, caps/reflows when
+        // taller, and tracks the parent on resize so a shrunk box doesn't
+        // leave a stale-tall iframe clipped by the slot's overflow:hidden);
+        // against an auto parent the percentages resolve to no-constraint and
+        // the grow-only auto-measure fills inline-style height with content
+        // size, so the iframe grows.
         host.style.display ||= 'block';
         host.style.height = '100%';
         frame.style.height = '100%';
@@ -478,15 +481,21 @@ function ensureGameStyles(root: ShadowRoot): void {
     // iframe stretches to fill the slot instead of staying at the game's
     // manifest preferred size.
     '[part="game-iframe-slot"][data-fill="true"] iframe{width:100%!important;height:100%!important;flex:1 1 auto}',
-    // Inline `width="full"` / `height="full"`: parent-size floors without
-    // capping the iframe. Auto-measure populates inline-style width/height
-    // with content size; these rules keep the iframe at least 100% of slot
-    // on the filled axis when slot has a definite size, and resolve to 0
-    // (no constraint) when slot is auto-sized. Net effect: iframe axis =
-    // max(parent, content) instead of being clamped to parent like data-
-    // fill does.
-    '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;flex:1 1 auto}',
-    '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;flex:1 1 auto}',
+    // Inline `width="full"` / `height="full"`: clamp the iframe to the slot
+    // on the filled axis WHEN the slot has a definite size, but let it grow
+    // to content when the slot is auto-sized. `min:100%`+`max:100%` does both.
+    // The iframe-runtime auto-measure (grow-only) writes a content-pixel
+    // inline width/height. Against a DEFINITE slot, min+max:100% pin the
+    // iframe to the slot: it fills when content is smaller, reflows/caps when
+    // content is larger, and tracks the slot in BOTH directions on resize (so
+    // a shrunk container can't leave a stale-big iframe overflowing past it).
+    // Against an AUTO / shrink-to-fit slot, percentage min/max resolve to
+    // no-constraint during intrinsic sizing, so the inline content size wins
+    // and the iframe grows. Contrast data-fill (px-pinned shell) which uses
+    // width/height:100%!important - a hard cap that would collapse the iframe
+    // to its replaced-default in an auto parent, breaking the grow case.
+    '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;max-width:100%;flex:1 1 auto}',
+    '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;max-height:100%;flex:1 1 auto}',
     // Badge slot: thin separator line between iframe and brand strip.
     '[part="game-badge-slot"]{display:flex;border-top:1px solid var(--cpt-skin-border);background:var(--cpt-skin-surface_bg)}',
     // Strip the embedded simple widget of its own border/radius/bg so it
