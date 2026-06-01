@@ -1,6 +1,21 @@
 #!/usr/bin/env sh
-# Pre-commit gate: typecheck + tests across the workspace. Codified after the
-# cycle-1/2/3 "ran tests before final edit" recurrence on slice-5+6. Skip with
-# `git commit --no-verify` ONLY when you've already run `pnpm verify` manually
-# AND the diff hasn't been touched since.
-exec pnpm verify
+# Pre-commit gate: typecheck + tests across the workspace, then SDK reference
+# docs in sync with source. Codified after the cycle-1/2/3 "ran tests before
+# final edit" recurrence on slice-5+6, and the docs-drift that reached CI when an
+# API change wasn't re-generated. Skip with `git commit --no-verify` ONLY when
+# you've already run `pnpm verify` + `pnpm run docs` manually AND the diff hasn't
+# been touched since.
+pnpm verify || exit 1
+
+# Reference docs (committed TypeDoc markdown) must track source TSDoc, mirroring
+# the CI docs-sync gate so a TSDoc/API edit that wasn't re-generated can't land
+# stale. The central tsconfig `paths` resolve cross-package types from source, so
+# this needs no build.
+pnpm run docs || exit 1
+docs_drift="$(git status --porcelain -- packages/*/docs)"
+if [ -n "$docs_drift" ]; then
+  echo "$docs_drift"
+  echo "ERROR: SDK reference docs are stale. The regen above updated them in your tree." >&2
+  echo "Review, then 'git add packages/*/docs' and re-commit (or 'pnpm run docs' yourself)." >&2
+  exit 1
+fi
