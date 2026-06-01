@@ -86,4 +86,25 @@ describe('applyIframeSize', () => {
     applyIframeSize(host as never, cfg({}), null);
     expect(host.calls.size).toEqual([400, 300]);
   });
+
+  it('preferred="full" stretches to 100% when the embed leaves the axis unset', () => {
+    const host = mockHost();
+    // Mirror the real unset GameConfig: width 'auto', height null.
+    applyIframeSize(host as never, cfg({ width: 'auto' as never, height: null as never }), { width: 'full', height: 'full' });
+    expect(host.calls.size).toEqual(['100%', '100%']);
+  });
+
+  it('an explicit customer value wins over a preferred="full" on the same axis', () => {
+    const host = mockHost();
+    // Customer set a px height; preferred wants full. Customer wins → the
+    // iframe is not stretched on that axis (the px shell + data-fill carry it).
+    applyIframeSize(host as never, cfg({ width: 'auto' as never, height: 480 as never }), { width: 'full', height: 'full' });
+    expect(host.calls.size).toEqual(['100%', 300]);
+  });
+
+  it('preferred px still sizes the iframe (no regression)', () => {
+    const host = mockHost();
+    applyIframeSize(host as never, cfg({ width: 'auto' as never, height: null as never }), { width: 320, height: 480 });
+    expect(host.calls.size).toEqual([320, 480]);
+  });
 });

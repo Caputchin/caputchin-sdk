@@ -227,8 +227,10 @@ export interface MarketplaceMetadata {
  *
  *  `width` / `height`: the widget sizes the iframe to these when the customer
  *  leaves the embed's `width` / `height` unset (a `full` customer value
- *  stretches that axis instead). Omit to fall back to the widget's built-in
- *  default footprint.
+ *  stretches that axis instead). Each is a positive pixel count, or the literal
+ *  `"full"` to stretch that axis to fill the parent (the same effect an embed
+ *  `width="full"` has, applied only when the embed leaves that axis unset). Omit
+ *  to fall back to the widget's built-in default footprint.
  *
  *  `layout`: the shell the widget builds around the game (an inline panel, a
  *  modal dialog, or a fullscreen overlay). The widget uses it only when the
@@ -239,8 +241,8 @@ export interface MarketplaceMetadata {
  *  key); a customer-hosted `game-src` bundle the platform cannot read ahead of
  *  mount ignores this hint, the same way it ignores the preferred footprint. */
 export interface PreferredPresentation {
-  width?: number;
-  height?: number;
+  width?: number | 'full';
+  height?: number | 'full';
   layout?: Layout;
 }
 

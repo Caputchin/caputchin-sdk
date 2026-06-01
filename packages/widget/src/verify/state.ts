@@ -35,7 +35,7 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
   /** The game's preferred presentation (footprint + layout) from the bootstrap
    *  `game` block (was the deleted manifest message's preferredWidth/Height).
    *  `layout` feeds the shell pick when the embed leaves `layout` unset. */
-  gamePreferred?: { width?: number; height?: number; layout?: Layout } | null;
+  gamePreferred?: { width?: number | 'full'; height?: number | 'full'; layout?: Layout } | null;
   /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
    *  `game` block, so the game-load path reuses that one round trip instead
    *  of a second `/widget/bootstrap` call.

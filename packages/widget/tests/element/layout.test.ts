@@ -115,3 +115,58 @@ describe('CaputchinGame - preferred layout from bootstrap', () => {
     el.remove();
   });
 });
+
+describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
+  function stubBootstrap(preferred: Record<string, unknown> | null): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ game: { preferred }, requiresGame: false }), { status: 200 }),
+      ),
+    );
+  }
+
+  afterEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+  });
+
+  it('inline: preferred.width="full" fills the outer shell (no collapse) when the embed leaves width unset', async () => {
+    stubBootstrap({ width: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      // The isFullWidth shell branch fired: frame tagged + host stretched to
+      // 100%. Without this the iframe's 100% would collapse against a
+      // content-sized host.
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).not.toBeNull();
+    });
+    expect(el.style.width).toBe('100%');
+    el.remove();
+  });
+
+  it('overlay: preferred.width/height="full" set the dialog fill flags', async () => {
+    stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      const dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+      expect(dialog).not.toBeNull();
+      expect(dialog!.dataset.fillX).toBe('true');
+      expect(dialog!.dataset.fillY).toBe('true');
+    });
+    el.remove();
+  });
+
+  it('an explicit embed width overrides preferred.width="full"', async () => {
+    stubBootstrap({ width: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    // Customer px wins: the shell is sized to 500px, not stretched full.
+    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
+    expect(el.style.width).toBe('500px');
+    el.remove();
+  });
+});

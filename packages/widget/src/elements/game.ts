@@ -9,6 +9,7 @@ import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
 import { buildWidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createGamePresentation } from '../modes/game.js';
+import { resolvePresentationSize } from '../config/effective-size.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
 import type { GameConfig } from '../config/game.js';
@@ -181,12 +182,16 @@ export class CaputchinGame extends HTMLElement {
 
     const shellConfig = buildWidgetShellConfig(resolved?.config ?? null);
 
+    // Fold the game's preferred footprint into the shell size: a preferred
+    // `"full"` is honored as full-axis only when the embed leaves that axis
+    // unset (preferred px stays on the iframe via applyIframeSize).
+    const effective = resolvePresentationSize(state.config, state.gamePreferred ?? null);
     const gp = createGamePresentation({
       host: this,
       root: shadow,
       trigger: derivedTrigger,
-      width: state.config.width,
-      height: state.config.height,
+      width: effective.width,
+      height: effective.height,
       layout,
       manual: isManual,
       shell,
