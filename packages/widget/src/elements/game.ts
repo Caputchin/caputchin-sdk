@@ -16,7 +16,7 @@ import type { GameConfig } from '../config/game.js';
 import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
-import { fetchBootstrap } from '../bootstrap/client.js';
+import { fetchBootstrap, fetchBootstrapResilient } from '../bootstrap/client.js';
 import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
@@ -56,7 +56,7 @@ export class CaputchinGame extends HTMLElement {
     state.config = inspection.config;
     const apiHost = __CAPUTCHIN_API_HOST__;
     // Shadow attaches synchronously so the host keeps its layout box during
-    // the bootstrap wait. Empty shadow until bootstrap completes.
+    // the bootstrap wait.
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
     // Warn (but keep widget running) if non-manual mode receives slotted
@@ -79,14 +79,36 @@ export class CaputchinGame extends HTMLElement {
       return;
     }
 
-    void fetchBootstrap({
+    // Is the bootstrap the SOLE source of the game's presentation? A
+    // bootstrap-sourced game (marketplace id / gated key) with no in-page
+    // `game-src` bundle has nothing to paint without the bootstrap: the
+    // resolved skin/locale/config + footprint AND the bundle url all ride the
+    // response. For that case the bootstrap is MANDATORY - it must run to
+    // completion (slow-load), never abort to an unstyled / blank render. When a
+    // `game-src` bundle exists in-page (or in manual mode where the customer
+    // slots their own DOM), the bootstrap is OPTIONAL: a 2s abort that degrades
+    // to the bundled render is fine because the overrides are best-effort.
+    const bootstrapMandatory = state.config.gameSrc === null && state.config.trigger !== 'manual';
+
+    // Show a loading skeleton while we wait. Without it the host box is an
+    // empty sized rectangle for the full (now un-aborted) bootstrap window,
+    // which reads as "blank / broken" rather than "loading". Skipped in manual
+    // mode (the customer's slotted DOM owns the box).
+    if (state.config.trigger !== 'manual') this.showLoadingSkeleton();
+
+    const signals = {
       apiHost,
       sitekey: state.config.sitekey,
       game: state.config.game ?? null,
       games: state.config.games ?? null,
       locale: resolveLocaleSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
-    }).then((result) => {
+    };
+    const bootstrap = bootstrapMandatory
+      ? fetchBootstrapResilient(signals)
+      : fetchBootstrap(signals);
+
+    void bootstrap.then((result) => {
       if (!this.state.connected || !this.state.config) return;
       // Authoritative gate rejection (409): the server says this key+game can't
       // make a valid round. Mount the error presentation + fire the `error`
@@ -134,6 +156,9 @@ export class CaputchinGame extends HTMLElement {
     resolved: ResolvedAxes | null,
     gateError?: { code: ErrorCode; message: string; originalCode?: string },
   ): void {
+    // Tear down the loading skeleton before any early-return, so a guarded-out
+    // mount still clears it (it no-ops when none is present).
+    this.removeLoadingSkeleton();
     const state = this.state;
     if (!state.config) return;
     const shadow = this.shadowRoot;
@@ -246,9 +271,38 @@ export class CaputchinGame extends HTMLElement {
     // on this widget; pass() / fail() drive completion in manual mode.
   }
 
+  /** Paint a neutral loading skeleton into the empty shadow while the bootstrap
+   *  is in flight. Without it a bootstrap-sourced game shows an empty sized box
+   *  for the whole (un-aborted) bootstrap window, which reads as broken. Torn
+   *  down by `removeLoadingSkeleton` the moment `completeMount` paints the real
+   *  presentation. No-op if one is already present. */
+  private showLoadingSkeleton(): void {
+    const shadow = this.shadowRoot;
+    if (!shadow || shadow.querySelector('[part="loading"]')) return;
+    const style = document.createElement('style');
+    style.dataset['cptLoading'] = '';
+    style.textContent = LOADING_SKELETON_CSS;
+    const box = document.createElement('div');
+    box.setAttribute('part', 'loading');
+    box.setAttribute('aria-hidden', 'true');
+    const spinner = document.createElement('div');
+    spinner.setAttribute('part', 'loading-spinner');
+    box.appendChild(spinner);
+    shadow.append(style, box);
+  }
+
+  /** Remove the loading skeleton (box + its scoped style). Safe to call when
+   *  none is present. */
+  private removeLoadingSkeleton(): void {
+    const shadow = this.shadowRoot;
+    if (!shadow) return;
+    shadow.querySelectorAll('[part="loading"],style[data-cpt-loading]').forEach((n) => n.remove());
+  }
+
   /** @internal Custom Element lifecycle; the browser calls this on removal. */
   disconnectedCallback(): void {
     const s = this.state;
+    this.removeLoadingSkeleton();
     s.trigger?.deactivate();
     s.gamePresentation?.unmount();
     s.capClient?.dispose();
@@ -285,3 +339,28 @@ function resolveLayout(attr: LayoutAttr, preferred: Layout | null): Layout {
   if (attr !== 'auto') return attr;
   return preferred !== null && isLayout(preferred) ? preferred : 'inline';
 }
+
+// Loading-skeleton styles. Fills the host box (full-axis games) or shows a
+// modest min-size placeholder (auto-size games, before the bootstrap reveals
+// the preferred footprint). The skeleton paints BEFORE any skin is resolved
+// (it is torn down the instant completeMount applies the resolved palette), so
+// the `--cpt-skin-*` references resolve to the neutral grey fallbacks; the
+// var() form just lets a host that already carries a palette (e.g. a remount)
+// tint it. The spinner is the only motion and drops to static under
+// prefers-reduced-motion.
+const LOADING_SKELETON_CSS = [
+  '[part="loading"]{',
+  'display:flex;align-items:center;justify-content:center;box-sizing:border-box;',
+  'width:100%;height:100%;min-width:180px;min-height:120px;',
+  'background:var(--cpt-skin-surface_bg,#f4f4f5);',
+  'border:1px solid var(--cpt-skin-border,#e4e4e7);border-radius:0.5rem;',
+  '}',
+  '[part="loading-spinner"]{',
+  'width:28px;height:28px;border-radius:50%;',
+  'border:3px solid var(--cpt-skin-border,#d4d4d8);',
+  'border-top-color:var(--cpt-skin-text,#71717a);',
+  'animation:cpt-skel-spin 0.8s linear infinite;',
+  '}',
+  '@keyframes cpt-skel-spin{to{transform:rotate(360deg)}}',
+  '@media (prefers-reduced-motion:reduce){[part="loading-spinner"]{animation:none}}',
+].join('');

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchBootstrap, buildBootstrapUrl, validateBootstrapResponse } from '../../../src/bootstrap/client.js';
+import { fetchBootstrap, fetchBootstrapResilient, buildBootstrapUrl, validateBootstrapResponse } from '../../../src/bootstrap/client.js';
 
 describe('buildBootstrapUrl', () => {
   it('includes only sitekey when no other inputs are provided', () => {
@@ -165,5 +165,63 @@ describe('fetchBootstrap', () => {
     await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: 1000 });
     const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
     expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('timeoutMs:null sends NO abort signal (the mandatory bootstrap runs to completion)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: null });
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeUndefined();
+  });
+});
+
+describe('fetchBootstrapResilient (mandatory bootstrap)', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('runs each attempt with NO abort signal (a slow resolve slow-loads, never aborts)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
+    await fetchBootstrapResilient({ apiHost: 'https://api', sitekey: null, game: 'o/r' });
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeUndefined();
+  });
+
+  it('retries a transient degrade (network error) then returns ok', async () => {
+    fetchSpy
+      .mockRejectedValueOnce(new TypeError('network'))
+      .mockRejectedValueOnce(new TypeError('network'))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r' },
+      { backoffMs: 0 },
+    );
+    expect(out.kind).toBe('ok');
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns an authoritative gate (409) immediately without retrying', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'gate-game-not-installed' }), { status: 409 }));
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: 'k', game: 'o/r' },
+      { backoffMs: 0 },
+    );
+    expect(out.kind).toBe('gate');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up after the attempt budget and returns the last degrade', async () => {
+    fetchSpy.mockRejectedValue(new TypeError('network'));
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r' },
+      { attempts: 2, backoffMs: 0 },
+    );
+    expect(out).toEqual({ kind: 'degrade' });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });

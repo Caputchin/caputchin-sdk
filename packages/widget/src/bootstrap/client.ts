@@ -3,9 +3,19 @@
 // detected them from the browser before this call when the attributes were
 // missing, so the server always sees concrete values rather than `auto`); the
 // server resolves one preset per axis (shell + game) and returns the resolved
-// presets + the game URL/integrity. First paint blocks on this call up to a 2
-// second hard timeout; on timeout, network error, or malformed response the
-// widget falls back to bundled-only rendering.
+// presets + the game URL/integrity.
+//
+// Two callers with opposite timeout policies:
+//   - OPTIONAL (an in-page `game-src` bundle exists): first paint blocks on
+//     this call up to a 2 second hard timeout; on timeout / network error /
+//     malformed response it degrades to bundled-only rendering. The overrides
+//     are best-effort there because the bundle can paint without them.
+//   - MANDATORY (a bootstrap-sourced game: a marketplace id / gated key with
+//     no `game-src`): the bootstrap is the SOLE source of the resolved presets
+//     (skin/locale/config + footprint) AND the bundle, so it must NOT be
+//     aborted - a slow bootstrap has to slow-load, never drop to an unstyled /
+//     blank render. That caller uses `fetchBootstrapResilient` (no per-attempt
+//     abort + a bounded retry on transient failure).
 
 import type { BootstrapResponse } from './types.js';
 
@@ -28,10 +38,22 @@ export interface FetchBootstrapInput {
    *  navigator); the server falls back to the bundled defaults. */
   locale?: string | null;
   skin?: string | null;
-  timeoutMs?: number;
+  /** Per-request abort window. `undefined` → the 2s default. A positive number
+   *  → that window. `null` → NO abort signal (the request runs to completion);
+   *  used by the mandatory bootstrap so a slow resolve slow-loads instead of
+   *  degrading. */
+  timeoutMs?: number | null;
 }
 
 export const BOOTSTRAP_DEFAULT_TIMEOUT_MS = 2000;
+
+/** Mandatory-bootstrap retry policy. A bootstrap-sourced game has no in-page
+ *  fallback, so a transient `degrade` (5xx / network / malformed) must be
+ *  retried rather than rendered unstyled. Bounded so a genuinely-down server
+ *  doesn't loop forever; on exhaustion the caller's existing degrade path
+ *  (run-time marketplace resolve) still recovers the bundle, just unstyled. */
+export const BOOTSTRAP_MANDATORY_ATTEMPTS = 3;
+export const BOOTSTRAP_MANDATORY_BACKOFF_MS = 400;
 
 /** The server's authoritative gate codes (409). These mean the configuration
  *  can NEVER produce a valid round - distinct from a transient blip. */
@@ -60,11 +82,15 @@ export type BootstrapResult =
   | { kind: 'degrade' };
 
 export async function fetchBootstrap(input: FetchBootstrapInput): Promise<BootstrapResult> {
-  const timeoutMs = input.timeoutMs ?? BOOTSTRAP_DEFAULT_TIMEOUT_MS;
+  // `undefined` → default 2s; an explicit `null` → no abort window at all.
+  const timeoutMs = input.timeoutMs === undefined ? BOOTSTRAP_DEFAULT_TIMEOUT_MS : input.timeoutMs;
   const url = buildBootstrapUrl(input);
   const { signal, cancel } = buildTimeoutSignal(timeoutMs);
   try {
-    const res = await fetch(url, { signal });
+    // Omit `signal` entirely when null so the request runs to completion (the
+    // mandatory path). A merely-slow bootstrap then resolves `ok` rather than
+    // aborting into a degrade.
+    const res = await fetch(url, signal ? { signal } : {});
     if (res.ok) {
       const raw: unknown = await res.json();
       const response = validateBootstrapResponse(raw);
@@ -112,14 +138,44 @@ async function parseGateError(res: Response): Promise<BootstrapGateError | null>
 // runtime we test against (happy-dom strips it). Fall back to
 // AbortController + setTimeout; the returned `cancel` clears the timer so
 // the abort never fires after a successful response (avoiding bogus
-// unhandled-rejection noise in long-lived test suites).
-function buildTimeoutSignal(ms: number): { signal: AbortSignal; cancel: () => void } {
+// unhandled-rejection noise in long-lived test suites). `ms === null` →
+// no signal at all (the request is never aborted).
+function buildTimeoutSignal(ms: number | null): { signal: AbortSignal | null; cancel: () => void } {
+  if (ms === null) return { signal: null, cancel: () => {} };
   if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
     return { signal: AbortSignal.timeout(ms), cancel: () => {} };
   }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
   return { signal: ctrl.signal, cancel: () => clearTimeout(timer) };
+}
+
+/** The mandatory-bootstrap fetch: no per-attempt abort (a slow resolve
+ *  slow-loads to completion) plus a bounded retry on transient `degrade`
+ *  (5xx / network / malformed). An authoritative `gate` (409) and a successful
+ *  `ok` are terminal - returned on the first occurrence, never retried. After
+ *  the attempt budget is spent it returns the last `degrade` so the caller's
+ *  existing fallback (run-time marketplace resolve) still recovers the bundle.
+ *
+ *  `attempts` / `backoffMs` are injectable for tests; `delayFn` defaults to a
+ *  real `setTimeout` and is stubbed to a no-op in unit tests so retries don't
+ *  add wall-clock. */
+export async function fetchBootstrapResilient(
+  input: FetchBootstrapInput,
+  opts: { attempts?: number; backoffMs?: number; delayFn?: (ms: number) => Promise<void> } = {},
+): Promise<BootstrapResult> {
+  const attempts = Math.max(1, opts.attempts ?? BOOTSTRAP_MANDATORY_ATTEMPTS);
+  const backoffMs = opts.backoffMs ?? BOOTSTRAP_MANDATORY_BACKOFF_MS;
+  const delayFn = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  let last: BootstrapResult = { kind: 'degrade' };
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    // `timeoutMs: null` → the request is never aborted; only a real transient
+    // failure produces a degrade worth retrying.
+    last = await fetchBootstrap({ ...input, timeoutMs: null });
+    if (last.kind !== 'degrade') return last;
+    if (attempt < attempts - 1 && backoffMs > 0) await delayFn(backoffMs * 2 ** attempt);
+  }
+  return last;
 }
 
 export function buildBootstrapUrl(input: FetchBootstrapInput): string {
