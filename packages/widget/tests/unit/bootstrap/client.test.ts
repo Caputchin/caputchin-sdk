@@ -39,6 +39,28 @@ describe('buildBootstrapUrl', () => {
     expect(url).not.toContain('locale=');
     expect(url).not.toContain('skin=');
   });
+
+  it('base64url-encodes an inline-JSON skin so a # hex color is not lost in transit', () => {
+    const skin = '{"_theme":"light","title":"#7E3A91"}';
+    const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'k', skin });
+    const value = new URL(url).searchParams.get('skin')!;
+    // Sentinel-prefixed, and NO '#' survives on the wire (raw or %23-encoded):
+    // that is what the OpenNext URL round-trip would have truncated.
+    expect(value.startsWith('b64.')).toBe(true);
+    expect(url).not.toContain('%23');
+    expect(url).not.toContain('#');
+    // Round-trips back to the exact inline JSON the server will resolve.
+    const decoded = Buffer.from(value.slice(4), 'base64url').toString('utf8');
+    expect(decoded).toBe(skin);
+  });
+
+  it('base64url-encodes an inline-JSON locale override too', () => {
+    const locale = '{"_lang":"ar","startTitle":"ابدأ"}';
+    const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'k', locale });
+    const value = new URL(url).searchParams.get('locale')!;
+    expect(value.startsWith('b64.')).toBe(true);
+    expect(Buffer.from(value.slice(4), 'base64url').toString('utf8')).toBe(locale);
+  });
 });
 
 describe('validateBootstrapResponse', () => {

@@ -178,6 +178,31 @@ export async function fetchBootstrapResilient(
   return last;
 }
 
+// Sentinel marking a base64url-encoded inline-JSON axis value (see
+// encodeInlineAxis). The server strips this prefix and decodes the rest.
+const INLINE_AXIS_PREFIX = 'b64.';
+
+// Encode an inline-JSON axis override (skin / locale) so it survives the
+// request path. An inline value can carry a '#' hex color (e.g.
+// {"title":"#7E3A91"}), and some hosting request layers treat a '#' inside a
+// query value as a URL fragment delimiter, dropping everything after it before
+// the server reads the param (which silently discards the override). base64url
+// carries no '#' (its alphabet is A-Za-z0-9-_), so we encode any inline-JSON
+// value behind the sentinel and send that. Preset names and mode shortcuts
+// (no leading '{' or '[') are sent verbatim, so existing requests are
+// unchanged.
+function encodeInlineAxis(value: string): string {
+  const trimmed = value.trimStart();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return value;
+  // btoa is latin1-only, so go through UTF-8 bytes first to keep multi-byte
+  // content (locale strings) intact, then map to the URL-safe alphabet.
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const b64url = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${INLINE_AXIS_PREFIX}${b64url}`;
+}
+
 export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   const params = new URLSearchParams();
   // Omit sitekey entirely when null: the server treats a sitekey-less request
@@ -185,8 +210,10 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   if (input.sitekey) params.set('sitekey', input.sitekey);
   if (input.game) params.set('game', input.game);
   if (input.games) params.set('games', input.games);
-  if (input.locale) params.set('locale', input.locale);
-  if (input.skin) params.set('skin', input.skin);
+  // skin / locale may be inline JSON; encode so a '#' hex color is not lost in
+  // transit (see encodeInlineAxis). game / games / sitekey are plain ids.
+  if (input.locale) params.set('locale', encodeInlineAxis(input.locale));
+  if (input.skin) params.set('skin', encodeInlineAxis(input.skin));
   return `${input.apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
 }
 
