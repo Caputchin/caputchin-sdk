@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.1...widget-v3.1.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **widget:** base64url-encode inline-JSON skin/locale overrides so hex colors survive transit ([0988038](https://github.com/Caputchin/caputchin-sdk/commit/0988038f38b48a05c5f3b60e636fd478feba3ab0))
+
 ## [3.1.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.0...widget-v3.1.1) (2026-06-02)
 
 
