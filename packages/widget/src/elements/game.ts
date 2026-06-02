@@ -279,6 +279,12 @@ export class CaputchinGame extends HTMLElement {
   private showLoadingSkeleton(): void {
     const shadow = this.shadowRoot;
     if (!shadow || shadow.querySelector('[part="loading"]')) return;
+    // Reserve the eventual footprint on the host NOW, from the customer's
+    // width/height attributes, so the skeleton fills the same box the game will
+    // (no min-size flash that then pops to full / pixel size on load). The real
+    // presentation re-applies the authoritative size in completeMount; for an
+    // unsized (auto) axis the skeleton keeps its min-size fallback.
+    this.applyLoadingHostSize();
     const style = document.createElement('style');
     style.dataset['cptLoading'] = '';
     style.textContent = LOADING_SKELETON_CSS;
@@ -289,6 +295,30 @@ export class CaputchinGame extends HTMLElement {
     spinner.setAttribute('part', 'loading-spinner');
     box.appendChild(spinner);
     shadow.append(style, box);
+  }
+
+  /** Provisionally size the host from the embed's width/height attributes so the
+   *  loading skeleton occupies the eventual box. Mirrors the full / pixel sizing
+   *  createInlineGame applies later; an `auto` width or unset height is left
+   *  alone so the skeleton's min-size fallback governs that axis. */
+  private applyLoadingHostSize(): void {
+    const config = this.state.config;
+    if (!config) return;
+    // Only the inline layout sizes the HOST (createInlineGame re-applies it
+    // authoritatively, so nothing leaks). modal / fullscreen size an entry
+    // checkbox via createOverlayGame and never touch host.style, and `auto` may
+    // resolve to either layout post-bootstrap - sizing the host now would leak
+    // game-footprint dims onto an overlay entry. So restrict to explicit inline.
+    if (config.layout !== 'inline') return;
+    const fullW = config.width === 'full';
+    const fullH = config.height === 'full';
+    const pxW = typeof config.width === 'number' ? config.width : null;
+    const pxH = typeof config.height === 'number' ? config.height : null;
+    if (fullW || fullH || pxW !== null || pxH !== null) this.style.display = 'block';
+    if (fullW) this.style.width = '100%';
+    else if (pxW !== null) this.style.width = `${pxW}px`;
+    if (fullH) this.style.height = '100%';
+    else if (pxH !== null) this.style.height = `${pxH}px`;
   }
 
   /** Remove the loading skeleton (box + its scoped style). Safe to call when

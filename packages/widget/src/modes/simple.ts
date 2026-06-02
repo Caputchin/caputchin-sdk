@@ -356,9 +356,28 @@ function ensureStyles(root: ShadowRoot): void {
     '[data-size="compact"] [part="simple-brand-tag"]{grid-column:auto;grid-row:auto;place-self:auto;font-size:0.5rem}',
     '[data-size="compact"] [part="simple-brand-name"]::after{content:" · ";color:var(--cpt-skin-separator);margin-inline-start:0.1rem}',
 
-    // --- phone viewports (≤28rem) auto-compact non-compact widgets ---
+    // --- phone viewports (≤28rem): reclaim the row, float the tagline ---
+    // The full brand block (logo + wordmark + tagline) can't sit beside the
+    // verify row on a phone without wrapping onto a second line (the "broken"
+    // stacked look). Keep the verify row on ONE line and the logo at FULL size
+    // on the trailing edge; hide the wordmark; float the tagline into the
+    // bottom-trailing corner (absolute, so it never pushes the row and may
+    // overlap the logo, like Friendly Captcha's corner brand). Scoped away from
+    // the game's compact brand strip.
     '@media (max-width:28rem){',
-      '[part="simple-checkbox"]:not([data-size="compact"]){padding:0.625rem 0.75rem;gap:0.5rem}',
+      // !important on flex-wrap + min-width: the root sets flex-wrap:wrap and
+      // min-width:min(18rem,100%) as INLINE styles (root.style.cssText), which a
+      // plain rule can't beat (the compact rule uses !important for the same
+      // reason). Without it the row still wraps on a narrow phone / long label.
+      '[part="simple-checkbox"]:not([data-size="compact"]){position:relative;flex-wrap:nowrap!important;min-width:0!important}',
+      '[part="simple-checkbox"]:not([data-size="compact"]) [part="simple-brand-name"]{display:none}',
+      // Tagline floats in the bottom-trailing corner, on top of the full-size
+      // logo (which stays in flow, trailing-aligned, at its 32px base size).
+      '[part="simple-checkbox"]:not([data-size="compact"]) [part="simple-brand-tag"]{position:absolute;bottom:0.2rem;inset-inline-end:0.4rem;font-size:0.6rem;line-height:1;z-index:1}',
+      // Compact strip (the game brand footer): a single right-aligned row, so
+      // there is no corner to float into. Just hide the wordmark (its "·"
+      // separator goes with it via ::after), leaving logo + tagline trailing.
+      '[data-size="compact"] [part="simple-brand-name"]{display:none}',
     '}',
   ].join('');
   root.appendChild(style);
