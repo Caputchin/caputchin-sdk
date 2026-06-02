@@ -18,6 +18,9 @@ export interface ShellStrings {
   simpleAriaCheckbox: string;
   simpleAriaStatus: string;
   overlayClose: string;
+  /** Accessible name (the `title` attribute) for the game challenge iframe,
+   *  announced when a screen reader enters the embedded challenge. */
+  frameTitle: string;
 }
 
 export interface WidgetShell {
@@ -38,6 +41,7 @@ const HARDCODED_FALLBACK: ShellStrings = {
   simpleAriaCheckbox: 'Verify you are human',
   simpleAriaStatus: 'Caputchin verification status',
   overlayClose: 'Close',
+  frameTitle: 'Caputchin verification challenge',
 };
 
 function toStrings(resolved: ResolvedLocale | null): ShellStrings {

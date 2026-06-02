@@ -1,5 +1,6 @@
 import { buildSrcdoc } from './srcdoc.js';
 import { listen, send } from '../protocol/channel.js';
+import { buildWidgetShell } from '../locale/widget-shell.js';
 import type { IframeToWidget } from '../protocol/messages.js';
 import type { Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin, Seed } from '@caputchin/game-sdk';
 
@@ -50,6 +51,10 @@ export class IframeHost {
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.style.border = 'none';
     iframe.style.display = 'block';
+    // Accessible name for the embedded challenge game (announced when a screen
+    // reader enters the frame). English fallback at build; replaced with the
+    // visitor's resolved-locale title at kickoff().
+    iframe.title = buildWidgetShell(null).strings.frameTitle;
     // Capture the document `load` before setting srcdoc/appending so the event
     // can't be missed. kickoff() awaits this.
     this.frameLoaded = new Promise<void>((resolve) => {
@@ -139,6 +144,11 @@ export class IframeHost {
     config: ResolvedConfig | null = null,
   ): void {
     if (!this.iframe) return;
+
+    // Localize the iframe's accessible name now the visitor's locale is
+    // resolved (the English fallback was set at build). A null locale (keyless
+    // demo / bootstrap miss) keeps the English fallback.
+    this.iframe.title = buildWidgetShell(locale).strings.frameTitle;
 
     const dispatch = (): void => {
       if (!this.iframe) return;

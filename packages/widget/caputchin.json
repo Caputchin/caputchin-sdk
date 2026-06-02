@@ -36,6 +36,10 @@
       "overlayClose": {
         "name": "Close button aria-label",
         "description": "Screen-reader label for the close (x) button on the fullscreen game dialog."
+      },
+      "frameTitle": {
+        "name": "Challenge frame title",
+        "description": "Accessible name (title attribute) for the iframe running the challenge game. Announced when a screen reader enters the frame."
       }
     },
     "presets": {
@@ -50,7 +54,8 @@
         "brandTag": "see no data",
         "simpleAriaCheckbox": "Verify you are human",
         "simpleAriaStatus": "Caputchin verification status",
-        "overlayClose": "Close"
+        "overlayClose": "Close",
+        "frameTitle": "Caputchin verification challenge"
       },
       "Arabic": {
         "_lang": "ar",
@@ -63,7 +68,8 @@
         "brandTag": "أعيننا مغمضة",
         "simpleAriaCheckbox": "تحقّق من أنك إنسان",
         "simpleAriaStatus": "حالة التحقق من كابوتشن",
-        "overlayClose": "إغلاق"
+        "overlayClose": "إغلاق",
+        "frameTitle": "تحدّي التحقق من كابوتشن"
       },
       "Chinese (Simplified)": {
         "_lang": "zh-Hans",
@@ -76,7 +82,8 @@
         "brandTag": "视而不见",
         "simpleAriaCheckbox": "验证您是真人",
         "simpleAriaStatus": "Caputchin 验证状态",
-        "overlayClose": "关闭"
+        "overlayClose": "关闭",
+        "frameTitle": "Caputchin 验证挑战"
       },
       "Spanish": {
         "_lang": "es",
@@ -89,7 +96,8 @@
         "brandTag": "ojos que no ven",
         "simpleAriaCheckbox": "Verifica que eres humano",
         "simpleAriaStatus": "Estado de verificación de Caputchin",
-        "overlayClose": "Cerrar"
+        "overlayClose": "Cerrar",
+        "frameTitle": "Desafío de verificación de Caputchin"
       },
       "Portuguese": {
         "_lang": "pt",
@@ -102,7 +110,8 @@
         "brandTag": "de olhos fechados",
         "simpleAriaCheckbox": "Verifique que você é humano",
         "simpleAriaStatus": "Status de verificação do Caputchin",
-        "overlayClose": "Fechar"
+        "overlayClose": "Fechar",
+        "frameTitle": "Desafio de verificação do Caputchin"
       },
       "French": {
         "_lang": "fr",
@@ -115,7 +124,8 @@
         "brandTag": "les yeux fermés",
         "simpleAriaCheckbox": "Vérifiez que vous êtes humain",
         "simpleAriaStatus": "État de vérification Caputchin",
-        "overlayClose": "Fermer"
+        "overlayClose": "Fermer",
+        "frameTitle": "Défi de vérification Caputchin"
       },
       "German": {
         "_lang": "de",
@@ -128,7 +138,8 @@
         "brandTag": "Augen zu",
         "simpleAriaCheckbox": "Bestätige, dass du ein Mensch bist",
         "simpleAriaStatus": "Caputchin-Verifizierungsstatus",
-        "overlayClose": "Schließen"
+        "overlayClose": "Schließen",
+        "frameTitle": "Caputchin-Verifizierungsaufgabe"
       },
       "Russian": {
         "_lang": "ru",
@@ -141,7 +152,8 @@
         "brandTag": "закрываем глаза",
         "simpleAriaCheckbox": "Подтвердите, что вы человек",
         "simpleAriaStatus": "Статус проверки Caputchin",
-        "overlayClose": "Закрыть"
+        "overlayClose": "Закрыть",
+        "frameTitle": "Проверочное задание Caputchin"
       },
       "Japanese": {
         "_lang": "ja",
@@ -154,7 +166,8 @@
         "brandTag": "見ない約束",
         "simpleAriaCheckbox": "人間であることを確認",
         "simpleAriaStatus": "Caputchin 確認ステータス",
-        "overlayClose": "閉じる"
+        "overlayClose": "閉じる",
+        "frameTitle": "Caputchin 認証チャレンジ"
       },
       "Korean": {
         "_lang": "ko",
@@ -167,7 +180,8 @@
         "brandTag": "눈을 감습니다",
         "simpleAriaCheckbox": "사람인지 확인",
         "simpleAriaStatus": "Caputchin 인증 상태",
-        "overlayClose": "닫기"
+        "overlayClose": "닫기",
+        "frameTitle": "Caputchin 인증 챌린지"
       },
       "Indonesian": {
         "_lang": "id",
@@ -180,7 +194,8 @@
         "brandTag": "kami tutup mata",
         "simpleAriaCheckbox": "Verifikasi bahwa Anda manusia",
         "simpleAriaStatus": "Status verifikasi Caputchin",
-        "overlayClose": "Tutup"
+        "overlayClose": "Tutup",
+        "frameTitle": "Tantangan verifikasi Caputchin"
       }
     }
   },
