@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.1.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.0.0...widget-v3.1.0) (2026-06-02)
+
+
+### Features
+
+* **widget:** add opt-in @caputchin/widget/jsx React typings ([c6f94ac](https://github.com/Caputchin/caputchin-sdk/commit/c6f94ac1defdfbbeb53cffdcd6c7142709bb228f))
+* **widget:** surface the verifying state across no-verify game layouts ([ce985e7](https://github.com/Caputchin/caputchin-sdk/commit/ce985e7e93fcf39808c189adebafc6545d86a5c2))
+
+
+### Bug Fixes
+
+* **widget:** cap width/height=full iframe to its definite container so oversized games reflow ([d6b3a15](https://github.com/Caputchin/caputchin-sdk/commit/d6b3a1590d1f91d5d92cbb317f4325207a0253c3))
+* **widget:** localized accessible title on the challenge iframe (11 languages) ([b5f7887](https://github.com/Caputchin/caputchin-sdk/commit/b5f7887ed5163bf22ebdbc2758c4d640a2a23e19))
+
 ## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v2.3.0...widget-v3.0.0) (2026-06-01)
 
 
