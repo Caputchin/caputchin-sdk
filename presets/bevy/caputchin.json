@@ -1,0 +1,10 @@
+{
+  "entry": "dist/{{project-name}}.js",
+  "run": {
+    "entry": "dist/run.js",
+    "modules": [
+      { "name": "{{project-name}}.wasm", "path": "dist/{{project-name}}.wasm", "type": "wasm" }
+    ]
+  },
+  "preferred": { "width": 420, "height": 320 }
+}

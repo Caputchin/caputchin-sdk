@@ -1,2 +1,7 @@
 packages:
   - "packages/*"
+  - "kits/*"
+  - "presets/*"
+  # cargo-generate templates carry {{placeholder}} package.json files; they are
+  # scaffolds, not workspace packages.
+  - "!presets/bevy"

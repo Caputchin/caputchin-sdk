@@ -10,9 +10,18 @@
       "component": "replay-contract",
       "package-name": "@caputchin/replay-contract"
     },
-    "packages/engine-runtime": {
+    "kits/engine-runtime": {
       "component": "engine-runtime",
       "package-name": "@caputchin/engine-runtime"
+    },
+    "kits/replay-wasm": {
+      "component": "replay-wasm",
+      "package-name": "@caputchin/replay-wasm"
+    },
+    "kits/replay-rs": {
+      "release-type": "rust",
+      "component": "replay-rs",
+      "package-name": "caputchin-replay-rs"
     },
     "packages/game-sdk": {
       "component": "game-sdk",

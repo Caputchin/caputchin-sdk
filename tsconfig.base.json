@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "paths": {
       "@caputchin/replay-contract": ["./packages/replay-contract/src/index.ts"],
-      "@caputchin/engine-runtime": ["./packages/engine-runtime/src/index.ts"],
+      "@caputchin/engine-runtime": ["./kits/engine-runtime/src/index.ts"],
+      "@caputchin/replay-wasm": ["./kits/replay-wasm/src/index.ts"],
       "@caputchin/game-sdk": ["./packages/game-sdk/src/index.ts"],
       "@caputchin/widget": ["./packages/widget/src/index.ts"]
     }

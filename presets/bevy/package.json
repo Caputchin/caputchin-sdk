@@ -1,0 +1,20 @@
+{
+  "name": "{{project-name}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build": "pnpm build:wasm && tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@caputchin/game-sdk": "^3.0.0",
+    "@caputchin/replay-contract": "^0.2.0",
+    "@caputchin/replay-wasm": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0"
+  }
+}

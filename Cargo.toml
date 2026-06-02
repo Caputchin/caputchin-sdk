@@ -1,0 +1,11 @@
+# Cargo workspace for the Rust members of the SDK. Kept deliberately small: the
+# only published crate is the replay authoring crate (kits/replay-rs). pnpm
+# ignores this file, and pnpm-workspace.yaml ignores Cargo dirs, so the two
+# toolchains coexist in one repo.
+#
+# presets/bevy is EXCLUDED: it is a cargo-generate template whose Cargo.toml
+# carries {{placeholders}} and is not a real, parseable crate.
+[workspace]
+resolver = "2"
+members = ["kits/replay-rs"]
+exclude = ["presets/bevy"]

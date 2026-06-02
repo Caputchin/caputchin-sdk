@@ -1,0 +1,19 @@
+[package]
+name = "caputchin-replay-rs"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Rust authoring crate for Caputchin server-validated game replay: turns a deterministic sim into the C-ABI a headless WASM replay artifact exports."
+repository = "https://github.com/Caputchin/caputchin-sdk"
+homepage = "https://github.com/Caputchin/caputchin-sdk/tree/main/kits/replay-rs"
+# API docs are auto-built and hosted by docs.rs on publish (the Rust-native
+# equivalent of the committed TypeDoc markdown the JS packages ship).
+documentation = "https://docs.rs/caputchin-replay-rs"
+keywords = ["caputchin", "replay", "deterministic", "wasm", "captcha"]
+categories = ["wasm", "game-development"]
+readme = "README.md"
+
+# Plain rlib: this crate ships a macro plus the Verdict type. The author's GAME
+# crate is the one that sets crate-type = ["cdylib"] to emit the wasm; this crate
+# is a normal dependency of it.
+[lib]

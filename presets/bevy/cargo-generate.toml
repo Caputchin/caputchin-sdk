@@ -1,0 +1,5 @@
+[template]
+description = "A Caputchin replay game on the Bevy engine: a headless deterministic-replay scaffold plus the build pipeline and a render upgrade path."
+cargo_generate_version = ">=0.18.0"
+# cargo-generate provides `project-name` (from --name) and `crate_name`
+# (its snake_case form) automatically; no extra placeholders are needed.

@@ -1,0 +1,48 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "A Caputchin replay game on the Bevy engine."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# The deterministic sim (src/sim.rs) is plain integer Rust and compiles into
+# both builds, so the server replay and the browser run identical logic. The
+# `render` feature additionally pulls full Bevy (DefaultPlugins -> WebGL2) for
+# the live browser build. (Advanced: you can author the sim as bevy_ecs and
+# share it both ends, as the Wall Smash reference game does.)
+[dependencies]
+caputchin-replay-rs = "0.1"
+
+bevy = { version = "0.18", default-features = false, optional = true, features = [
+    "bevy_winit",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_sprite_render",
+    "bevy_window",
+    "webgl2",
+] }
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+
+[dependencies.web-sys]
+version = "0.3"
+optional = true
+features = ["Window", "CustomEvent", "CustomEventInit", "EventTarget"]
+
+[features]
+# Headless replay build is the default (bevy_ecs only -> tiny, zero-import wasm).
+default = []
+# Live browser build: full Bevy render + the wasm-bindgen entry.
+render = ["dep:bevy", "dep:wasm-bindgen", "dep:js-sys", "dep:web-sys"]
+
+# Size-tuned release profile for the SHIPPED artifact (slow to build).
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
