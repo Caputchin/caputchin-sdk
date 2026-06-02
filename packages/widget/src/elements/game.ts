@@ -291,6 +291,12 @@ export class CaputchinGame extends HTMLElement {
     const box = document.createElement('div');
     box.setAttribute('part', 'loading');
     box.setAttribute('aria-hidden', 'true');
+    // modal / fullscreen mount a small checkbox ENTRY (the game opens in a
+    // dialog on click), not a game-area frame - so the loading placeholder must
+    // be entry-sized, not the tall game-frame box (which dwarfs the entry it
+    // resolves into). Inline keeps the full game-frame skeleton.
+    const layout = this.state.config?.layout;
+    if (layout === 'modal' || layout === 'fullscreen') box.dataset['overlay'] = '';
     const spinner = document.createElement('div');
     spinner.setAttribute('part', 'loading-spinner');
     box.appendChild(spinner);
@@ -385,6 +391,10 @@ const LOADING_SKELETON_CSS = [
   'background:var(--cpt-skin-surface_bg,#f4f4f5);',
   'border:1px solid var(--cpt-skin-border,#e4e4e7);border-radius:0.5rem;',
   '}',
+  // Overlay (modal / fullscreen) entry: compact, checkbox-entry-sized placeholder
+  // instead of the tall game-frame box, so it matches the small entry it becomes.
+  '[part="loading"][data-overlay]{width:fit-content;height:auto;min-width:12rem;min-height:3rem}',
+  '[part="loading"][data-overlay] [part="loading-spinner"]{width:22px;height:22px}',
   '[part="loading-spinner"]{',
   'width:28px;height:28px;border-radius:50%;',
   'border:3px solid var(--cpt-skin-border,#d4d4d8);',
