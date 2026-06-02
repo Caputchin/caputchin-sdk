@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/engine-runtime",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Optional authoring kit (deterministic primitives, shims, reducer-to-run adapter) for Caputchin server-validated game replay",
   "keywords": [
     "caputchin",

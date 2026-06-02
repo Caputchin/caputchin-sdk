@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.0...widget-v3.1.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* **widget:** keep a bootstrap-sourced game's mount fetch non-abortable so a slow resolve keeps its skin ([060435d](https://github.com/Caputchin/caputchin-sdk/commit/060435dd8d67a91891369f86625601755f0083d7))
+
 ## [3.1.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.0.0...widget-v3.1.0) (2026-06-02)
 
 

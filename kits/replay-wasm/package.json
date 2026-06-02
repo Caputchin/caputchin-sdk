@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/replay-wasm",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generic host glue for a Caputchin headless WASM replay artifact: precompiled-module instantiation, linear-memory marshalling over the cap_alloc/cap_run C-ABI, and gzip+base64 inline decode.",
   "keywords": [
     "caputchin",
