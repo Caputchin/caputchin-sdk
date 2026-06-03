@@ -5,19 +5,24 @@
 // server resolves one preset per axis (shell + game) and returns the resolved
 // presets + the game URL/integrity.
 //
-// Two callers with opposite timeout policies:
-//   - OPTIONAL (an in-page `game-src` bundle exists): first paint blocks on
-//     this call up to a 2 second hard timeout; on timeout / network error /
-//     malformed response it degrades to bundled-only rendering. The overrides
-//     are best-effort there because the bundle can paint without them.
-//   - MANDATORY (a bootstrap-sourced game: a marketplace id / gated key with
-//     no `game-src`): the bootstrap is the SOLE source of the resolved presets
-//     (skin/locale/config + footprint) AND the bundle, so it must NOT be
-//     aborted - a slow bootstrap has to slow-load, never drop to an unstyled /
-//     blank render. That caller uses `fetchBootstrapResilient` (no per-attempt
-//     abort + a bounded retry on transient failure).
+// Resilience policy (`fetchBootstrapResilient`, the `<caputchin-game>` caller):
+// the bootstrap carries the game's preferred footprint + resolved skin/locale,
+// so a SILENT degrade mis-sizes the game and drops to bundled skin. The old
+// behaviour aborted at a hard 2s and degraded silently, which on a slow service
+// rendered an unstyled, wrongly-sized game. Now each attempt gets a GENEROUS
+// per-attempt ceiling (tolerate a slow-but-alive server instead of aborting it)
+// with a bounded retry on FAST transient failure (network reset / 5xx /
+// malformed). A per-attempt TIMEOUT is terminal - the ceiling already gave the
+// server a full window, and retrying a slow server only multiplies the wait -
+// so the worst-case spinner is one ceiling, never unbounded. On final exhaustion
+// the caller degrades to bundled AND fires the `degraded` event (never silent).
+//
+// `fetchBootstrap` is the single-attempt primitive (still used by the cap-only
+// `<caputchin-widget>`, whose bundled checkbox is fully usable so a shorter
+// window is the right trade). Both accept an external `signal` (the element's
+// disconnect AbortController) so a torn-down widget stops fetching/retrying.
 
-import type { BootstrapResponse } from './types.js';
+import type { BootstrapResponse, DegradeReason } from './types.js';
 
 export interface FetchBootstrapInput {
   apiHost: string;
@@ -38,20 +43,32 @@ export interface FetchBootstrapInput {
    *  navigator); the server falls back to the bundled defaults. */
   locale?: string | null;
   skin?: string | null;
-  /** Per-request abort window. `undefined` → the 2s default. A positive number
-   *  → that window. `null` → NO abort signal (the request runs to completion);
-   *  used by the mandatory bootstrap so a slow resolve slow-loads instead of
-   *  degrading. */
+  /** Per-request abort window. `undefined` → the default. A positive number
+   *  → that window. `null` → NO timeout signal (the request runs until it
+   *  resolves or the external `signal` aborts). */
   timeoutMs?: number | null;
+  /** External abort signal, merged with the per-request timeout. The elements
+   *  pass their disconnect AbortController here so a removed widget stops
+   *  fetching (and the resilient loop stops retrying). */
+  signal?: AbortSignal;
 }
 
+/** Single-attempt default window (`fetchBootstrap`). Kept short: its only
+ *  caller is the cap-only widget, whose bundled checkbox paints fine without
+ *  the resolve, so a long blocking wait would be the worse trade. */
 export const BOOTSTRAP_DEFAULT_TIMEOUT_MS = 2000;
 
-/** Mandatory-bootstrap retry policy. A bootstrap-sourced game has no in-page
- *  fallback, so a transient `degrade` (5xx / network / malformed) must be
- *  retried rather than rendered unstyled. Bounded so a genuinely-down server
- *  doesn't loop forever; on exhaustion the caller's existing degrade path
- *  (run-time marketplace resolve) still recovers the bundle, just unstyled. */
+/** Resilient per-attempt ceiling (`fetchBootstrapResilient`). Generous on
+ *  purpose: it must tolerate a slow-but-alive server (the bug it replaces
+ *  aborted those at 2s and mis-rendered), while still bounding a HUNG
+ *  connection so the loading skeleton can't spin forever. */
+export const BOOTSTRAP_ATTEMPT_TIMEOUT_MS = 8000;
+
+/** Resilient retry policy. A `degrade` from a FAST transient failure (5xx /
+ *  network / malformed) is retried; a per-attempt `timeout` is terminal (the
+ *  ceiling already gave the server a full window). Bounded so a genuinely-down
+ *  server doesn't loop forever; on exhaustion the caller degrades to bundled
+ *  and fires the `degraded` event. */
 export const BOOTSTRAP_MANDATORY_ATTEMPTS = 3;
 export const BOOTSTRAP_MANDATORY_BACKOFF_MS = 400;
 
@@ -74,28 +91,35 @@ export interface BootstrapGateError {
  *  - `ok`      - resolved presets + (gated) ticket; mount normally.
  *  - `gate`    - authoritative 409; surface an error, do NOT mount a round.
  *  - `degrade` - transient (timeout / network / 5xx / malformed); fall back to
- *                bundled-only rendering. The old "everything is null" behavior,
- *                now scoped to NON-authoritative failures. */
+ *                bundled-only rendering and fire the `degraded` event. The
+ *                `reason` distinguishes a slow/hung server (`timeout`, terminal
+ *                for the resilient retry) from a fast failure worth retrying. */
 export type BootstrapResult =
   | { kind: 'ok'; response: BootstrapResponse }
   | { kind: 'gate'; error: BootstrapGateError }
-  | { kind: 'degrade' };
+  | { kind: 'degrade'; reason: DegradeReason };
 
 export async function fetchBootstrap(input: FetchBootstrapInput): Promise<BootstrapResult> {
-  // `undefined` → default 2s; an explicit `null` → no abort window at all.
+  // `undefined` → default window; an explicit `null` → no timeout (runs until
+  // it resolves or the external signal aborts).
   const timeoutMs = input.timeoutMs === undefined ? BOOTSTRAP_DEFAULT_TIMEOUT_MS : input.timeoutMs;
   const url = buildBootstrapUrl(input);
-  const { signal, cancel } = buildTimeoutSignal(timeoutMs);
+  const { signal, cancel } = buildTimeoutSignal(timeoutMs, input.signal);
   try {
-    // Omit `signal` entirely when null so the request runs to completion (the
-    // mandatory path). A merely-slow bootstrap then resolves `ok` rather than
-    // aborting into a degrade.
+    // Omit `signal` entirely only when there's nothing to abort on (no timeout
+    // AND no external signal). A merely-slow bootstrap then resolves `ok`.
     const res = await fetch(url, signal ? { signal } : {});
     if (res.ok) {
-      const raw: unknown = await res.json();
+      let raw: unknown;
+      try {
+        raw = await res.json();
+      } catch {
+        // 2xx with an unparseable body: bundled fallback, tagged malformed.
+        return { kind: 'degrade', reason: 'malformed' };
+      }
       const response = validateBootstrapResponse(raw);
       // Malformed-but-200 stays a degrade (bundled fallback), as before.
-      return response ? { kind: 'ok', response } : { kind: 'degrade' };
+      return response ? { kind: 'ok', response } : { kind: 'degrade', reason: 'malformed' };
     }
     // Authoritative gate rejection: a 409 carrying a known gate code. The
     // server says this key+game can't make a valid round, so degrading into a
@@ -105,12 +129,13 @@ export async function fetchBootstrap(input: FetchBootstrapInput): Promise<Bootst
       const gate = await parseGateError(res);
       if (gate) return { kind: 'gate', error: gate };
     }
-    return { kind: 'degrade' };
-  } catch {
-    // AbortError on timeout, TypeError on network failure, SyntaxError on
-    // invalid JSON, anything else - uniform degrade. The widget reads degrade
-    // as "no overrides, mount with bundled".
-    return { kind: 'degrade' };
+    return { kind: 'degrade', reason: 'http' };
+  } catch (err) {
+    // AbortError on timeout / external abort → `timeout` (terminal for the
+    // resilient retry); any other throw (TypeError network failure, etc.) →
+    // `network`. The widget reads degrade as "no overrides, mount with bundled".
+    const aborted = (err as { name?: string } | null)?.name === 'AbortError';
+    return { kind: 'degrade', reason: aborted ? 'timeout' : 'network' };
   } finally {
     cancel();
   }
@@ -134,46 +159,92 @@ async function parseGateError(res: Response): Promise<BootstrapGateError | null>
   return { code, message };
 }
 
-// AbortSignal.timeout is the natural fit but is not available in every
-// runtime we test against (happy-dom strips it). Fall back to
-// AbortController + setTimeout; the returned `cancel` clears the timer so
-// the abort never fires after a successful response (avoiding bogus
-// unhandled-rejection noise in long-lived test suites). `ms === null` →
-// no signal at all (the request is never aborted).
-function buildTimeoutSignal(ms: number | null): { signal: AbortSignal | null; cancel: () => void } {
-  if (ms === null) return { signal: null, cancel: () => {} };
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    return { signal: AbortSignal.timeout(ms), cancel: () => {} };
-  }
+// Build the fetch abort signal from a per-request timeout merged with the
+// caller's external (disconnect) signal. A single AbortController fans both in
+// rather than AbortSignal.timeout / AbortSignal.any (happy-dom strips both, and
+// we need the merge regardless). The returned `cancel` clears the timer and
+// detaches the external listener so the abort never fires after the response
+// settles (avoiding bogus unhandled-rejection noise in long-lived suites).
+//   - `ms === null` AND no external → no signal at all (never aborted).
+//   - external already aborted → the controller starts aborted (fetch rejects
+//     immediately with AbortError).
+function buildTimeoutSignal(
+  ms: number | null,
+  external?: AbortSignal,
+): { signal: AbortSignal | null; cancel: () => void } {
+  if (ms === null && !external) return { signal: null, cancel: () => {} };
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  return { signal: ctrl.signal, cancel: () => clearTimeout(timer) };
+  const cleanups: Array<() => void> = [];
+  if (external) {
+    if (external.aborted) ctrl.abort();
+    else {
+      const onAbort = (): void => ctrl.abort();
+      external.addEventListener('abort', onAbort, { once: true });
+      cleanups.push(() => external.removeEventListener('abort', onAbort));
+    }
+  }
+  // Skip arming the timer when the external signal already aborted the
+  // controller - there's nothing left to time out.
+  if (ms !== null && !ctrl.signal.aborted) {
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    cleanups.push(() => clearTimeout(timer));
+  }
+  return { signal: ctrl.signal, cancel: () => { for (const c of cleanups) c(); } };
 }
 
-/** The mandatory-bootstrap fetch: no per-attempt abort (a slow resolve
- *  slow-loads to completion) plus a bounded retry on transient `degrade`
- *  (5xx / network / malformed). An authoritative `gate` (409) and a successful
- *  `ok` are terminal - returned on the first occurrence, never retried. After
- *  the attempt budget is spent it returns the last `degrade` so the caller's
- *  existing fallback (run-time marketplace resolve) still recovers the bundle.
+/** The resilient bootstrap fetch (the `<caputchin-game>` caller): a GENEROUS
+ *  per-attempt ceiling (tolerate a slow-but-alive server) plus a bounded retry
+ *  on FAST transient `degrade` (5xx / network / malformed). Terminal outcomes,
+ *  returned on first occurrence and never retried:
+ *    - `ok` / `gate` (409)        - authoritative.
+ *    - `degrade` reason `timeout` - the ceiling already gave the server a full
+ *      window; retrying a slow/hung server only multiplies the wait, so we stop
+ *      here. This is what bounds the worst-case loading spinner to one ceiling.
+ *  After the attempt budget is spent it returns the last `degrade` so the
+ *  caller degrades to bundled (and fires the `degraded` event). The external
+ *  `signal` (disconnect) short-circuits the loop between attempts.
  *
- *  `attempts` / `backoffMs` are injectable for tests; `delayFn` defaults to a
- *  real `setTimeout` and is stubbed to a no-op in unit tests so retries don't
- *  add wall-clock. */
+ *  `attempts` / `backoffMs` / `attemptTimeoutMs` are injectable for tests;
+ *  `delayFn` defaults to a real `setTimeout` and is stubbed in unit tests so
+ *  retries don't add wall-clock. */
 export async function fetchBootstrapResilient(
   input: FetchBootstrapInput,
-  opts: { attempts?: number; backoffMs?: number; delayFn?: (ms: number) => Promise<void> } = {},
+  opts: {
+    attempts?: number;
+    backoffMs?: number;
+    attemptTimeoutMs?: number | null;
+    delayFn?: (ms: number) => Promise<void>;
+  } = {},
 ): Promise<BootstrapResult> {
   const attempts = Math.max(1, opts.attempts ?? BOOTSTRAP_MANDATORY_ATTEMPTS);
   const backoffMs = opts.backoffMs ?? BOOTSTRAP_MANDATORY_BACKOFF_MS;
-  const delayFn = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  let last: BootstrapResult = { kind: 'degrade' };
+  const attemptTimeoutMs =
+    opts.attemptTimeoutMs === undefined ? BOOTSTRAP_ATTEMPT_TIMEOUT_MS : opts.attemptTimeoutMs;
+  const baseDelay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  // Backoff that resolves early when the external signal aborts, so a disconnect
+  // mid-sleep stops the loop immediately instead of waiting out the window.
+  const delay = (ms: number): Promise<void> => new Promise<void>((resolve) => {
+    const sig = input.signal;
+    if (sig?.aborted) { resolve(); return; }
+    let settled = false;
+    const done = (): void => {
+      if (settled) return;
+      settled = true;
+      sig?.removeEventListener('abort', done);
+      resolve();
+    };
+    sig?.addEventListener('abort', done, { once: true });
+    void baseDelay(ms).then(done);
+  });
+  let last: BootstrapResult = { kind: 'degrade', reason: 'network' };
   for (let attempt = 0; attempt < attempts; attempt++) {
-    // `timeoutMs: null` → the request is never aborted; only a real transient
-    // failure produces a degrade worth retrying.
-    last = await fetchBootstrap({ ...input, timeoutMs: null });
-    if (last.kind !== 'degrade') return last;
-    if (attempt < attempts - 1 && backoffMs > 0) await delayFn(backoffMs * 2 ** attempt);
+    // The widget was removed mid-loop: stop, the caller's mount is guarded off.
+    if (input.signal?.aborted) return last;
+    last = await fetchBootstrap({ ...input, timeoutMs: attemptTimeoutMs });
+    // `ok` / `gate` are authoritative; a `timeout` degrade is terminal (see above).
+    if (last.kind !== 'degrade' || last.reason === 'timeout') return last;
+    if (input.signal?.aborted) return last;
+    if (attempt < attempts - 1 && backoffMs > 0) await delay(backoffMs * 2 ** attempt);
   }
   return last;
 }

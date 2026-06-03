@@ -133,28 +133,34 @@ describe('fetchBootstrap', () => {
     expect(out).toEqual({ kind: 'ok', response: { ...body, requiresGame: false } });
   });
 
-  it('degrades on a transient 5xx (bundled fallback, no hard error)', async () => {
+  it('degrades on a transient 5xx (bundled fallback, no hard error) tagged http', async () => {
     fetchSpy.mockResolvedValue(new Response('boom', { status: 500 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'http' });
   });
 
-  it('degrades on network error', async () => {
+  it('degrades on network error tagged network', async () => {
     fetchSpy.mockRejectedValue(new TypeError('network'));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'network' });
   });
 
-  it('degrades on invalid JSON body', async () => {
+  it('degrades on an AbortError (timeout) tagged timeout', async () => {
+    fetchSpy.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: 50 });
+    expect(out).toEqual({ kind: 'degrade', reason: 'timeout' });
+  });
+
+  it('degrades on invalid JSON body tagged malformed', async () => {
     fetchSpy.mockResolvedValue(new Response('not-json', { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'malformed' });
   });
 
-  it('degrades on malformed top-level shape', async () => {
+  it('degrades on malformed top-level shape tagged malformed', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: 'bogus', game: null }), { status: 200 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'malformed' });
   });
 
   it('surfaces an authoritative 409 gate-game-not-installed as kind:gate with code + message', async () => {
@@ -170,34 +176,49 @@ describe('fetchBootstrap', () => {
     expect(out).toEqual({ kind: 'gate', error: { code: 'gate-misconfigured', message: '' } });
   });
 
-  it('degrades on a 409 carrying an UNKNOWN error code (not an authoritative gate code)', async () => {
+  it('degrades on a 409 carrying an UNKNOWN error code (not an authoritative gate code) tagged http', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'something-else' }), { status: 409 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'http' });
   });
 
-  it('degrades on a 409 with a non-JSON body', async () => {
+  it('degrades on a 409 with a non-JSON body tagged http', async () => {
     fetchSpy.mockResolvedValue(new Response('nope', { status: 409 }));
     const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k' });
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'http' });
   });
 
-  it('passes AbortSignal.timeout to fetch (caller cannot extend the window)', async () => {
+  it('passes a timeout abort signal to fetch (caller cannot extend the window)', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
     await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: 1000 });
     const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('timeoutMs:null sends NO abort signal (the mandatory bootstrap runs to completion)', async () => {
+  it('timeoutMs:null + no external signal sends NO abort signal', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
     await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: null });
     const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
     expect(init?.signal).toBeUndefined();
   });
+
+  it('merges an external signal: a pre-aborted signal aborts the fetch (degrade timeout)', async () => {
+    // happy-dom's fetch honors an already-aborted signal by rejecting AbortError.
+    fetchSpy.mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.signal?.aborted) return Promise.reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    });
+    const ext = new AbortController();
+    ext.abort();
+    const out = await fetchBootstrap({ apiHost: 'https://api', sitekey: 'k', timeoutMs: null, signal: ext.signal });
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+    expect(init?.signal?.aborted).toBe(true);
+    expect(out).toEqual({ kind: 'degrade', reason: 'timeout' });
+  });
 });
 
-describe('fetchBootstrapResilient (mandatory bootstrap)', () => {
+describe('fetchBootstrapResilient (resilient bootstrap)', () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     fetchSpy = vi.fn();
@@ -207,9 +228,19 @@ describe('fetchBootstrapResilient (mandatory bootstrap)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('runs each attempt with NO abort signal (a slow resolve slow-loads, never aborts)', async () => {
+  it('runs each attempt with a generous per-attempt ceiling signal (tolerates a slow server)', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
     await fetchBootstrapResilient({ apiHost: 'https://api', sitekey: null, game: 'o/r' });
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('attemptTimeoutMs:null opts out of the per-attempt ceiling (no signal)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
+    await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r' },
+      { attemptTimeoutMs: null },
+    );
     const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined;
     expect(init?.signal).toBeUndefined();
   });
@@ -227,6 +258,16 @@ describe('fetchBootstrapResilient (mandatory bootstrap)', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
+  it('treats a per-attempt timeout as terminal (no retry — bounds the spinner)', async () => {
+    fetchSpy.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r' },
+      { attempts: 3, backoffMs: 0 },
+    );
+    expect(out).toEqual({ kind: 'degrade', reason: 'timeout' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('returns an authoritative gate (409) immediately without retrying', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'gate-game-not-installed' }), { status: 409 }));
     const out = await fetchBootstrapResilient(
@@ -237,13 +278,41 @@ describe('fetchBootstrapResilient (mandatory bootstrap)', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('gives up after the attempt budget and returns the last degrade', async () => {
+  it('gives up after the attempt budget and returns the last (fast-failure) degrade', async () => {
     fetchSpy.mockRejectedValue(new TypeError('network'));
     const out = await fetchBootstrapResilient(
       { apiHost: 'https://api', sitekey: null, game: 'o/r' },
       { attempts: 2, backoffMs: 0 },
     );
-    expect(out).toEqual({ kind: 'degrade' });
+    expect(out).toEqual({ kind: 'degrade', reason: 'network' });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('bails the inter-attempt backoff immediately when the signal aborts mid-sleep', async () => {
+    const ext = new AbortController();
+    fetchSpy.mockRejectedValue(new TypeError('network')); // retryable degrade
+    // A backoff that aborts the signal then NEVER resolves on its own: only the
+    // abort-aware delay wrapper can unblock it, proving disconnect-mid-sleep does
+    // not wait out the window (otherwise this test hangs).
+    const delayFn = vi.fn(() => { ext.abort(); return new Promise<void>(() => {}); });
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r', signal: ext.signal },
+      { attempts: 3, backoffMs: 10, delayFn },
+    );
+    expect(out.kind).toBe('degrade');
+    expect(fetchSpy).toHaveBeenCalledTimes(1); // aborted during backoff → no 2nd attempt
+    expect(delayFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('short-circuits without fetching when the external signal is already aborted (disconnect)', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
+    const ext = new AbortController();
+    ext.abort();
+    const out = await fetchBootstrapResilient(
+      { apiHost: 'https://api', sitekey: null, game: 'o/r', signal: ext.signal },
+      { backoffMs: 0 },
+    );
+    expect(out.kind).toBe('degrade');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

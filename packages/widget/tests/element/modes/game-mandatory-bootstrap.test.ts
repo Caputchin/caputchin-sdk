@@ -1,15 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getGame } from '../../fixtures/test-element.js';
 
-// A bootstrap-sourced game (marketplace id, no in-page `game-src`) has nothing
-// to paint without the bootstrap: the resolved skin/locale/config + footprint
-// AND the bundle url all ride the response. So its mount bootstrap is MANDATORY
-// - it must run to completion (slow-load), never abort at 2s into an unstyled /
-// blank render. A `game-src` (in-page bundle) mount keeps the optional 2s abort.
+// The bootstrap carries the game's preferred footprint + resolved
+// skin/locale/config (and, for a marketplace id, the bundle url), so a SILENT
+// degrade mis-sizes the game and drops to bundled skin. EVERY game mount runs
+// the bootstrap through the RESILIENT fetch: a GENEROUS per-attempt ceiling
+// tolerates a slow-but-alive server (instead of the old 2s abort that dropped it
+// into an unstyled / blank render), with a bounded retry on fast transient
+// failure and a terminal stop on timeout so the spinner is bounded. This holds
+// whether or not an in-page `game-src` bundle exists - the bundle only changes
+// what a FINAL degrade can still paint.
 //
-// Regression for the keyless skin-loss bug: on prod the skinned bootstrap is a
-// permanent cache-miss (~1.7s) and the 2s AbortSignal.timeout aborted it →
-// degrade → resolved skin lost → game rendered the bundled default skin.
+// Regression for the skin-loss bug: on prod the skinned bootstrap is a permanent
+// cache-miss (~1.7s); the old 2s abort dropped it to the bundled default skin.
+// The generous ceiling (well above that) lets it complete.
 
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
 (globalThis as Record<string, unknown>)['__IFRAME_RUNTIME__'] = '';
@@ -51,10 +55,10 @@ function deferredFetch(): { spy: ReturnType<typeof vi.fn>; resolve: (r: Response
   return { spy, resolve: resolveFn!, calls };
 }
 
-describe('mandatory bootstrap (bootstrap-sourced game)', () => {
+describe('resilient bootstrap (game mount)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('keyless game: the mount bootstrap carries NO abort signal', async () => {
+  it('keyless game: the mount bootstrap carries a generous ceiling signal (not the old no-signal, not the old 2s abort)', async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     vi.stubGlobal('fetch', vi.fn((input: string | URL, init?: RequestInit) => {
       calls.push({ url: String(input), init });
@@ -65,18 +69,23 @@ describe('mandatory bootstrap (bootstrap-sourced game)', () => {
     await settle();
     const mountCall = calls.find((c) => c.url.includes('/widget/bootstrap'));
     expect(mountCall).toBeDefined();
-    expect(mountCall!.init?.signal).toBeUndefined();
+    // A ceiling signal is present (hang-guard); a slow-but-alive server still
+    // completes because the ceiling is far above the prod cache-miss latency
+    // (covered by the resolved-skin test below).
+    expect(mountCall!.init?.signal).toBeInstanceOf(AbortSignal);
+    expect(mountCall!.init?.signal?.aborted).toBe(false);
     el.remove();
   });
 
-  it('game-src game (in-page bundle): the bootstrap keeps the 2s abort signal', async () => {
+  it('game-src game (in-page bundle): also runs the resilient ceiling (no longer the aggressive 2s abort)', async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     vi.stubGlobal('fetch', vi.fn((input: string | URL, init?: RequestInit) => {
       calls.push({ url: String(input), init });
       return Promise.resolve(new Response(JSON.stringify({ widget: null, game: null }), { status: 200 }));
     }));
-    // sitekey + game-src: bootstrap runs (for overrides) but the bundle is in
-    // page, so it is the OPTIONAL path that degrades at 2s.
+    // sitekey + game-src: the bundle is in-page, but the bootstrap still carries
+    // the footprint + resolved skin/locale, so it runs the SAME resilient ceiling
+    // as the keyless mount - a slow service no longer silently mis-renders it.
     const el = getGame({ sitekey: 'cpt_pub_x', 'game-src': 'https://example.com/g.js', 'no-verify': '', layout: 'inline' });
     document.body.appendChild(el);
     await settle();

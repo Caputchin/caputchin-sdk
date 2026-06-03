@@ -10,6 +10,7 @@ import { createInitialState, type WidgetState } from '../verify/state.js';
 import type { WidgetConfig } from '../config/widget.js';
 import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
+import { emitDegraded } from '../verify/events.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
 import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
@@ -50,20 +51,27 @@ export class CaputchinWidget extends HTMLElement {
     // box during the bootstrap wait (empty box, no FOUC of bundled).
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
 
+    // Abort the in-flight bootstrap if the element is removed mid-flight.
+    const abort = new AbortController();
+    state.bootstrapAbort = abort;
     // The SERVER resolves one preset per axis. The widget pre-resolves its
     // signal inputs first: when the `locale` / `skin` attribute is missing the
     // element falls back to the navigator language / `prefers-color-scheme`,
-    // so the server always receives one concrete value per axis.
+    // so the server always receives one concrete value per axis. The cap-only
+    // widget keeps the short single-attempt window (its bundled checkbox is
+    // fully usable, so a long blocking wait would be the worse trade).
     void fetchBootstrap({
       apiHost,
       sitekey: state.config.sitekey,
       locale: resolveLocaleSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
+      signal: abort.signal,
     }).then((result) => {
-      // Disconnect race: element removed from DOM during the bootstrap
-      // wait. The new state bag from disconnectedCallback has no config,
-      // so the guard fires and the mount is skipped.
-      if (!this.state.connected || !this.state.config) return;
+      // Disconnect race: element removed (or same-node remounted) during the
+      // bootstrap wait. A disconnect swaps in a fresh bag and a remount swaps in
+      // the next mount's bag, so `this.state !== state` means this resolution
+      // belongs to a torn-down mount and must not act on the live one.
+      if (this.state !== state || !this.state.connected || !this.state.config) return;
       // Authoritative gate rejection (409): the gated key's pool can't supply a
       // game - and this cap-only element couldn't host one anyway. Surface the
       // server's reason; verification still fails closed at /verify/start.
@@ -74,6 +82,13 @@ export class CaputchinWidget extends HTMLElement {
         fireError(this, 'gate-unavailable', reason, result.error.code);
         this.completeMount(apiHost, null);
         return;
+      }
+      // Transient degrade: the resolve failed / timed out, so the cap shell
+      // renders with bundled skin/locale. Surface it on the `degraded` event +
+      // a dev warning so a slow service is observable, never silent.
+      if (result.kind === 'degrade') {
+        console.warn(`[caputchin] bootstrap degraded (${result.reason}); rendering widget with bundled defaults`);
+        emitDegraded(this, result.reason);
       }
       const bootstrap = result.kind === 'ok' ? result.response : null;
       // This cap-only element can't host a game, but the site key is
@@ -129,6 +144,8 @@ export class CaputchinWidget extends HTMLElement {
   /** @internal Custom Element lifecycle; the browser calls this on removal. */
   disconnectedCallback(): void {
     const s = this.state;
+    // Stop any in-flight bootstrap before tearing down.
+    s.bootstrapAbort?.abort();
     s.trigger?.deactivate();
     s.presentation?.unmount();
     s.capClient?.dispose();
@@ -137,6 +154,7 @@ export class CaputchinWidget extends HTMLElement {
     // makes the bootstrap .then guard fire if the response arrives after
     // disconnect.
     s.config = null;
+    s.bootstrapAbort = null;
     s.trigger = null;
     s.triggerCtx = null;
     s.capClient = null;

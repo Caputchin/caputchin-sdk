@@ -90,6 +90,40 @@ describe('CaputchinGame lifecycle', () => {
   });
 });
 
+describe('bootstrap degrade is observable (not silent)', () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it('fires the `degraded` event with a reason when the resolve times out', async () => {
+    // A per-attempt timeout (AbortError) is terminal in the resilient loop, so
+    // this is one fast reject rather than the full retry budget.
+    vi.mocked(fetch).mockRejectedValueOnce(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const el = getGame({ game: '@x/y' });
+    const reasons: string[] = [];
+    el.addEventListener('degraded', (e) => reasons.push((e as CustomEvent).detail.reason));
+    document.body.appendChild(el);
+    await flush();
+    expect(reasons).toContain('timeout');
+    el.remove();
+  });
+
+  it('aborts the in-flight bootstrap on disconnect (no late mount, no throw)', async () => {
+    let abortedSignal: AbortSignal | null = null;
+    vi.mocked(fetch).mockImplementationOnce((_url: string, init?: RequestInit) => {
+      abortedSignal = init?.signal ?? null;
+      // Never resolves on its own; disconnect must abort it.
+      return new Promise((_res, rej) => {
+        init?.signal?.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+      });
+    });
+    const el = getGame({ game: '@x/y' });
+    document.body.appendChild(el);
+    el.remove();
+    await flush();
+    expect(abortedSignal).not.toBeNull();
+    expect(abortedSignal!.aborted).toBe(true);
+  });
+});
+
 describe('both widgets coexist', () => {
   it('register independently and both work on one page', () => {
     const w = getWidget({ sitekey: 'k' });

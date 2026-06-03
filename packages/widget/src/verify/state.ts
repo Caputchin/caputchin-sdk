@@ -21,6 +21,9 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
   triggerCtx: TriggerContext | null;
   lockedToken: string | null;
   connected: boolean;
+  /** Aborts the in-flight bootstrap fetch (and its resilient retry loop) when
+   *  the element disconnects, so a removed widget stops fetching mid-flight. */
+  bootstrapAbort: AbortController | null;
   // ---- game-only fields (left undefined on the cap widget) ----
   gamePresentation?: GamePresentation | null;
   iframeHost?: IframeHost | null;
@@ -62,6 +65,7 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     triggerCtx: null,
     lockedToken: null,
     connected: false,
+    bootstrapAbort: null,
     gamePresentation: null,
     iframeHost: null,
     gameStartedEmitted: false,

@@ -9,6 +9,15 @@
 
 import type { Layout, ResolvedConfig, ResolvedLocale, ResolvedSkin } from '@caputchin/game-sdk';
 
+/** Why a bootstrap fetch fell back to bundled defaults. Carried on the
+ *  customer-facing `degraded` event's `detail.reason` so telemetry can tell a
+ *  slow / unreachable resolve apart from a malformed response.
+ *  - `timeout`   - the resolve exceeded its time budget (service slow / hung).
+ *  - `network`   - the fetch itself failed (offline, DNS, CORS, connection reset).
+ *  - `http`      - a non-2xx, non-authoritative response (5xx, unexpected 4xx).
+ *  - `malformed` - a 2xx whose body was not valid JSON / not the expected shape. */
+export type DegradeReason = 'timeout' | 'network' | 'http' | 'malformed';
+
 /** One resolved preset per axis. A null axis means the server resolved nothing
  *  (e.g. the game declares no presets for that axis) - the widget/game falls
  *  back to its bundled default for that axis. */

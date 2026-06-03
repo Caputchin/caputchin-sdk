@@ -16,7 +16,8 @@ import type { GameConfig } from '../config/game.js';
 import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
-import { fetchBootstrap, fetchBootstrapResilient } from '../bootstrap/client.js';
+import { emitDegraded } from '../verify/events.js';
+import { fetchBootstrapResilient } from '../bootstrap/client.js';
 import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
@@ -79,23 +80,26 @@ export class CaputchinGame extends HTMLElement {
       return;
     }
 
-    // Is the bootstrap the SOLE source of the game's presentation? A
-    // bootstrap-sourced game (marketplace id / gated key) with no in-page
-    // `game-src` bundle has nothing to paint without the bootstrap: the
-    // resolved skin/locale/config + footprint AND the bundle url all ride the
-    // response. For that case the bootstrap is MANDATORY - it must run to
-    // completion (slow-load), never abort to an unstyled / blank render. When a
-    // `game-src` bundle exists in-page (or in manual mode where the customer
-    // slots their own DOM), the bootstrap is OPTIONAL: a 2s abort that degrades
-    // to the bundled render is fine because the overrides are best-effort.
-    const bootstrapMandatory = state.config.gameSrc === null && state.config.trigger !== 'manual';
+    // The bootstrap carries the game's preferred footprint + resolved
+    // skin/locale, so a silent degrade mis-sizes the game and drops to bundled
+    // skin. It runs through the RESILIENT fetch regardless of whether an in-page
+    // `game-src` bundle exists: a generous per-attempt ceiling tolerates a
+    // slow-but-alive server instead of the old 2s abort (which rendered an
+    // unstyled, wrongly-sized game), with a bounded retry on fast transient
+    // failure. On final exhaustion it degrades to bundled AND fires `degraded`.
+    // A `game-src` bundle just means the final degrade still has something to
+    // paint; the resilient policy is the same either way.
 
     // Show a loading skeleton while we wait. Without it the host box is an
-    // empty sized rectangle for the full (now un-aborted) bootstrap window,
-    // which reads as "blank / broken" rather than "loading". Skipped in manual
-    // mode (the customer's slotted DOM owns the box).
+    // empty sized rectangle for the full bootstrap window, which reads as
+    // "blank / broken" rather than "loading". Skipped in manual mode (the
+    // customer's slotted DOM owns the box).
     if (state.config.trigger !== 'manual') this.showLoadingSkeleton();
 
+    // Abort the in-flight bootstrap (and its retry loop) if the element is
+    // removed mid-flight, so a torn-down widget stops fetching.
+    const abort = new AbortController();
+    state.bootstrapAbort = abort;
     const signals = {
       apiHost,
       sitekey: state.config.sitekey,
@@ -103,13 +107,16 @@ export class CaputchinGame extends HTMLElement {
       games: state.config.games ?? null,
       locale: resolveLocaleSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
+      signal: abort.signal,
     };
-    const bootstrap = bootstrapMandatory
-      ? fetchBootstrapResilient(signals)
-      : fetchBootstrap(signals);
 
-    void bootstrap.then((result) => {
-      if (!this.state.connected || !this.state.config) return;
+    void fetchBootstrapResilient(signals).then((result) => {
+      // Guard on the captured bag identity first: a disconnect swaps in a fresh
+      // bag (and a same-node remount swaps in the NEXT mount's bag), so
+      // `this.state !== state` means this resolution belongs to a torn-down
+      // mount and must not act on the live one. The connected/config checks keep
+      // the original narrowing for the `this.state.*` reads below.
+      if (this.state !== state || !this.state.connected || !this.state.config) return;
       // Authoritative gate rejection (409): the server says this key+game can't
       // make a valid round. Mount the error presentation + fire the `error`
       // event; do NOT proceed into a bundled round (it would dead-end at
@@ -125,6 +132,14 @@ export class CaputchinGame extends HTMLElement {
           originalCode: result.error.code,
         });
         return;
+      }
+      // Transient degrade (timeout / network / 5xx / malformed): the resolve
+      // failed after the retry budget, so the game renders with bundled
+      // defaults (size/skin/locale may be off). Surface it on the `degraded`
+      // event + a dev warning so a slow service is observable, never silent.
+      if (result.kind === 'degrade') {
+        console.warn(`[caputchin] bootstrap degraded (${result.reason}); rendering game with bundled defaults`);
+        emitDegraded(this, result.reason);
       }
       const bootstrap = result.kind === 'ok' ? result.response : null;
       // The server-resolved GAME axes + preferred footprint ride to the iframe
@@ -338,6 +353,8 @@ export class CaputchinGame extends HTMLElement {
   /** @internal Custom Element lifecycle; the browser calls this on removal. */
   disconnectedCallback(): void {
     const s = this.state;
+    // Stop any in-flight bootstrap + its retry loop before tearing down.
+    s.bootstrapAbort?.abort();
     this.removeLoadingSkeleton();
     s.trigger?.deactivate();
     s.gamePresentation?.unmount();
@@ -346,6 +363,7 @@ export class CaputchinGame extends HTMLElement {
     // Null out the bag's fields BEFORE swapping so closures captured by
     // installGameMethods see inert state.
     s.config = null;
+    s.bootstrapAbort = null;
     s.trigger = null;
     s.triggerCtx = null;
     s.capClient = null;
