@@ -46,12 +46,15 @@ export function mountKaplayGame(game: KaplayGame, args: MountArgs): () => void {
       : Array.isArray(bg) && bg.length >= 3
         ? `rgb(${bg[0] | 0},${bg[1] | 0},${bg[2] | 0})`
         : '';
+  // Removed in cleanup() only if THIS mount injected it (idempotent per iframe).
+  let injectedFit: Element | null = null;
   try {
     if (!doc.getElementById('cpt-kaplay-fit')) {
       const fit = doc.createElement('style');
       fit.id = 'cpt-kaplay-fit';
       fit.textContent = `html,body{width:100%;height:100%;margin:0;overflow:hidden${bgCss ? `;background:${bgCss}` : ''}}`;
       doc.head.appendChild(fit);
+      injectedFit = fit;
     }
     container.style.width = '100%';
     container.style.height = '100%';
@@ -230,6 +233,7 @@ export function mountKaplayGame(game: KaplayGame, args: MountArgs): () => void {
     try {
       doc.removeEventListener('keydown', onKeyDown);
       doc.removeEventListener('keyup', onKeyUp);
+      injectedFit?.remove();
     } catch {
       /* best effort */
     }
