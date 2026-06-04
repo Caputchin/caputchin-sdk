@@ -1,6 +1,6 @@
 [package]
 name = "caputchin-replay-rs"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 license = "Apache-2.0"
 description = "Rust authoring crate for Caputchin server-validated game replay: turns a deterministic sim into the C-ABI a headless WASM replay artifact exports."
