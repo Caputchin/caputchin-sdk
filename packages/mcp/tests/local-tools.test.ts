@@ -50,7 +50,7 @@ describe('renderSiteverifyExample', () => {
   it('emits node fetch snippet for node/javascript/typescript', () => {
     for (const lang of ['node', 'javascript', 'typescript'] as const) {
       const out = renderSiteverifyExample({ language: lang });
-      expect(out).toContain('fetch("https://caputchin.com/api/v1/siteverify"');
+      expect(out).toContain('fetch("https://api.caputchin.com/api/v1/siteverify"');
       expect(out).toContain('process.env.CAPUTCHIN_SECRET');
     }
   });
@@ -75,7 +75,7 @@ describe('renderSiteverifyExample', () => {
 
   it('emits curl snippet', () => {
     const out = renderSiteverifyExample({ language: 'curl' });
-    expect(out).toContain('curl -sS -X POST https://caputchin.com/api/v1/siteverify');
+    expect(out).toContain('curl -sS -X POST https://api.caputchin.com/api/v1/siteverify');
   });
 
   it('reflects CAPUTCHIN_API_HOST override across snippets (single source)', () => {

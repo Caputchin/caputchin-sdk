@@ -4,7 +4,7 @@ Model Context Protocol server for Caputchin over stdio. Works with Claude
 Desktop, Cursor, Claude Code, and any other MCP client that speaks stdio.
 
 This package is a thin stdio adapter: it proxies the canonical management
-tool catalogue served by Caputchin's `/api/mcp` HTTP endpoint, and adds
+tool catalogue served by Caputchin's `/mcp` HTTP endpoint, and adds
 offline developer-onboarding tools (HTML and backend snippet generators)
 that need no Caputchin account. The full tool list is defined in
 [caputchin-platform/apps/web/src/lib/mcp-tools.ts](https://github.com/Caputchin/caputchin-platform/blob/main/apps/web/src/lib/mcp-tools.ts)
@@ -22,7 +22,7 @@ Set the management token before launching:
 | Env var | Required | Default | Notes |
 |---|---|---|---|
 | `CAPUTCHIN_TOKEN` | yes (default mode) | (none) | Management token starting with `cpt_pat_`. Mint one from the dashboard. |
-| `CAPUTCHIN_API_HOST` | no | `https://caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`. |
+| `CAPUTCHIN_API_HOST` | no | `https://api.caputchin.com` | Override for staging or self-hosted deployments. Trailing slashes are stripped. The endpoint is `${CAPUTCHIN_API_HOST}/mcp`. |
 
 Run in local-only mode (no token; only the offline snippet generators load):
 
@@ -48,7 +48,7 @@ npx @caputchin/mcp --local-only
 
 ## Tool surface
 
-### Remote tools (proxied from `/api/mcp`)
+### Remote tools (proxied from `/mcp`)
 
 Fetched live from the platform on first `tools/list`; cached for the
 session. Adding or removing a tool only requires a platform deploy,

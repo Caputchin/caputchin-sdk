@@ -180,7 +180,7 @@ describe('tools/call routing', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('proxies non-local tool calls to /api/mcp', async () => {
+  it('proxies non-local tool calls to /mcp', async () => {
     fetchSpy
       .mockResolvedValueOnce(
         new Response(

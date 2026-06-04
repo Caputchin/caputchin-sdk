@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`renderSiteverifyExample > snapshot: curl 1`] = `
-"curl -sS -X POST https://caputchin.com/api/v1/siteverify \\
+"curl -sS -X POST https://api.caputchin.com/api/v1/siteverify \\
   -H "content-type: application/json" \\
   -d "{\\"secret\\":\\"$CAPUTCHIN_SECRET\\",\\"response\\":\\"$TOKEN\\"}""
 `;
@@ -12,7 +12,7 @@ exports[`renderSiteverifyExample > snapshot: go 1`] = `
     "response": token,
 })
 res, err := http.Post(
-    "https://caputchin.com/api/v1/siteverify",
+    "https://api.caputchin.com/api/v1/siteverify",
     "application/json",
     bytes.NewReader(body),
 )
@@ -25,7 +25,7 @@ if !verdict.Success { return fmt.Errorf("captcha failed") }"
 
 exports[`renderSiteverifyExample > snapshot: javascript 1`] = `
 "// Node 18+ (built-in fetch)
-const res = await fetch("https://caputchin.com/api/v1/siteverify", {
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
   method: "POST",
   headers: { "content-type": "application/json" },
   body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),
@@ -36,7 +36,7 @@ if (!verdict.success) throw new Error(verdict["error-codes"].join(","));"
 
 exports[`renderSiteverifyExample > snapshot: node 1`] = `
 "// Node 18+ (built-in fetch)
-const res = await fetch("https://caputchin.com/api/v1/siteverify", {
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
   method: "POST",
   headers: { "content-type": "application/json" },
   body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),
@@ -46,7 +46,7 @@ if (!verdict.success) throw new Error(verdict["error-codes"].join(","));"
 `;
 
 exports[`renderSiteverifyExample > snapshot: php 1`] = `
-"$res = file_get_contents('https://caputchin.com/api/v1/siteverify', false, stream_context_create([
+"$res = file_get_contents('https://api.caputchin.com/api/v1/siteverify', false, stream_context_create([
     'http' => [
         'method'  => 'POST',
         'header'  => 'content-type: application/json',
@@ -65,7 +65,7 @@ if (!$verdict['success']) {
 exports[`renderSiteverifyExample > snapshot: python 1`] = `
 "import os, requests
 res = requests.post(
-    "https://caputchin.com/api/v1/siteverify",
+    "https://api.caputchin.com/api/v1/siteverify",
     json={"secret": os.environ["CAPUTCHIN_SECRET"], "response": token},
     timeout=10,
 )
@@ -76,7 +76,7 @@ if not verdict.get("success"):
 
 exports[`renderSiteverifyExample > snapshot: typescript 1`] = `
 "// Node 18+ (built-in fetch)
-const res = await fetch("https://caputchin.com/api/v1/siteverify", {
+const res = await fetch("https://api.caputchin.com/api/v1/siteverify", {
   method: "POST",
   headers: { "content-type": "application/json" },
   body: JSON.stringify({ secret: process.env.CAPUTCHIN_SECRET, response: token }),

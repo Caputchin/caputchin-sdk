@@ -1,13 +1,13 @@
 /**
- * Thin MCP JSON-RPC client targeting the platform's `/api/mcp` endpoint.
+ * Thin MCP JSON-RPC client targeting the platform's `/mcp` endpoint.
  *
  * The SDK no longer carries its own tool catalogue; it
  * proxies `tools/list` and `tools/call` to the platform. This module
  * holds the network + JSON-RPC plumbing the proxy needs.
  *
  * Auth: management token (`cpt_pat_*`) via the `CAPUTCHIN_TOKEN` env
- * var. Base URL: `CAPUTCHIN_API_HOST` (default https://caputchin.com).
- * The MCP endpoint is `${CAPUTCHIN_API_HOST}/api/mcp`.
+ * var. Base URL: `CAPUTCHIN_API_HOST` (default https://api.caputchin.com).
+ * The MCP endpoint is `${CAPUTCHIN_API_HOST}/mcp`.
  */
 /**
  * Resolved configuration for the platform Management API client. Built by
@@ -15,7 +15,7 @@
  * `mcp*` functions in this module.
  */
 export type ManagementApiConfig = {
-  /** Platform base URL (no trailing slash), e.g. `"https://caputchin.com"`. */
+  /** Platform base URL (no trailing slash), e.g. `"https://api.caputchin.com"`. */
   baseUrl: string;
   /** Management API token (`cpt_pat_...`), sourced from `CAPUTCHIN_TOKEN`. */
   token: string;
@@ -23,15 +23,15 @@ export type ManagementApiConfig = {
 
 /**
  * Resolve the platform host from the environment. Uses `CAPUTCHIN_API_HOST`
- * when set, otherwise defaults to `https://caputchin.com`. Trailing slashes
+ * when set, otherwise defaults to `https://api.caputchin.com`. Trailing slashes
  * are stripped. Shared by the API client and the offline snippet tools so a
  * staging or self-hosted MCP points everything at one host.
  *
  * @param env - Process environment. Defaults to `process.env`.
- * @returns Base URL with no trailing slash, e.g. `"https://caputchin.com"`.
+ * @returns Base URL with no trailing slash, e.g. `"https://api.caputchin.com"`.
  */
 export function resolveApiHost(env: NodeJS.ProcessEnv = process.env): string {
-  return (env.CAPUTCHIN_API_HOST ?? 'https://caputchin.com').replace(/\/+$/, '');
+  return (env.CAPUTCHIN_API_HOST ?? 'https://api.caputchin.com').replace(/\/+$/, '');
 }
 
 /**
@@ -71,7 +71,7 @@ function nextRpcId(): number {
 }
 
 /**
- * Low-level POST to `/api/mcp`. The body is a JSON-RPC 2.0 envelope; the
+ * Low-level POST to `/mcp`. The body is a JSON-RPC 2.0 envelope; the
  * response is also JSON-RPC 2.0. Network and HTTP errors throw; JSON-RPC
  * `error` envelopes return as the rejected branch on `Result`.
  */
@@ -79,7 +79,7 @@ async function postRpc(cfg: ManagementApiConfig, method: string, params?: Record
   const body = { jsonrpc: '2.0', id: nextRpcId(), method, ...(params !== undefined ? { params } : {}) };
   let res: Response;
   try {
-    res = await fetch(`${cfg.baseUrl}/api/mcp`, {
+    res = await fetch(`${cfg.baseUrl}/mcp`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${cfg.token}`,
@@ -89,11 +89,11 @@ async function postRpc(cfg: ManagementApiConfig, method: string, params?: Record
       body: JSON.stringify(body),
     });
   } catch (err) {
-    throw new Error(`MCP network error to ${cfg.baseUrl}/api/mcp: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`MCP network error to ${cfg.baseUrl}/mcp: ${err instanceof Error ? err.message : String(err)}`);
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`MCP HTTP ${res.status} from ${cfg.baseUrl}/api/mcp: ${text || '(empty body)'}`);
+    throw new Error(`MCP HTTP ${res.status} from ${cfg.baseUrl}/mcp: ${text || '(empty body)'}`);
   }
   const text = await res.text();
   let parsed: JsonRpcResponse;

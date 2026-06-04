@@ -8,8 +8,8 @@ import {
 } from '../src/api.js';
 
 describe('resolveApiHost', () => {
-  it('defaults to the public apex when env is unset', () => {
-    expect(resolveApiHost({} as NodeJS.ProcessEnv)).toBe('https://caputchin.com');
+  it('defaults to the api host when env is unset', () => {
+    expect(resolveApiHost({} as NodeJS.ProcessEnv)).toBe('https://api.caputchin.com');
   });
   it('honors CAPUTCHIN_API_HOST and strips trailing slashes', () => {
     expect(
@@ -19,9 +19,9 @@ describe('resolveApiHost', () => {
 });
 
 describe('readManagementConfig', () => {
-  it('defaults base URL to https://caputchin.com when env is unset', () => {
+  it('defaults base URL to https://api.caputchin.com when env is unset', () => {
     const cfg = readManagementConfig({ CAPUTCHIN_TOKEN: 'cpt_pat_test' } as NodeJS.ProcessEnv);
-    expect(cfg.baseUrl).toBe('https://caputchin.com');
+    expect(cfg.baseUrl).toBe('https://api.caputchin.com');
     expect(cfg.token).toBe('cpt_pat_test');
   });
 
@@ -45,7 +45,7 @@ describe('mcpInitialize', () => {
   beforeEach(() => fetchSpy.mockReset());
   afterEach(() => fetchSpy.mockReset());
 
-  it('POSTs JSON-RPC initialize to /api/mcp and accepts the supported protocolVersion', async () => {
+  it('POSTs JSON-RPC initialize to /mcp and accepts the supported protocolVersion', async () => {
     fetchSpy.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -62,7 +62,7 @@ describe('mcpInitialize', () => {
     );
     await expect(mcpInitialize(cfg)).resolves.toBeUndefined();
     const [url, init] = fetchSpy.mock.calls[0]!;
-    expect(url).toBe('https://caputchin.com/api/mcp');
+    expect(url).toBe('https://caputchin.com/mcp');
     const headers = init?.headers as Record<string, string>;
     expect(headers.authorization).toBe('Bearer cpt_pat_xyz');
     const body = JSON.parse(init?.body as string);
