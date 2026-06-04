@@ -1,0 +1,62 @@
+{
+  "name": "@caputchin/replay-selfcheck",
+  "version": "0.1.0",
+  "description": "The shared replay determinism + smoke check: replays a run under a hostile isolate-equivalent environment and flags ambient non-determinism, native-trig divergence, and run-to-run drift. Used by the author CLI and the platform replay isolate alike.",
+  "keywords": [
+    "caputchin",
+    "deterministic",
+    "determinism",
+    "replay",
+    "self-check",
+    "conformance"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk",
+    "directory": "kits/replay-selfcheck"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./isolate": {
+      "types": "./dist/isolate.d.ts",
+      "import": "./dist/isolate.js",
+      "require": "./dist/isolate.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "dependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@caputchin/replay-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitest": "^2.0.0"
+  }
+}
