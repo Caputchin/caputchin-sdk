@@ -25,7 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
           cache: pnpm
 
       # release-please release PRs bump package.json versions without refreshing
@@ -42,7 +42,7 @@ jobs:
       # The committed packages/*/docs/ reference is generated from source TSDoc
       # by `pnpm run docs`. Regenerate and fail if it drifts, so a TSDoc edit
       # that wasn't re-generated can't land stale docs. Runs AFTER `pnpm build`:
-      # cross-package re-exports (e.g. engine-runtime re-exporting
+      # cross-package re-exports (e.g. engine-kit re-exporting
       # replay-contract's ReplayConfig) resolve their TSDoc from the built
       # `.d.ts`, so docs must regenerate against a fresh dist to match the
       # committed output deterministically.

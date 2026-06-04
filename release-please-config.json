@@ -10,9 +10,17 @@
       "component": "replay-contract",
       "package-name": "@caputchin/replay-contract"
     },
-    "kits/engine-runtime": {
-      "component": "engine-runtime",
-      "package-name": "@caputchin/engine-runtime"
+    "kits/determinism": {
+      "component": "determinism",
+      "package-name": "@caputchin/determinism"
+    },
+    "kits/engine-kit": {
+      "component": "engine-kit",
+      "package-name": "@caputchin/engine-kit"
+    },
+    "kits/replay-selfcheck": {
+      "component": "replay-selfcheck",
+      "package-name": "@caputchin/replay-selfcheck"
     },
     "kits/replay-wasm": {
       "component": "replay-wasm",
@@ -22,6 +30,18 @@
       "release-type": "rust",
       "component": "replay-rs",
       "package-name": "caputchin-replay-rs"
+    },
+    "presets/melonjs": {
+      "component": "preset-melonjs",
+      "package-name": "@caputchin/preset-melonjs"
+    },
+    "presets/phaser": {
+      "component": "preset-phaser",
+      "package-name": "@caputchin/preset-phaser"
+    },
+    "presets/kaplay": {
+      "component": "preset-kaplay",
+      "package-name": "@caputchin/preset-kaplay"
     },
     "packages/game-sdk": {
       "component": "game-sdk",

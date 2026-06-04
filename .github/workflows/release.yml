@@ -15,9 +15,14 @@ jobs:
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       replay_contract_released: ${{ steps.release.outputs['packages/replay-contract--release_created'] }}
+      determinism_released: ${{ steps.release.outputs['kits/determinism--release_created'] }}
       replay_wasm_released: ${{ steps.release.outputs['kits/replay-wasm--release_created'] }}
-      engine_runtime_released: ${{ steps.release.outputs['kits/engine-runtime--release_created'] }}
+      engine_kit_released: ${{ steps.release.outputs['kits/engine-kit--release_created'] }}
+      replay_selfcheck_released: ${{ steps.release.outputs['kits/replay-selfcheck--release_created'] }}
       replay_rs_released: ${{ steps.release.outputs['kits/replay-rs--release_created'] }}
+      preset_melonjs_released: ${{ steps.release.outputs['presets/melonjs--release_created'] }}
+      preset_phaser_released: ${{ steps.release.outputs['presets/phaser--release_created'] }}
+      preset_kaplay_released: ${{ steps.release.outputs['presets/kaplay--release_created'] }}
       game_sdk_released: ${{ steps.release.outputs['packages/game-sdk--release_created'] }}
       widget_released: ${{ steps.release.outputs['packages/widget--release_created'] }}
       mcp_released: ${{ steps.release.outputs['packages/mcp--release_created'] }}
@@ -50,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
           cache: pnpm
           registry-url: https://registry.npmjs.org
           always-auth: true
@@ -62,18 +67,47 @@ jobs:
       - run: pnpm build
 
       # Publish in dependency order: replay-contract (the mandatory contract) is
-      # depended on by engine-runtime + game-sdk, so it goes first.
+      # depended on by engine-kit + game-sdk, so it goes first.
       - name: Publish @caputchin/replay-contract
         if: ${{ needs.release-please.outputs.replay_contract_released == 'true' }}
         run: pnpm --filter @caputchin/replay-contract publish --access public --no-git-checks
+
+      # determinism has no intra-repo deps; engine-kit + the presets depend on
+      # it, so it publishes before them.
+      - name: Publish @caputchin/determinism
+        if: ${{ needs.release-please.outputs.determinism_released == 'true' }}
+        run: pnpm --filter @caputchin/determinism publish --access public --no-git-checks
 
       - name: Publish @caputchin/replay-wasm
         if: ${{ needs.release-please.outputs.replay_wasm_released == 'true' }}
         run: pnpm --filter @caputchin/replay-wasm publish --access public --no-git-checks
 
-      - name: Publish @caputchin/engine-runtime
-        if: ${{ needs.release-please.outputs.engine_runtime_released == 'true' }}
-        run: pnpm --filter @caputchin/engine-runtime publish --access public --no-git-checks
+      # replay-selfcheck depends on replay-contract + determinism (both above) and
+      # is depended on by engine-kit, so it publishes between them.
+      - name: Publish @caputchin/replay-selfcheck
+        if: ${{ needs.release-please.outputs.replay_selfcheck_released == 'true' }}
+        run: pnpm --filter @caputchin/replay-selfcheck publish --access public --no-git-checks
+
+      - name: Publish @caputchin/engine-kit
+        if: ${{ needs.release-please.outputs.engine_kit_released == 'true' }}
+        run: pnpm --filter @caputchin/engine-kit publish --access public --no-git-checks
+
+      # preset-melonjs depends on engine-kit, so it publishes after it.
+      - name: Publish @caputchin/preset-melonjs
+        if: ${{ needs.release-please.outputs.preset_melonjs_released == 'true' }}
+        run: pnpm --filter @caputchin/preset-melonjs publish --access public --no-git-checks
+
+      # preset-phaser is standalone (no engine-kit dep); it only needs
+      # replay-contract, already published above.
+      - name: Publish @caputchin/preset-phaser
+        if: ${{ needs.release-please.outputs.preset_phaser_released == 'true' }}
+        run: pnpm --filter @caputchin/preset-phaser publish --access public --no-git-checks
+
+      # preset-kaplay is self-contained (no engine-kit dep); it only needs
+      # replay-contract, already published above.
+      - name: Publish @caputchin/preset-kaplay
+        if: ${{ needs.release-please.outputs.preset_kaplay_released == 'true' }}
+        run: pnpm --filter @caputchin/preset-kaplay publish --access public --no-git-checks
 
       - name: Publish @caputchin/game-sdk
         if: ${{ needs.release-please.outputs.game_sdk_released == 'true' }}
