@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/preset-kaplay",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Self-contained Caputchin replay preset for the KAPLAY engine: headless boot, fixed-step pump, deterministic RNG rail, and the conforming run/live adapters. The on-ramp for any KAPLAY game on the deterministic-replay platform.",
   "keywords": [
     "caputchin",
