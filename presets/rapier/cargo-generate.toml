@@ -1,0 +1,5 @@
+[template]
+description = "A Caputchin replay game on rapier3d: a renderer + WASM-physics scaffold whose ONE wasm carries both the headless replay C-ABI and the live stepping C-ABI."
+cargo_generate_version = ">=0.18.0"
+# cargo-generate provides `project-name` (from --name) and `crate_name`
+# (its snake_case form) automatically; no extra placeholders are needed.

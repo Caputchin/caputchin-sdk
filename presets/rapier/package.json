@@ -1,0 +1,25 @@
+{
+  "name": "{{project-name}}",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "files": [
+    "dist",
+    "caputchin.json",
+    ".caputchin"
+  ],
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "prebuild": "[ -f dist/{{project-name}}.wasm ] || pnpm build:wasm",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@caputchin/game-sdk": "^3.1.0",
+    "@caputchin/replay-contract": "^0.3.0",
+    "@caputchin/replay-wasm": "^0.2.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}

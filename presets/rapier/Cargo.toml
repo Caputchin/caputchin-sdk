@@ -1,0 +1,26 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "A Caputchin replay game on rapier3d."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# The deterministic sim (src/sim.rs) compiles into ONE wasm that exposes both
+# C-ABIs: the headless replay (cap_run) via `caputchin_replay!` and the live
+# stepping (live_*) via `caputchin_live!`, so the browser steps the identical
+# module the server replays. rapier3d's enhanced-determinism makes the physics
+# cross-platform bit-exact.
+[dependencies]
+rapier3d = { version = "0.22", features = ["enhanced-determinism"] }
+caputchin-replay-rs = "0.3"
+
+# Size-tuned release profile for the shipped artifact (slow to build).
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

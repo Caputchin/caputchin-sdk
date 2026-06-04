@@ -5,3 +5,4 @@ packages:
   # cargo-generate templates carry {{placeholder}} package.json files; they are
   # scaffolds, not workspace packages.
   - "!presets/bevy"
+  - "!presets/rapier"

@@ -7,6 +7,7 @@
 
 export { inflateWasm } from './wasm-inline.js';
 export { runWithModule, toBytes } from './run-core.js';
+export { LiveSim } from './live.js';
 
 // Re-export the contract surface so kit consumers have one import site.
 export type { Seed, Verdict, RunFn } from '@caputchin/replay-contract';

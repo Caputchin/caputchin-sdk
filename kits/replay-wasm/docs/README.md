@@ -1,5 +1,11 @@
 # @caputchin/replay-wasm
 
+## Classes
+
+| Class | Description |
+| ------ | ------ |
+| [LiveSim](Class.LiveSim.md) | A live play session over a sim wasm built with `caputchin_live!`. Create once, `step` each fixed tick feeding the game's opaque i32 input, `state` each frame to render, `trace` once the round ends, then `free`. |
+
 ## Interfaces
 
 | Interface | Description |

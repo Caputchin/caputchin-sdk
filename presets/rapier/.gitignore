@@ -1,0 +1,6 @@
+/target
+/dist
+/build
+/node_modules
+/src/generated/*.ts
+Cargo.lock
