@@ -15,10 +15,10 @@ reading `Math.random`, but a plain assignment just replaces it).
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `seed` | readonly `number`[] |
-| `scope?` | *typeof* `globalThis` |
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `seed` | readonly `number`[] | `undefined` |
+| `scope` | *typeof* `globalThis` | `globalThis` |
 
 ## Returns
 

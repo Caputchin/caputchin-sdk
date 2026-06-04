@@ -17,10 +17,10 @@ than bundled into the DOM stubs.
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `scope?` | `object` |
-| `nowMs?` | `number` |
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `scope` | `object` | `globalThis` |
+| `nowMs` | `number` | `0` |
 
 ## Returns
 

@@ -4,9 +4,9 @@
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `scope?` | `object` |
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `scope` | `object` | `globalThis` |
 
 ## Returns
 

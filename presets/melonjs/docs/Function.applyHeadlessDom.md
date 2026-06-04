@@ -17,9 +17,9 @@ pair with [freezeClock](Function.freezeClock.md) on the server.
 
 ## Parameters
 
-| Parameter | Type |
-| ------ | ------ |
-| `scope?` | `object` |
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `scope` | `object` | `globalThis` |
 
 ## Returns
 
