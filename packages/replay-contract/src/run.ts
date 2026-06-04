@@ -76,3 +76,15 @@ export const RUN_EXPORT_NAME = 'run' as const;
  * wrapper and the caller in lockstep.
  */
 export const RUN_RPC_METHOD = 'run' as const;
+
+/**
+ * The RPC method name the host `WorkerEntrypoint` exposes for the determinism
+ * SELF-CHECK over the loaded `run`. `apps/replay` calls
+ * `stub[RUN_SELFCHECK_RPC]()`; the load-time wrapper defines a method of this
+ * name that probes the module's {@link RUN_EXPORT_NAME} export (replaying it under
+ * a hostile environment) and returns a self-check report. Used at vendor / upload
+ * / index time to gate non-deterministic artifacts; separate from
+ * {@link RUN_RPC_METHOD} (the authoritative per-verify replay). Sharing the
+ * constant keeps the host wrapper and the caller in lockstep.
+ */
+export const RUN_SELFCHECK_RPC = 'selfcheck' as const;

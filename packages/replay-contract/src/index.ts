@@ -11,4 +11,4 @@ export type { Verdict } from './verdict';
 export { parseVerdict } from './verdict';
 
 export type { RunFn, ReplayConfig } from './run';
-export { RUN_EXPORT_NAME, RUN_RPC_METHOD } from './run';
+export { RUN_EXPORT_NAME, RUN_RPC_METHOD, RUN_SELFCHECK_RPC } from './run';
