@@ -1,7 +1,7 @@
 //! End-to-end check of the live-stepping C-ABI emitted by `caputchin_live!`:
 //! implement `LiveGame`, drive live_new/step/state/trace/free, and read the state
 //! (via the out-len pointer) and trace back. Mirrors the JS host path.
-use caputchin_replay_rs::{caputchin_live, LiveGame};
+use caputchin_replay_rs::{LiveGame, caputchin_live};
 
 // A trivial live game. state = [seed0, config_sum, step_count, last_input_sum];
 // trace = the low byte of each step's input sum.
