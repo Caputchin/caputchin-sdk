@@ -1,0 +1,83 @@
+{
+  "name": "@caputchin/preset-phaser",
+  "version": "0.1.0",
+  "description": "Run a FULL headless Phaser 4 game (Arcade physics included) as a Caputchin deterministic-replay sim. The engine itself is the server run: the @caputchin/determinism kit makes it deterministic (transcendental Math swap + headless DOM boot), plus a seeded RNG, a fixed-step worldstep driver, and a build preset.",
+  "keywords": [
+    "caputchin",
+    "replay",
+    "phaser",
+    "deterministic",
+    "captcha",
+    "headless"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "require": "./dist/install.cjs"
+    },
+    "./live": {
+      "types": "./dist/live.d.ts",
+      "import": "./dist/live.js",
+      "require": "./dist/live.cjs"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js",
+      "require": "./dist/build.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/install.js",
+    "./dist/install.cjs",
+    "./dist/live.js",
+    "./dist/live.cjs"
+  ],
+  "peerDependencies": {
+    "phaser": "^4.1.0"
+  },
+  "dependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@caputchin/replay-contract": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "phaser": "^4.1.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}

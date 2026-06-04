@@ -1,0 +1,77 @@
+{
+  "name": "@caputchin/preset-melonjs",
+  "version": "0.1.0",
+  "description": "Per-engine on-ramp for running a melonJS game headless and deterministically on the Caputchin replay platform.",
+  "keywords": [
+    "caputchin",
+    "melonjs",
+    "preset",
+    "deterministic",
+    "replay",
+    "captcha"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "require": "./dist/install.cjs"
+    },
+    "./live": {
+      "types": "./dist/live.d.ts",
+      "import": "./dist/live.js",
+      "require": "./dist/live.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/install.js",
+    "./dist/install.cjs",
+    "./dist/live.js",
+    "./dist/live.cjs"
+  ],
+  "peerDependencies": {
+    "melonjs": "^19"
+  },
+  "dependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@caputchin/engine-kit": "workspace:*",
+    "@caputchin/replay-contract": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "melonjs": "^19.6.0",
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitest": "^2.0.0"
+  }
+}

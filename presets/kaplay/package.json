@@ -1,0 +1,66 @@
+{
+  "name": "@caputchin/preset-kaplay",
+  "version": "0.1.0",
+  "description": "Self-contained Caputchin replay preset for the KAPLAY engine: headless boot, fixed-step pump, deterministic RNG rail, and the conforming run/live adapters. The on-ramp for any KAPLAY game on the deterministic-replay platform.",
+  "keywords": [
+    "caputchin",
+    "kaplay",
+    "kaboom",
+    "deterministic",
+    "replay",
+    "captcha",
+    "game",
+    "preset"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk",
+    "directory": "presets/kaplay"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "dependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@caputchin/replay-contract": "workspace:*"
+  },
+  "peerDependencies": {
+    "@caputchin/game-sdk": "^3.0.0",
+    "kaplay": "3001.0.19"
+  },
+  "devDependencies": {
+    "@caputchin/game-sdk": "workspace:*",
+    "@types/node": "^22.0.0",
+    "happy-dom": "^15.0.0",
+    "kaplay": "3001.0.19",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
