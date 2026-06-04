@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Caputchin/caputchin-sdk/compare/preset-kaplay-v0.2.0...preset-kaplay-v0.3.0) (2026-06-04)
+
+
+### Features
+
+* **preset-kaplay:** responsive live canvas (fills + reflows to the host container, crisp) ([870b04d](https://github.com/Caputchin/caputchin-sdk/commit/870b04d813cae9e26917d893c35b1b4bb42f4af3))
+
 ## [0.2.0](https://github.com/Caputchin/caputchin-sdk/compare/preset-kaplay-v0.1.0...preset-kaplay-v0.2.0) (2026-06-04)
 
 
