@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/preset-melonjs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Per-engine on-ramp for running a melonJS game headless and deterministically on the Caputchin replay platform.",
   "keywords": [
     "caputchin",

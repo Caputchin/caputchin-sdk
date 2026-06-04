@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/replay-selfcheck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The shared replay determinism + smoke check: replays a run under a hostile isolate-equivalent environment and flags ambient non-determinism, native-trig divergence, and run-to-run drift. Used by the author CLI and the platform replay isolate alike.",
   "keywords": [
     "caputchin",
