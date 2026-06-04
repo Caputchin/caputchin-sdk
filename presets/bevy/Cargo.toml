@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 # both builds, so the server replay and the browser run identical logic. The
 # `render` feature additionally pulls full Bevy (DefaultPlugins -> WebGL2) for
 # the live browser build. (Advanced: you can author the sim as bevy_ecs and
-# share it both ends, as the Wall Smash reference game does.)
+# share it both ends.)
 [dependencies]
 caputchin-replay-rs = "0.1"
 

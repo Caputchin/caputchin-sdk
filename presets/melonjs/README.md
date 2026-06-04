@@ -107,8 +107,6 @@ import { createMelonDriver, encodeTrace } from '@caputchin/preset-melonjs';
 2. `createMelonDriver(spec, app, { seed, config })` returns the same fixed-step driver the server replays; run it from a manual loop (the preset trap-wraps each `world.update`), recording each input tick-stamped with `encodeTrace`.
 3. On pass / round end, forward the recorded trace to `bridge.pass({ trace })` via [`@caputchin/game-sdk`](https://www.npmjs.com/package/@caputchin/game-sdk).
 
-Caputchin's first-party **DotRunner** game is the complete, open-source worked example of this live path on melonJS.
-
 ## API
 
 | Export | Purpose |

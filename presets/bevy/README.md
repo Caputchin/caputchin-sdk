@@ -48,7 +48,7 @@ The headless artifact above has no pixels. Your playable game is a full Bevy Web
 3. Write `src/index.ts` that calls `register(...)` from [`@caputchin/game-sdk`](https://www.npmjs.com/package/@caputchin/game-sdk), boots the wasm-bindgen module, mounts its canvas, and forwards the finish event's trace to `bridge.pass({ trace })`. Inline the live WASM with `inflateWasm` from `@caputchin/replay-wasm` (the iframe CSP forbids fetching it).
 4. Add the live build to `scripts/build-wasm.sh` (`cargo build --features render` then `wasm-bindgen`) and a second IIFE entry to `tsup.config.ts`.
 
-Caputchin's first-party **Wall Smash** game is the complete, open-source worked example of this live path (Bevy 2D/3D render, trace recording, the finish-event bridge); copy its `src/live.rs` and `src/game.ts` patterns.
+Together, steps 1-4 scaffold the live path: the Bevy 2D/3D render, trace recording, and the finish-event bridge. The generated `src/lib.rs` marks where each piece goes.
 
 ## Publish
 

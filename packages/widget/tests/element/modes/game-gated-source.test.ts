@@ -73,12 +73,12 @@ describe('gated-key game-src enforcement (Phase 13)', () => {
       widget: { resolved: { locale: null, skin: null, config: null } },
       game: { url: 'https://games.test.com/marketplace-bundle.js', integrity: 'sha384-mp', runUrl: null, runIntegrity: null, runModules: null, preferred: null, resolved: { locale: null, skin: null, config: null } },
       requiresGame: true,
-      gameId: 'caputchin/games/leaf',
+      gameId: 'acme/games/leaf',
       ticket: 'enc.sig',
     });
     const el = getGame({
       sitekey: 'cpt_pub_x',
-      game: 'caputchin/games/leaf',
+      game: 'acme/games/leaf',
       'game-src': 'https://customer-cdn.example/fake.js',
     });
     const captured = listenInvalidConfig(el);

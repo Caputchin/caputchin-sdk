@@ -20,14 +20,14 @@ Phaser reads `window` and `Image` while its module evaluates, not only at `new P
 // src/run.ts (the headless replay entry)
 import '@caputchin/preset-phaser/install'; // MUST be first
 import { makePhaserRun } from '@caputchin/preset-phaser';
-import { volleySim, decode } from './sim.js'; // imports phaser
+import { gameSim, decode } from './sim.js'; // imports phaser
 
 export const run = makePhaserRun({
   width: 640,
   height: 400,
   maxTicks: 60 * 60, // hard ceiling (~60s at 60Hz)
   decode,
-  sim: volleySim, // ({ seed, config, currentTick, currentAction, rng }) => hooks
+  sim: gameSim, // ({ seed, config, currentTick, currentAction, rng }) => hooks
 });
 ```
 
@@ -51,10 +51,10 @@ import { seedFromPlatform } from '@caputchin/preset-phaser';
 import { defineConfig } from 'tsup';
 import { definePhaserBuild } from '@caputchin/preset-phaser/build';
 
-export default defineConfig(definePhaserBuild({ gameId: 'volley' }));
+export default defineConfig(definePhaserBuild({ gameId: 'my-game' }));
 ```
 
-This emits a minified IIFE live bundle (`dist/volley.js`, phaser and assets inlined for the iframe CSP) and a minified ESM headless bundle (`dist/run.js`) for the replay isolate.
+This emits a minified IIFE live bundle (`dist/my-game.js`, phaser and assets inlined for the iframe CSP) and a minified ESM headless bundle (`dist/run.js`) for the replay isolate.
 
 ## Determinism
 

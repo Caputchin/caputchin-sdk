@@ -25,7 +25,7 @@ export interface PhaserBuildOptions {
  *
  *   import { defineConfig } from 'tsup';
  *   import { definePhaserBuild } from '@caputchin/preset-phaser/build';
- *   export default defineConfig(definePhaserBuild({ gameId: 'volley' }));
+ *   export default defineConfig(definePhaserBuild({ gameId: 'my-game' }));
  */
 export function definePhaserBuild(opts: PhaserBuildOptions): Options[] {
   const liveEntry = opts.liveEntry ?? 'src/index.ts';

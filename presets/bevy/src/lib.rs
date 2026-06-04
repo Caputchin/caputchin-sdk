@@ -10,7 +10,7 @@ pub mod sim;
 // Live (render) build: your Bevy WebGL render goes here.
 //   1. create src/live.rs with a wasm-bindgen `start(...)` entry that boots a
 //      Bevy App, draws the game, records the input trace, and emits a finish
-//      event (see README.md and the Wall Smash reference game),
+//      event (see README.md),
 //   2. uncomment the two lines below,
 //   3. build with `--features render`.
 // #[cfg(feature = "render")]

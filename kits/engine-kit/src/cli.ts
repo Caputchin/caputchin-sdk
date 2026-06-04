@@ -2,7 +2,7 @@
 // caputchin-selfcheck - the pre-publish determinism CLI. Points at a
 // BUILT run artifact (the file the game publishes) and replays it through the
 // `selfCheck` prober under a hostile, isolate-equivalent environment, so an
-// author (and our own first-party games) confirm cross-env determinism before
+// author confirms cross-env determinism before
 // the artifact ships. Exits non-zero on any violation, so it drops into CI /
 // a pre-publish hook.
 //

@@ -40,10 +40,10 @@ afterEach(() => {
 describe('register()', () => {
   it('keys by data-game-id from the script tag', () => {
     setCapGlobal({ games: {} });
-    installDataGameIdScript('caputchin/games/leaf-memory');
+    installDataGameIdScript('acme/games/sample');
     const factory = makeFactory();
     register(factory);
-    expect(capGlobal().games['caputchin/games/leaf-memory']).toBe(factory);
+    expect(capGlobal().games['acme/games/sample']).toBe(factory);
   });
 
   it('falls back to DEFAULT_REGISTRY_KEY when no data-game-id', () => {

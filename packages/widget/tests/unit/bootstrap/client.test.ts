@@ -104,7 +104,7 @@ describe('validateBootstrapResponse', () => {
       widget: null,
       game: { url: 'https://cdn/leaf.js', integrity: 'sha384-x', overrides: null },
       requiresGame: true,
-      gameId: 'caputchin/games/leaf',
+      gameId: 'acme/games/leaf',
       ticket: 'enc.sig',
     };
     expect(validateBootstrapResponse(raw)).toEqual(raw);

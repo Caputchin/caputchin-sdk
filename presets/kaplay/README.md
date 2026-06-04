@@ -148,11 +148,6 @@ index-time determinism gate, only a conformance smoke test, so verify locally.
 - The `run(seed, config, trace) -> verdict` contract, including a failing verdict
   for a malformed trace and rejection of a non-terminating run.
 
-## Reference game
-
-Caputchin's first-party **Blockfall** is the complete, open-source worked example
-(scene, sim, touch + keyboard, locales, skins) built on this preset.
-
 ## API reference
 
 Full API docs (generated from the source) live in [`docs/`](docs/README.md):

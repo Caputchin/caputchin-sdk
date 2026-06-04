@@ -60,8 +60,8 @@ jobs:
         run: pnpm coverage
 
   # The Rust kit (kits/replay-rs) is a separate toolchain from the pnpm lane
-  # above; its own job keeps cargo off the node critical path. Mirrors the rust
-  # setup in the caputchin-games CI (dtolnay toolchain + Swatinem cache).
+  # above; its own job keeps cargo off the node critical path (dtolnay toolchain
+  # + Swatinem cache).
   rust:
     runs-on: ubuntu-latest
     steps:

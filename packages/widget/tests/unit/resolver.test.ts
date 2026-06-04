@@ -56,7 +56,7 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap)', () => {
       }),
       { status: 200 }
     ));
-    const r = await fetchMarketplaceResolution('caputchin/games', API_HOST, SITE_KEY);
+    const r = await fetchMarketplaceResolution('acme/games', API_HOST, SITE_KEY);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.message).toContain('no marketplace bundle');
   });
@@ -85,10 +85,10 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap)', () => {
       JSON.stringify({ widget: null, game: { url: 'https://x.com/g.js', integrity: 'sha384-x', overrides: null } }),
       { status: 200 }
     ));
-    await fetchMarketplaceResolution('caputchin/games/leaf-memory', API_HOST, SITE_KEY);
+    await fetchMarketplaceResolution('acme/games/sample', API_HOST, SITE_KEY);
     const calledUrl = vi.mocked(fetch).mock.calls[0]![0] as string;
     expect(calledUrl).toBe(
-      'https://api.example.com/api/v1/widget/bootstrap?game=caputchin%2Fgames%2Fleaf-memory&sitekey=cpt_pub_test'
+      'https://api.example.com/api/v1/widget/bootstrap?game=acme%2Fgames%2Fsample&sitekey=cpt_pub_test'
     );
   });
 });

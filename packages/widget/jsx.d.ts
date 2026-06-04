@@ -32,7 +32,7 @@ type CaputchinWidgetAttributes = React.HTMLAttributes<HTMLElement> & {
 type CaputchinGameAttributes = React.HTMLAttributes<HTMLElement> & {
   /** Public site key (cpt_pub_...). Omit for a keyless, game-only mount. */
   sitekey?: string;
-  /** Marketplace game id, e.g. "owner/repo/leaf-memory". */
+  /** Marketplace game id, e.g. "owner/repo/game". */
   game?: string;
   /** Comma-separated game ids; the server picks one per mount. */
   games?: string;

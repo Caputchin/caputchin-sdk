@@ -16,7 +16,7 @@ Drop the result into the game's `tsup.config.ts`:
 
   import { defineConfig } from 'tsup';
   import { definePhaserBuild } from '@caputchin/preset-phaser/build';
-  export default defineConfig(definePhaserBuild({ gameId: 'volley' }));
+  export default defineConfig(definePhaserBuild({ gameId: 'my-game' }));
 
 ## Parameters
 

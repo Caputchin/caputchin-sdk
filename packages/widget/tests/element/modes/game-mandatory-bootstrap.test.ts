@@ -64,7 +64,7 @@ describe('resilient bootstrap (game mount)', () => {
       calls.push({ url: String(input), init });
       return Promise.resolve(okBootstrap());
     }));
-    const el = getGame({ game: 'caputchin/games/leaf-memory', 'no-verify': '', layout: 'inline' });
+    const el = getGame({ game: 'acme/games/sample', 'no-verify': '', layout: 'inline' });
     document.body.appendChild(el);
     await settle();
     const mountCall = calls.find((c) => c.url.includes('/widget/bootstrap'));
@@ -98,7 +98,7 @@ describe('resilient bootstrap (game mount)', () => {
   it('shows a loading skeleton during the wait and removes it once mounted', async () => {
     const { spy, resolve } = deferredFetch();
     vi.stubGlobal('fetch', spy);
-    const el = getGame({ game: 'caputchin/games/leaf-memory', 'no-verify': '', layout: 'inline', width: 'full', height: 'full' });
+    const el = getGame({ game: 'acme/games/sample', 'no-verify': '', layout: 'inline', width: 'full', height: 'full' });
     document.body.appendChild(el);
     await flush();
     // Bootstrap still pending: skeleton up, no game iframe.
@@ -129,7 +129,7 @@ describe('resilient bootstrap (game mount)', () => {
     const { spy, resolve } = deferredFetch();
     vi.stubGlobal('fetch', spy);
     const el = getGame({
-      game: 'caputchin/games/leaf-memory',
+      game: 'acme/games/sample',
       'no-verify': '',
       layout: 'inline',
       skin: JSON.stringify({ _theme: 'dark', card_front_bg: '#252D5C' }),

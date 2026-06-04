@@ -51,7 +51,7 @@ function assertField(name: string, value: string): void {
  *
  * @param sessionId - Server-issued session token. Must be non-empty and must
  *   not contain `':'`.
- * @param gameId - Game identifier slug (e.g. `"dino-runner"`). Must be
+ * @param gameId - Game identifier slug (e.g. `"owner/repo/game"`). Must be
  *   non-empty and must not contain `':'`.
  * @param roundIndex - Zero-based round counter for this session. Must be a
  *   non-negative integer.

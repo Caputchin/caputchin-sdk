@@ -19,7 +19,7 @@ against an independent SHA-256.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `sessionId` | `string` | Server-issued session token. Must be non-empty and must not contain `':'`. |
-| `gameId` | `string` | Game identifier slug (e.g. `"dino-runner"`). Must be non-empty and must not contain `':'`. |
+| `gameId` | `string` | Game identifier slug (e.g. `"owner/repo/game"`). Must be non-empty and must not contain `':'`. |
 | `roundIndex` | `number` | Zero-based round counter for this session. Must be a non-negative integer. |
 
 ## Returns

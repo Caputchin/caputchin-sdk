@@ -12,7 +12,7 @@ function referenceSeed(sessionId: string, gameId: string, roundIndex: number): S
 
 describe('deriveSeed', () => {
   const S = 'sess_abc123';
-  const G = 'caputchin/games/leaf-memory';
+  const G = 'acme/games/sample';
 
   it('is deterministic - same inputs, same seed', async () => {
     const a = await deriveSeed(S, G, 0);
@@ -32,7 +32,7 @@ describe('deriveSeed', () => {
 
   it('changes with gameId', async () => {
     expect(await deriveSeed(S, G, 0)).not.toEqual(
-      await deriveSeed(S, 'caputchin/games/dino-runner', 0),
+      await deriveSeed(S, 'acme/games/other', 0),
     );
   });
 
