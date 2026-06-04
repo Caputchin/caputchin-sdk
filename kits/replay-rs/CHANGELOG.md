@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-rs-v0.2.0...replay-rs-v0.3.0) (2026-06-04)
+
+
+### Features
+
+* **replay:** add Lane-2 live-stepping macro + replay-wasm LiveSim + rapier preset ([e8da4ae](https://github.com/Caputchin/caputchin-sdk/commit/e8da4ae2645ba7ad5ad2a77e8779874a7d7fbcc5))
+
 ## [0.2.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-rs-v0.1.0...replay-rs-v0.2.0) (2026-06-02)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Caputchin/caputchin-sdk/compare/preset-melonjs-v0.2.0...preset-melonjs-v0.2.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **preset-melonjs:** alias global so bundled Howler resolves in the headless replay isolate ([62cc788](https://github.com/Caputchin/caputchin-sdk/commit/62cc788658d0f93e7cab9ce0f4a6dd1d81067ac8))
+
 ## [0.2.0](https://github.com/Caputchin/caputchin-sdk/compare/preset-melonjs-v0.1.0...preset-melonjs-v0.2.0) (2026-06-04)
 
 
