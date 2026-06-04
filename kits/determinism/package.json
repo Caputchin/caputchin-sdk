@@ -1,0 +1,54 @@
+{
+  "name": "@caputchin/determinism",
+  "version": "0.1.0",
+  "description": "Make a JS environment deterministic so the same code runs bit-identically in the browser and on the server: deterministic transcendental math (fdlibm kernels) plus a Math swap. The shared determinism primitive for Caputchin replay presets.",
+  "keywords": [
+    "caputchin",
+    "deterministic",
+    "determinism",
+    "fdlibm",
+    "math",
+    "replay",
+    "cross-platform"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk",
+    "directory": "kits/determinism"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitest": "^2.0.0"
+  }
+}
