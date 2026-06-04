@@ -16,3 +16,5 @@ export type {
 export type { GameContext } from './context';
 export type { GameFactory } from './register';
 export { DEFAULT_REGISTRY_KEY, register } from './register';
+export { randomSeed } from './seed';
+export { makeNow } from './clock';

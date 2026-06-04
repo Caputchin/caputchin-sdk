@@ -42,4 +42,6 @@
 
 | Function | Description |
 | ------ | ------ |
+| [makeNow](Function.makeNow.md) | Build the driver's wall-clock reader: prefers the view's `performance.now()` (monotonic, sub-millisecond) and falls back to `Date.now()` when the view has no `performance` (older embedders, some test doubles). |
+| [randomSeed](Function.randomSeed.md) | Build a throwaway random [Seed](TypeAlias.Seed.md) for a no-verify mount - a live preview where the platform issued no per-round seed (no session). The replay never runs without a session, so any seed just gives the preview some play variety. |
 | [register](Function.register.md) | Register the game's factory with the iframe's Caputchin global; the widget iframe runtime invokes it on kickoff. No manifest is passed: the SERVER resolves presets + the preferred footprint (from the indexed `caputchin.json` / dashboard-authored schemas) and ships them down via the bootstrap + kickoff message, so the in-frame manifest is never read at runtime. The `caputchin.json` file stays the author + marketplace-indexer source of truth (typed by [GameManifest](Interface.GameManifest.md)); it just isn't handed to `register`. |
