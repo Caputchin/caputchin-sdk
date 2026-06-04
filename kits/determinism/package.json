@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/determinism",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Make a JS environment deterministic so the same code runs bit-identically in the browser and on the server: deterministic transcendental math (fdlibm kernels) plus a Math swap. The shared determinism primitive for Caputchin replay presets.",
   "keywords": [
     "caputchin",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-contract-v0.2.0...replay-contract-v0.3.0) (2026-06-04)
+
+
+### Features
+
+* **replay-contract:** add RUN_SELFCHECK_RPC method constant ([db36172](https://github.com/Caputchin/caputchin-sdk/commit/db361728e1d51cb9e3f3fcb0d10767b6937f1a2c))
+
 ## [0.2.0](https://github.com/Caputchin/caputchin-sdk/compare/replay-contract-v0.1.0...replay-contract-v0.2.0) (2026-06-01)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/Caputchin/caputchin-sdk/compare/engine-kit-v0.3.0...engine-kit-v0.4.0) (2026-06-04)
+
+
+### Features
+
+* **engine-kit:** reducer-to-run authoring lane, renamed from engine-runtime and trimmed of moved primitives ([2239f91](https://github.com/Caputchin/caputchin-sdk/commit/2239f9182fd20b6a71563a272464981fe2a7d972))
+
 ## [0.3.0](https://github.com/Caputchin/caputchin-sdk/compare/engine-runtime-v0.2.0...engine-runtime-v0.3.0) (2026-06-02)
 
 

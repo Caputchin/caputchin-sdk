@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v3.0.0...game-sdk-v3.1.0) (2026-06-04)
+
+
+### Features
+
+* **game-sdk:** add makeNow + randomSeed helpers ([6d1f1c8](https://github.com/Caputchin/caputchin-sdk/commit/6d1f1c84b11a8072c55aea53d63398d72390bf24))
+
 ## [3.0.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v2.1.0...game-sdk-v3.0.0) (2026-06-01)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/preset-phaser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run a FULL headless Phaser 4 game (Arcade physics included) as a Caputchin deterministic-replay sim. The engine itself is the server run: the @caputchin/determinism kit makes it deterministic (transcendental Math swap + headless DOM boot), plus a seeded RNG, a fixed-step worldstep driver, and a build preset.",
   "keywords": [
     "caputchin",

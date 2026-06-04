@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.1.3](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.2...widget-v3.1.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **widget:** compact loading skeleton for modal/fullscreen so it matches the entry, not the game frame ([0bdfc03](https://github.com/Caputchin/caputchin-sdk/commit/0bdfc037f89211cba46597a2f1a53ed947306d9f))
+* **widget:** resilient bootstrap ceiling + degraded event, no silent slow-service mis-size ([b7298b1](https://github.com/Caputchin/caputchin-sdk/commit/b7298b1f3cff0ba41633ddaf2e1b7baa7203cecd))
+* **widget:** responsive brand + size-matched loading skeleton on small screens ([9634f20](https://github.com/Caputchin/caputchin-sdk/commit/9634f20c0be4e73ecae523c5161a7fc253f24a0f))
+
 ## [3.1.2](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.1...widget-v3.1.2) (2026-06-02)
 
 
