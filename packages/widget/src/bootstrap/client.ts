@@ -1,4 +1,4 @@
-// Client for /api/v1/widget/bootstrap. The widget calls this once at
+// Client for /v1/widget/bootstrap. The widget calls this once at
 // connectedCallback with the PRE-RESOLVED `locale` + `skin` (the element auto-
 // detected them from the browser before this call when the attributes were
 // missing, so the server always sees concrete values rather than `auto`); the
@@ -285,7 +285,7 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   // transit (see encodeInlineAxis). game / games / sitekey are plain ids.
   if (input.locale) params.set('locale', encodeInlineAxis(input.locale));
   if (input.skin) params.set('skin', encodeInlineAxis(input.skin));
-  return `${input.apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
+  return `${input.apiHost}/v1/widget/bootstrap?${params.toString()}`;
 }
 
 // Top-level shape guard at the JSON-decode boundary. Per project memory:

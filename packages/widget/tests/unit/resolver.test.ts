@@ -4,7 +4,7 @@ import { fetchMarketplaceResolution } from '../../src/resolver.js';
 const API_HOST = 'https://api.example.com';
 const SITE_KEY = 'cpt_pub_test';
 
-describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap)', () => {
+describe('fetchMarketplaceResolution (calls /v1/widget/bootstrap)', () => {
   beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
   afterEach(() => { vi.restoreAllMocks(); });
 
@@ -88,7 +88,7 @@ describe('fetchMarketplaceResolution (calls /api/v1/widget/bootstrap)', () => {
     await fetchMarketplaceResolution('acme/games/sample', API_HOST, SITE_KEY);
     const calledUrl = vi.mocked(fetch).mock.calls[0]![0] as string;
     expect(calledUrl).toBe(
-      'https://api.example.com/api/v1/widget/bootstrap?game=acme%2Fgames%2Fsample&sitekey=cpt_pub_test'
+      'https://api.example.com/v1/widget/bootstrap?game=acme%2Fgames%2Fsample&sitekey=cpt_pub_test'
     );
   });
 });

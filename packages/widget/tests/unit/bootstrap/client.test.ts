@@ -4,7 +4,7 @@ import { fetchBootstrap, fetchBootstrapResilient, buildBootstrapUrl, validateBoo
 describe('buildBootstrapUrl', () => {
   it('includes only sitekey when no other inputs are provided', () => {
     const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'cpt_pub_abc' });
-    expect(url).toBe('https://api.test/api/v1/widget/bootstrap?sitekey=cpt_pub_abc');
+    expect(url).toBe('https://api.test/v1/widget/bootstrap?sitekey=cpt_pub_abc');
   });
 
   it('includes game when provided', () => {

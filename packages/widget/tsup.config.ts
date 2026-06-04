@@ -20,11 +20,11 @@ if (fs.existsSync(metaPath)) {
   );
 }
 
-// Default to the prod host (caputchin.com). Local dev overrides via the
+// Default to the verify host (verify.caputchin.com). Local dev overrides via the
 // `CAPUTCHIN_API_HOST` env var (see mprocs.yaml widget proc).
 const sharedDefine = {
   __CAPUTCHIN_API_HOST__: JSON.stringify(
-    process.env.CAPUTCHIN_API_HOST ?? 'https://caputchin.com'
+    process.env.CAPUTCHIN_API_HOST ?? 'https://verify.caputchin.com'
   ),
   __IFRAME_RUNTIME__: JSON.stringify(iframeRuntime),
   __IFRAME_RUNTIME_SHA256__: JSON.stringify(iframeRuntimeSha256),

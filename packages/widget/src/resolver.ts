@@ -1,5 +1,5 @@
 // Marketplace bundle URL + integrity hash for a game id. Hits the
-// /api/v1/widget/bootstrap endpoint (which replaced the dedicated
+// /v1/widget/bootstrap endpoint (which replaced the dedicated
 // /api/v1/games/resolve endpoint). The same response shape powers the
 // widget's white-label override fetch at mount time; for marketplace lookups
 // specifically we only consume `game.url` + `game.integrity`.
@@ -23,14 +23,14 @@ export async function fetchMarketplaceResolution(
   apiHost: string,
   sitekey: string | null,
 ): Promise<ResolutionResult> {
-  // Game-bundle resolution is keyless: /api/v1/widget/bootstrap resolves the
+  // Game-bundle resolution is keyless: /v1/widget/bootstrap resolves the
   // marketplace `game` bundle (url + integrity) for any caller. The sitekey is
   // sent only when present, so a keyed call additionally carries the tenant's
   // overrides (unused here, consumed at mount); a game-only widget with no
   // sitekey still resolves the bundle.
   const params = new URLSearchParams({ game: id });
   if (sitekey) params.set('sitekey', sitekey);
-  const url = `${apiHost}/api/v1/widget/bootstrap?${params.toString()}`;
+  const url = `${apiHost}/v1/widget/bootstrap?${params.toString()}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {

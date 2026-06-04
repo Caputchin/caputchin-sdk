@@ -37,7 +37,7 @@ import type { ResolvedAxes } from '../bootstrap/types.js';
  */
 export class CaputchinGame extends HTMLElement {
   /** @internal Custom Element observed attributes. */
-  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin'];
+  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'api-host'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -55,7 +55,10 @@ export class CaputchinGame extends HTMLElement {
     if (inspection.inert) return;
 
     state.config = inspection.config;
-    const apiHost = __CAPUTCHIN_API_HOST__;
+    // `api-host` attribute lets self-hosters or SDK-pinning consumers override
+    // the build-time default without rebuilding the bundle (additive, non-breaking).
+    const apiHostAttr = this.getAttribute('api-host');
+    const apiHost = (apiHostAttr && apiHostAttr.trim()) ? apiHostAttr.trim() : __CAPUTCHIN_API_HOST__;
     // Shadow attaches synchronously so the host keeps its layout box during
     // the bootstrap wait.
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });

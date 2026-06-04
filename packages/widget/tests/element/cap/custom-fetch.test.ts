@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 describe('CAP_CUSTOM_FETCH - URL-routed widget identity', () => {
-  it('rewrites /__cpt/{id}/challenge → /api/v1/verify/start', async () => {
+  it('rewrites /__cpt/{id}/challenge → /v1/verify/start', async () => {
     const id = 'cpt_t1';
     registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {} });
     const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
@@ -32,12 +32,12 @@ describe('CAP_CUSTOM_FETCH - URL-routed widget identity', () => {
       body: JSON.stringify({ challenge: 'x' }),
     });
     expect(fetchSpy).toHaveBeenCalled();
-    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/verify/start');
+    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/v1/verify/start');
     fetchSpy.mockRestore();
     unregisterSession(id);
   });
 
-  it('rewrites /__cpt/{id}/redeem → /api/v1/verify/pass and extracts platform.wrappedToken (not cap token)', async () => {
+  it('rewrites /__cpt/{id}/redeem → /v1/verify/pass and extracts platform.wrappedToken (not cap token)', async () => {
     const id = 'cpt_t2';
     const onWrappedToken = vi.fn();
     registerSession(id, { platform: {}, onWrappedToken });
@@ -55,7 +55,7 @@ describe('CAP_CUSTOM_FETCH - URL-routed widget identity', () => {
       body: JSON.stringify({ token: 'cap' }),
     });
     expect(fetchSpy).toHaveBeenCalled();
-    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/api/v1/verify/pass');
+    expect(fetchSpy.mock.calls[0]![0]).toBe('https://api.test.com/v1/verify/pass');
     const sentBody = JSON.parse((fetchSpy.mock.calls[0]![1] as RequestInit).body as string);
     expect(sentBody.platform.trace).toBe('tr-xyz');
     // Pass/fail only - the widget surfaces no score (server-authoritative).

@@ -186,7 +186,7 @@ export function installCustomFetch(): void {
       const body = JSON.stringify(
         ctx?.platform ? { ...parsedBody, platform: ctx.platform } : parsedBody
       );
-      const startResponse = await window.fetch(`${apiHost}/api/v1/verify/start`, {
+      const startResponse = await window.fetch(`${apiHost}/v1/verify/start`, {
         ...init,
         method: 'POST',
         body,
@@ -242,7 +242,7 @@ export function installCustomFetch(): void {
     const sessionId = sessionIds.get(widgetId);
     if (sessionId) platform = { ...platform, sessionId };
 
-    const response = await window.fetch(`${apiHost}/api/v1/verify/pass`, {
+    const response = await window.fetch(`${apiHost}/v1/verify/pass`, {
       ...init,
       method: 'POST',
       body: JSON.stringify({ ...parsedBody, platform }),

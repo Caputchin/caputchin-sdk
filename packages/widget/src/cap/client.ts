@@ -33,8 +33,8 @@ export function createCapClient(
   registerSession(widgetId, ctx);
 
   // Sentinel apiEndpoint; never reaches the server. Custom-fetch parses the
-  // widget id from the URL path and rewrites to the real /api/v1/verify/start
-  // and /api/v1/verify/pass endpoints.
+  // widget id from the URL path and rewrites to the real /v1/verify/start
+  // and /v1/verify/pass endpoints.
   const cap = new Cap({ apiEndpoint: `${apiHost}/${CPT_ROUTE_PREFIX}/${widgetId}/` });
 
   // Silence cap.js's `console.error("[cap]", ...)` for in-flight solves that
