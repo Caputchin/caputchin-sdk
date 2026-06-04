@@ -71,7 +71,8 @@ renderer, and a second IIFE entry in `tsup.config.ts` whose output is the
 ## The pieces this builds on
 
 - [`caputchin-replay-rs`](https://crates.io/crates/caputchin-replay-rs) provides the
-  `caputchin_replay!` and `caputchin_live!` macros.
+  `caputchin_replay!` and `caputchin_live!` macros. This scaffold pins version 0.3
+  (the release that adds `caputchin_live!`); generate it once that version is published.
 - [`@caputchin/replay-wasm`](https://www.npmjs.com/package/@caputchin/replay-wasm) is
   the JS host glue for the replay side.
 - [`@caputchin/replay-contract`](https://www.npmjs.com/package/@caputchin/replay-contract)
