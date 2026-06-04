@@ -29,7 +29,48 @@ export function mountKaplayGame(game: KaplayGame, args: MountArgs): () => void {
   const doc = container.ownerDocument;
   const win = (doc.defaultView ?? (globalThis as unknown)) as Window & AnyRecord;
 
+  // Establish the iframe height chain so the canvas's height:100% resolves
+  // against the iframe size instead of collapsing to content-height. The SDK
+  // srcdoc sets margin/padding 0 on html+body but no height, and the mount
+  // container is a plain <div>; without a definite height chain, percentage
+  // heights fall back to auto and the responsive canvas below collapses to a tiny
+  // board. The other first-party games inject the same fix (see leaf-memory
+  // styles). Setting the container size directly keeps it robust to the host id.
+  // Paint the iframe + container with the game's own background colour so the
+  // letterbox bars (the empty space when the scaled game does not fill the
+  // container) are seamless with the game's edges.
+  const bg = (game.options.kaplay as AnyRecord | undefined)?.['background'];
+  const bgCss =
+    typeof bg === 'string'
+      ? bg
+      : Array.isArray(bg) && bg.length >= 3
+        ? `rgb(${bg[0] | 0},${bg[1] | 0},${bg[2] | 0})`
+        : '';
+  try {
+    if (!doc.getElementById('cpt-kaplay-fit')) {
+      const fit = doc.createElement('style');
+      fit.id = 'cpt-kaplay-fit';
+      fit.textContent = `html,body{width:100%;height:100%;margin:0;overflow:hidden${bgCss ? `;background:${bgCss}` : ''}}`;
+      doc.head.appendChild(fit);
+    }
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.position = 'relative';
+    container.style.overflow = 'hidden';
+    if (bgCss) container.style.background = bgCss;
+  } catch {
+    /* best effort - non-DOM host */
+  }
+
+  // The canvas is positioned ABSOLUTELY (out of flow) to fill the height:100%
+  // container. KAPLAY auto-sizes its gfx to the canvas, but an in-flow canvas
+  // feeds its size back into the runtime's content-measurement -> the iframe
+  // grows -> the canvas grows (an unbounded loop + scrollbars). Out of flow, the
+  // canvas just FILLS the container (whose size is anchored by the height chain),
+  // so the measured content stays the iframe size and the loop never starts.
   const canvas = doc.createElement('canvas');
+  canvas.style.position = 'absolute';
+  canvas.style.inset = '0';
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.display = 'block';
@@ -91,8 +132,18 @@ export function mountKaplayGame(game: KaplayGame, args: MountArgs): () => void {
     for (const f of batch) f(vt);
   };
 
+  // Drop the game's fixed virtual resolution for the LIVE canvas so KAPLAY sizes
+  // its gfx to the (container-filling) canvas at NATIVE resolution - the scene is
+  // drawn crisply at the display size, not a fixed 270x480 framebuffer scaled up
+  // (which pixelates). The author's scene reads k.width()/k.height() (the layout
+  // already does) to scale-to-fit + centre + paint its own background out to the
+  // edges, so the fit is crisp + seamless. The HEADLESS replay keeps the fixed
+  // nominal size (pump.ts unchanged): it renders nothing and the sim reads NO
+  // dimensions, so live==replay is unaffected.
   const k: KAPLAYCtx = kaplay({
     ...game.options.kaplay,
+    width: undefined,
+    height: undefined,
     canvas,
     global: false,
   });
