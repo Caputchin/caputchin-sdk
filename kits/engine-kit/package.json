@@ -1,0 +1,61 @@
+{
+  "name": "@caputchin/engine-kit",
+  "version": "0.3.0",
+  "description": "Optional authoring kit: the reducer-to-run adapter (fixed-step replay loop + default trace codec) for Caputchin server-validated game replay",
+  "keywords": [
+    "caputchin",
+    "engine",
+    "deterministic",
+    "replay",
+    "captcha"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "bin": {
+    "caputchin-selfcheck": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@caputchin/replay-contract": "workspace:*",
+    "@caputchin/replay-selfcheck": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "devDependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}
