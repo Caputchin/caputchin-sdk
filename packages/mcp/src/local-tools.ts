@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { resolveApiHost } from './api.js';
+import { resolveVerifyHost } from './api.js';
 
 /**
  * Local-only tools that need no Management API access. These run offline:
@@ -71,9 +71,11 @@ export function renderWidgetSnippet(args: z.infer<typeof WidgetSnippetInput>): s
 export function renderSiteverifyExample(args: z.infer<typeof SiteverifyExampleInput>): string {
   const lang = args.language;
   // Single source for the endpoint URL across every language snippet, derived
-  // from the env-overridable platform host (CAPUTCHIN_API_HOST), so a staging
-  // or self-hosted MCP emits matching examples instead of the public default.
-  const siteverifyUrl = `${resolveApiHost()}/api/v1/siteverify`;
+  // from the env-overridable verification host (CAPUTCHIN_VERIFY_HOST), so a
+  // staging or self-hosted MCP emits matching examples instead of the public
+  // default. siteverify lives on the public data plane (verify.caputchin.com),
+  // a different host from the control plane that serves /mcp.
+  const siteverifyUrl = `${resolveVerifyHost()}/v1/siteverify`;
   if (lang === 'node' || lang === 'javascript' || lang === 'typescript') {
     return [
       '// Node 18+ (built-in fetch)',

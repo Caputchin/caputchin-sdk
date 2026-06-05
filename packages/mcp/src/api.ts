@@ -35,6 +35,21 @@ export function resolveApiHost(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 /**
+ * Resolve the public verification host (the data plane that answers
+ * `/v1/siteverify`, widget bootstrap, and verify). Uses `CAPUTCHIN_VERIFY_HOST`
+ * when set, otherwise defaults to `https://verify.caputchin.com`. This is a
+ * separate host from {@link resolveApiHost}: the control plane (`/mcp`,
+ * management) and the public verification data plane live on different
+ * subdomains. Trailing slashes are stripped.
+ *
+ * @param env - Process environment. Defaults to `process.env`.
+ * @returns Base URL with no trailing slash, e.g. `"https://verify.caputchin.com"`.
+ */
+export function resolveVerifyHost(env: NodeJS.ProcessEnv = process.env): string {
+  return (env.CAPUTCHIN_VERIFY_HOST ?? 'https://verify.caputchin.com').replace(/\/+$/, '');
+}
+
+/**
  * Read and validate the Management API config from the environment.
  * Throws if `CAPUTCHIN_TOKEN` is absent.
  *

@@ -50,7 +50,7 @@ describe('renderSiteverifyExample', () => {
   it('emits node fetch snippet for node/javascript/typescript', () => {
     for (const lang of ['node', 'javascript', 'typescript'] as const) {
       const out = renderSiteverifyExample({ language: lang });
-      expect(out).toContain('fetch("https://api.caputchin.com/api/v1/siteverify"');
+      expect(out).toContain('fetch("https://verify.caputchin.com/v1/siteverify"');
       expect(out).toContain('process.env.CAPUTCHIN_SECRET');
     }
   });
@@ -75,19 +75,19 @@ describe('renderSiteverifyExample', () => {
 
   it('emits curl snippet', () => {
     const out = renderSiteverifyExample({ language: 'curl' });
-    expect(out).toContain('curl -sS -X POST https://api.caputchin.com/api/v1/siteverify');
+    expect(out).toContain('curl -sS -X POST https://verify.caputchin.com/v1/siteverify');
   });
 
-  it('reflects CAPUTCHIN_API_HOST override across snippets (single source)', () => {
-    const prev = process.env.CAPUTCHIN_API_HOST;
-    process.env.CAPUTCHIN_API_HOST = 'https://staging.example.com/';
+  it('reflects CAPUTCHIN_VERIFY_HOST override across snippets (single source)', () => {
+    const prev = process.env.CAPUTCHIN_VERIFY_HOST;
+    process.env.CAPUTCHIN_VERIFY_HOST = 'https://staging.example.com/';
     try {
       const out = renderSiteverifyExample({ language: 'curl' });
-      expect(out).toContain('https://staging.example.com/api/v1/siteverify');
+      expect(out).toContain('https://staging.example.com/v1/siteverify');
       expect(out).not.toContain('caputchin.com');
     } finally {
-      if (prev === undefined) delete process.env.CAPUTCHIN_API_HOST;
-      else process.env.CAPUTCHIN_API_HOST = prev;
+      if (prev === undefined) delete process.env.CAPUTCHIN_VERIFY_HOST;
+      else process.env.CAPUTCHIN_VERIFY_HOST = prev;
     }
   });
 
