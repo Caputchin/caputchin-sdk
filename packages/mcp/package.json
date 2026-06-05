@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/mcp",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "stdio MCP adapter for Caputchin: proxies the canonical /api/mcp tool catalogue and ships offline dev-onboarding tools.",
   "keywords": [
     "caputchin",

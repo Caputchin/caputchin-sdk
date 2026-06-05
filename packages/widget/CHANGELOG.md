@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.3...widget-v3.2.0) (2026-06-05)
+
+
+### Features
+
+* **widget:** retarget default host to verify.caputchin.com, drop /api prefix from v1 paths, add api-host attribute override ([62ce657](https://github.com/Caputchin/caputchin-sdk/commit/62ce657fdff0a61f50176ece006550003c82508e))
+
 ## [3.1.3](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.2...widget-v3.1.3) (2026-06-04)
 
 
