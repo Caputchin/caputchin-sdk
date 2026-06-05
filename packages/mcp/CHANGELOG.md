@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.1...mcp-v2.1.0) (2026-06-05)
+
+
+### Features
+
+* **mcp:** retarget default host to api.caputchin.com, drop /api prefix from /mcp path ([0905d44](https://github.com/Caputchin/caputchin-sdk/commit/0905d4439a4506af5db2a5f18c3ad518df5b9bf1))
+
+
+### Bug Fixes
+
+* **mcp:** emit siteverify snippet against verify.caputchin.com/v1/siteverify ([37d9c01](https://github.com/Caputchin/caputchin-sdk/commit/37d9c01c1781d6482381d4422fef4c9bdc00105b))
+
 ## [2.0.1](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.0...mcp-v2.0.1) (2026-05-24)
 
 
