@@ -12,6 +12,7 @@ Options for [toRun](Function.toRun.md).
 
 | Property | Modifier | Type | Description |
 | ------ | ------ | ------ | ------ |
+| <a id="maxactionspertick"></a> `maxActionsPerTick?` | `public` | `number` | Max actions allowed on a single logical tick before the trace is rejected as malformed (a failing verdict, not a throw). Defaults to a generous internal cap (256) that no human input rate approaches. Raise only for an unusual input model that batches many actions per tick. |
 | <a id="maxticks"></a> `maxTicks` | `readonly` | `number` | Maximum number of fixed timesteps the replay loop may advance before declaring the run truncated and returning `passed: false`. Prevents a non-terminating engine from hanging the server isolate. Set this to a value safely above the longest legitimate play session; a typical 30-second game at [FIXED\_TIMESTEP\_MS](Variable.FIXED_TIMESTEP_MS.md) fits in ~1875 ticks. |
 
 ## Methods

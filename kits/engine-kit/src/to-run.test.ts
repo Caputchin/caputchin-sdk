@@ -94,4 +94,31 @@ describe('toRun', () => {
     // ...but the truncated guard in toRun overrides it.
     expect(r(SEED, null, encodeTrace([])).passed).toBe(false);
   });
+
+  it('rejects a structurally-invalid trace (tick past maxTicks / backwards) with a failing verdict', () => {
+    const fail = { passed: false, score: 0, durationMs: 0 };
+    // run() has maxTicks 1000; a tick at/past it is malformed.
+    expect(run(SEED, null, encodeTrace([{ tick: 1000, action: { kind: 'boost' } }]))).toEqual(fail);
+    // ticks that run backwards never come from the live driver.
+    expect(
+      run(
+        SEED,
+        null,
+        encodeTrace([
+          { tick: 5, action: { kind: 'boost' } },
+          { tick: 1, action: { kind: 'boost' } },
+        ]),
+      ),
+    ).toEqual(fail);
+  });
+
+  it('enforces maxActionsPerTick (too many actions on one tick -> failing verdict)', () => {
+    const tight = toRun(engine, { maxTicks: 1000, maxActionsPerTick: 2 });
+    const many: TickInput<A>[] = [
+      { tick: 1, action: { kind: 'boost' } },
+      { tick: 1, action: { kind: 'boost' } },
+      { tick: 1, action: { kind: 'boost' } },
+    ];
+    expect(tight(SEED, null, encodeTrace(many))).toEqual({ passed: false, score: 0, durationMs: 0 });
+  });
 });

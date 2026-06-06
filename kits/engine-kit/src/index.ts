@@ -16,6 +16,7 @@
  */
 
 export { FIXED_TIMESTEP_MS, CODEC_V } from './constants';
+export { REACTION_FLOOR_MS, reactionFloorTicks, isHumanReaction } from './reaction';
 export { defineEngine } from './define-engine';
 export { replay } from './harness';
 export { toRun } from './to-run';

@@ -109,6 +109,13 @@ export interface GameManifest {
   /** Preferred presentation footprint (width / height). See
    *  {@link PreferredPresentation}. */
   preferred?: PreferredPresentation;
+  /** Minimum plausible human solve time, in milliseconds. The platform pins this
+   *  (via the signed game-gate ticket) and rejects a `/verify/pass` whose real
+   *  wall-clock elapsed time falls below it (a deterministic offline solver
+   *  submits a finished round in roughly zero time). Set it conservatively per
+   *  game, well under the slowest real player; the platform ships it in shadow
+   *  (log-only) mode first to calibrate. Omit to apply no floor. */
+  minSolveMs?: number;
   locales?: {
     /** Optional per-key documentation. Drives translator tooling and the
      *  future dashboard override editor. Not read at runtime. */

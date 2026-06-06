@@ -6,6 +6,7 @@
 
 import { replay } from './harness';
 import { decodeTrace } from './trace-codec';
+import { DEFAULT_MAX_ACTIONS_PER_TICK, isStructurallyValid } from './validate-trace';
 import type { EngineDef, TickInput } from './types';
 import type { Seed, Verdict } from '@caputchin/replay-contract';
 
@@ -29,6 +30,13 @@ export interface ToRunOptions<A> {
    * @returns Ordered array of tick-stamped inputs to feed the replay loop.
    */
   decode?(trace: Uint8Array | string): readonly TickInput<A>[];
+  /**
+   * Max actions allowed on a single logical tick before the trace is rejected as
+   * malformed (a failing verdict, not a throw). Defaults to a generous internal
+   * cap (256) that no human input rate approaches. Raise only for an unusual
+   * input model that batches many actions per tick.
+   */
+  maxActionsPerTick?: number;
 }
 
 /**
@@ -59,6 +67,17 @@ export function toRun<S, A, C, V>(
     try {
       inputs = decode(trace);
     } catch {
+      return { passed: false, score: 0, durationMs: 0 };
+    }
+    // Structural tamper tripwire before replay: a trace whose tick shape the live
+    // driver never produces (out-of-range / backwards ticks, absurd per-tick
+    // action counts) is a rejectable run, not something to feed the engine.
+    if (
+      !isStructurallyValid(inputs, {
+        maxTicks: opts.maxTicks,
+        maxActionsPerTick: opts.maxActionsPerTick ?? DEFAULT_MAX_ACTIONS_PER_TICK,
+      })
+    ) {
       return { passed: false, score: 0, durationMs: 0 };
     }
     const outcome = replay(engine, {
