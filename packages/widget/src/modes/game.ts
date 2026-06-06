@@ -505,31 +505,44 @@ function ensureGameStyles(root: ShadowRoot): void {
     // --- overlay (modal / fullscreen) ---
     '[part="game-overlay-host"]{display:inline-block}',
     '[part="game-overlay-checkbox"]{display:inline-block}',
-    '[part="game-overlay-dialog"]{padding:0;border:0;background:transparent;max-width:none;max-height:none}',
+    '[part="game-overlay-dialog"]{padding:0;border:0;background:transparent;max-width:none;max-height:none;box-sizing:border-box}',
     '[part="game-overlay-dialog"][open]{display:flex;flex-direction:column}',
     // Modal: shrink-wrap to the iframe so neither white space nor scrollbars
     // appear. The iframe is sized to the game's manifest dimensions (or the
     // 400x300 default); the dialog hugs that plus its own padding. Capped to
-    // 90vw / 90vh so very large games still fit the viewport.
-    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:var(--cpt-skin-surface_bg);padding:1rem;width:fit-content;height:fit-content;max-width:90vw;max-height:90vh;box-shadow:0 20px 50px var(--cpt-skin-shadow)}',
+    // 90vw / 90dvh (box-sizing:border-box from the base rule folds the 1rem
+    // padding INTO that cap) so the dialog never exceeds the viewport; an
+    // over-wide game is then clamped by max-width:100% on the iframe below.
+    // dvh (dynamic viewport height) tracks the mobile address-bar; vh is the
+    // fallback for browsers without dvh.
+    '[part="game-overlay-dialog"][data-layout="modal"]{border-radius:0.75rem;background:var(--cpt-skin-surface_bg);padding:1rem;width:fit-content;height:fit-content;max-width:90vw;max-height:90vh;max-height:90dvh;box-shadow:0 20px 50px var(--cpt-skin-shadow)}',
     // Modal + fill: switch the dialog off shrink-wrap on the filled axis so
     // the iframe inside actually has a definite size to stretch into. Pinned
     // to 90vw / 90vh (matching the existing max-* cap) so the modal still
     // reads as a dialog with backdrop, not as a fullscreen overlay.
     '[part="game-overlay-dialog"][data-layout="modal"][data-fill-x="true"]{width:90vw}',
-    '[part="game-overlay-dialog"][data-layout="modal"][data-fill-y="true"]{height:90vh}',
+    '[part="game-overlay-dialog"][data-layout="modal"][data-fill-y="true"]{height:90vh;height:90dvh}',
     '[part="game-overlay-dialog"][data-layout="modal"]::backdrop{background:var(--cpt-skin-modal_backdrop)}',
-    '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:var(--cpt-skin-surface_bg)}',
+    '[part="game-overlay-dialog"][data-layout="fullscreen"]{width:100vw;height:100vh;height:100dvh;max-width:100vw;max-height:100vh;max-height:100dvh;background:var(--cpt-skin-surface_bg)}',
     '[part="game-overlay-dialog"][data-layout="fullscreen"]::backdrop{background:var(--cpt-skin-fullscreen_backdrop)}',
     // Overlay (modal + fullscreen): iframe stays at its manifest preferred
     // size (set by applyIframeSize); slot fills the dialog interior and
     // centers the iframe both axes. Matters most for fullscreen; the
-    // dialog is 100vw/100vh, the game might be 280×160, and we want it
+    // dialog is 100vw/100dvh, the game might be 280x160, and we want it
     // centered with backdrop space rather than stretched and pixelated.
     // For modal the dialog shrink-wraps to the iframe so centering is a
     // no-op there but stays consistent.
-    '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex;align-items:center;justify-content:center}',
-    '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{border:0}',
+    // max-width:100% clamps the iframe WIDTH to the dialog interior: a game
+    // whose preferred width exceeds the capped dialog (90vw modal / 100vw
+    // fullscreen) shrinks to fit instead of overflowing the viewport (the mobile
+    // horizontal-scroll bug). Against a shrink-wrapped (auto) modal the
+    // percentage resolves to no-constraint, so a small game keeps its size and
+    // stays centered. max-height:100% only caps height where the slot has a
+    // DEFINITE height (fullscreen / height="full"); in a shrink-wrapped modal a
+    // taller-than-viewport game still centers and clips top/bottom (a
+    // pre-existing limit; a real vertical fit needs object-fit-style scaling).
+    '[part="game-overlay-dialog"] [part="game-iframe-slot"]{flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}',
+    '[part="game-overlay-dialog"] [part="game-iframe-slot"] iframe{border:0;max-width:100%;max-height:100%;box-sizing:border-box}',
     // width="full" / height="full" on a game widget in overlay layout: the
     // iframe stretches along that axis to fill the dialog interior. Per-axis
     // so a customer can fill one axis and letterbox the other. `align-items`
