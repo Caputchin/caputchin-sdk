@@ -122,7 +122,10 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
       // job: games are third-party and we can't assume they emit pass once.
       if (!firstPassSeen) {
         firstPassSeen = true;
-        client.releaseGate({ trace: msg.trace });
+        // Forward the captured input-motion trace alongside the game trace so
+        // the server can judge human-vs-automation. Omitted key is harmless
+        // (the server abstains when no input trace is present).
+        client.releaseGate({ trace: msg.trace, inputTrace: msg.inputTrace });
       }
     } else if (msg.kind === 'game-error') {
       const { code, originalCode } = mapIframeErrorCode(msg.code);

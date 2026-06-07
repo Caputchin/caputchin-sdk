@@ -83,6 +83,80 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
   document.addEventListener('keydown', markUserInteracted, { once: true, capture: true });
   document.addEventListener('focusin', markUserInteracted, { once: true, capture: true });
 
+  // ---- input-motion capture ----
+  // Record the shape + timing of the player's input (pointer and key events) as
+  // a compact, second trace that ships alongside the game trace when the round
+  // passes. The server uses it to tell genuine human play from automated input.
+  // It is in-memory only (never stored on the device) and discarded right after
+  // it is sent. Listeners are capture-phase and passive, so they observe events
+  // without ever calling preventDefault / stopPropagation, and cannot interfere
+  // with the game's own input handling. Pointer-locked play (no absolute
+  // coordinates) is accumulated into a running position so the format stays
+  // uniform. Bounded to a fixed event count so a long round cannot grow it
+  // without limit. Capture starts when the game starts (so the first event's
+  // timestamp is the player's reaction latency, not page-load time).
+  const INPUT_MAX_EVENTS = 4000;
+  const INPUT_MOVE_MIN_DT = 16; // coalesce pointer moves to roughly 60Hz
+  const inputEvents: number[][] = [];
+  let inputCaptureStarted = false;
+  let inputT0 = 0;
+  let lastMoveAt = -Infinity;
+  let lockX = 0;
+  let lockY = 0;
+
+  function startInputCapture(): void {
+    if (inputCaptureStarted) return;
+    inputCaptureStarted = true;
+    inputT0 = performance.now();
+  }
+  function inputRelT(): number {
+    return Math.round(performance.now() - inputT0);
+  }
+  function pushInput(ev: number[]): void {
+    if (!inputCaptureStarted || inputEvents.length >= INPUT_MAX_EVENTS) return;
+    inputEvents.push(ev);
+  }
+  // Stable small numeric id for a key code string. Used only to pair down/up
+  // and count distinct keys; it carries no text and no identity (the sandboxed
+  // iframe cannot see the host page or its form fields).
+  function keyId(code: string): number {
+    let h = 0;
+    for (let i = 0; i < code.length; i++) h = (Math.imul(h, 31) + code.charCodeAt(i)) | 0;
+    return h & 0xffff;
+  }
+  function pointerXY(pe: PointerEvent): [number, number] {
+    if (document.pointerLockElement != null) {
+      lockX += pe.movementX;
+      lockY += pe.movementY;
+      return [Math.round(lockX), Math.round(lockY)];
+    }
+    return [Math.round(pe.clientX), Math.round(pe.clientY)];
+  }
+  document.addEventListener('pointerdown', (e) => {
+    const [x, y] = pointerXY(e as PointerEvent);
+    pushInput([inputRelT(), 0, x, y]);
+  }, { capture: true, passive: true });
+  document.addEventListener('pointerup', (e) => {
+    const [x, y] = pointerXY(e as PointerEvent);
+    pushInput([inputRelT(), 1, x, y]);
+  }, { capture: true, passive: true });
+  document.addEventListener('pointermove', (e) => {
+    const t = inputRelT();
+    if (t - lastMoveAt < INPUT_MOVE_MIN_DT) return;
+    lastMoveAt = t;
+    const [x, y] = pointerXY(e as PointerEvent);
+    pushInput([t, 2, x, y]);
+  }, { capture: true, passive: true });
+  document.addEventListener('keydown', (e) => {
+    pushInput([inputRelT(), 3, keyId((e as KeyboardEvent).code)]);
+  }, { capture: true, passive: true });
+  document.addEventListener('keyup', (e) => {
+    pushInput([inputRelT(), 4, keyId((e as KeyboardEvent).code)]);
+  }, { capture: true, passive: true });
+  function serializeInputTrace(): string {
+    return JSON.stringify({ v: 1, e: inputEvents });
+  }
+
   // Read embedded game id from the runtime script tag (srcdoc sets data-game-id).
   const runtimeScript = document.querySelector('script[data-game-id]');
   const embeddedRaw = runtimeScript ? runtimeScript.getAttribute('data-game-id') : null;
@@ -201,7 +275,7 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
 
       const bridge: Bridge = {
         pass({ trace }) {
-          postToParent({ kind: 'game-pass', seq, trace });
+          postToParent({ kind: 'game-pass', seq, trace, inputTrace: serializeInputTrace() });
         },
         error({ code, message }) {
           postError(code, message ?? '');
@@ -270,6 +344,9 @@ import { DEFAULT_REGISTRY_KEY } from '@caputchin/game-sdk';
       }
       requestAnimationFrame(() => requestAnimationFrame(measureDocumentSize));
 
+      // Start input-motion capture now the game is live, so the first recorded
+      // event's timestamp measures the player's reaction, not page-load time.
+      startInputCapture();
       postToParent({ kind: 'game-started', seq });
       return;
     }

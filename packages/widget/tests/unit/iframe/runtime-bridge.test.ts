@@ -83,7 +83,7 @@ describe('iframe runtime - bridge.error contract', () => {
 });
 
 describe('iframe runtime - bridge.pass contract', () => {
-  it('pass({trace}) posts the trace', () => {
+  it('pass({trace}) posts the trace plus the captured input trace', () => {
     let captured: unknown = null;
     registerGame('c-1', (_root, bridge) => {
       captured = bridge;
@@ -92,8 +92,13 @@ describe('iframe runtime - bridge.pass contract', () => {
 
     (captured as { pass: (p: { trace: string }) => void }).pass({ trace: 'tr-3' });
 
-    const done = posted.find((m) => m['kind'] === 'game-pass');
-    expect(done).toEqual({ kind: 'game-pass', seq: 3, trace: 'tr-3' });
+    const done = posted.find((m) => m['kind'] === 'game-pass') as Record<string, unknown>;
+    expect(done['kind']).toBe('game-pass');
+    expect(done['seq']).toBe(3);
+    expect(done['trace']).toBe('tr-3');
+    // The input-motion trace rides alongside (a v1 JSON string).
+    expect(typeof done['inputTrace']).toBe('string');
+    expect(JSON.parse(done['inputTrace'] as string)).toMatchObject({ v: 1 });
   });
 
   it('pass({trace}) posts the opaque trace, no score/durationMs', () => {
@@ -105,9 +110,35 @@ describe('iframe runtime - bridge.pass contract', () => {
 
     (captured as { pass: (p: { trace: string }) => void }).pass({ trace: 'tr-4' });
 
-    const done = posted.find((m) => m['kind'] === 'game-pass');
-    expect(done).toEqual({ kind: 'game-pass', seq: 4, trace: 'tr-4' });
+    const done = posted.find((m) => m['kind'] === 'game-pass') as Record<string, unknown>;
+    expect(done['trace']).toBe('tr-4');
     expect(Object.prototype.hasOwnProperty.call(done, 'score')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(done, 'durationMs')).toBe(false);
+  });
+
+  it('captures pointer + key events into the input trace', () => {
+    let captured: unknown = null;
+    registerGame('c-3', (_root, bridge) => {
+      captured = bridge;
+    });
+    dispatchKickoff('c-3', 8);
+
+    document.dispatchEvent(new MouseEvent('pointerdown', { clientX: 120, clientY: 90, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('pointerup', { clientX: 121, clientY: 91, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowLeft', bubbles: true }));
+
+    (captured as { pass: (p: { trace: string }) => void }).pass({ trace: 'tr-8' });
+
+    const done = posted.find((m) => m['kind'] === 'game-pass' && m['seq'] === 8) as Record<string, unknown>;
+    const parsed = JSON.parse(done['inputTrace'] as string) as { v: number; e: number[][] };
+    expect(parsed.v).toBe(1);
+    // At least the down/up + key down/up landed (kinds 0,1,3,4).
+    const kinds = parsed.e.map((ev) => ev[1]);
+    expect(kinds).toContain(0);
+    expect(kinds).toContain(1);
+    expect(kinds).toContain(3);
+    expect(kinds).toContain(4);
   });
 });
 

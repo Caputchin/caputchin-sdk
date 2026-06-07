@@ -44,6 +44,11 @@ export interface GamePassMessage {
    *  /verify/pass; the server replays it for the authoritative verdict. The
    *  game reports no score here - the gate is the server replay. */
   trace: string;
+  /** A compact JSON record of the player's input motion (pointer + key timing),
+   *  captured by the runtime alongside the game trace and forwarded to
+   *  /verify/pass for human-vs-automation judging. Absent when capture produced
+   *  nothing. In-memory only; never stored on the device. */
+  inputTrace?: string;
 }
 
 export interface GameErrorMessage {
