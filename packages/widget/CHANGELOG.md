@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.2.0...widget-v3.2.1) (2026-06-07)
+
+
+### Bug Fixes
+
+* **widget:** cap the game modal to the viewport on mobile (clamp over-wide iframe) ([015aae8](https://github.com/Caputchin/caputchin-sdk/commit/015aae8dc39738bbaee3e2dd65492eae9be95232))
+
 ## [3.2.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.1.3...widget-v3.2.0) (2026-06-05)
 
 

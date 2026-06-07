@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/engine-kit",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Optional authoring kit: the reducer-to-run adapter (fixed-step replay loop + default trace codec) for Caputchin server-validated game replay",
   "keywords": [
     "caputchin",

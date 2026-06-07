@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v3.1.0...game-sdk-v3.2.0) (2026-06-07)
+
+
+### Features
+
+* **sdk:** gameplay bot-resistance kit helpers + minSolveMs manifest field ([ac021ce](https://github.com/Caputchin/caputchin-sdk/commit/ac021cec3526df6a812c01d81c4e29e7c4ae5e9e))
+
 ## [3.1.0](https://github.com/Caputchin/caputchin-sdk/compare/game-sdk-v3.0.0...game-sdk-v3.1.0) (2026-06-04)
 
 
