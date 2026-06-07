@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/Caputchin/caputchin-sdk/compare/engine-kit-v0.4.0...engine-kit-v0.5.0) (2026-06-07)
+
+
+### Features
+
+* **sdk:** gameplay bot-resistance kit helpers + minSolveMs manifest field ([ac021ce](https://github.com/Caputchin/caputchin-sdk/commit/ac021cec3526df6a812c01d81c4e29e7c4ae5e9e))
+
 ## [0.4.0](https://github.com/Caputchin/caputchin-sdk/compare/engine-kit-v0.3.0...engine-kit-v0.4.0) (2026-06-04)
 
 
