@@ -8,7 +8,7 @@ import {
 describe('renderWidgetSnippet', () => {
   it('emits a minimal snippet with only the sitekey', () => {
     const out = renderWidgetSnippet({ sitekey: 'cpt_pub_abc123' });
-    expect(out).toContain('cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/widget.js');
+    expect(out).toContain('cdn.jsdelivr.net/npm/@caputchin/widget@3/dist/widget.js');
     expect(out).toContain('sitekey="cpt_pub_abc123"');
     expect(out).not.toContain('game=');
     expect(out).not.toContain('games=');

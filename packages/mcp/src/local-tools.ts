@@ -28,7 +28,7 @@ export type LocalTool = {
   handler: (args: Record<string, unknown>) => Promise<string>;
 };
 
-const WIDGET_CDN_URL = 'https://cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/widget.js';
+const WIDGET_CDN_URL = 'https://cdn.jsdelivr.net/npm/@caputchin/widget@3/dist/widget.js';
 
 export const WidgetSnippetInput = z.object({
   sitekey: z
