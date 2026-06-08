@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.2.1...widget-v3.3.0) (2026-06-08)
+
+
+### Features
+
+* **widget:** capture input-motion trace alongside the game trace for verification ([bdd7be5](https://github.com/Caputchin/caputchin-sdk/commit/bdd7be57877681982f8851532399891e4d397010))
+
 ## [3.2.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.2.0...widget-v3.2.1) (2026-06-07)
 
 
