@@ -1,0 +1,11 @@
+{
+  "extends": "../../typedoc.base.json",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "out": "docs",
+  "externalSymbolLinkMappings": {
+    "@caputchin/replay-contract": {
+      "*": "https://github.com/Caputchin/caputchin-sdk/tree/main/packages/replay-contract"
+    }
+  }
+}

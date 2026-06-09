@@ -43,6 +43,10 @@
       "component": "preset-kaplay",
       "package-name": "@caputchin/preset-kaplay"
     },
+    "presets/excalibur": {
+      "component": "preset-excalibur",
+      "package-name": "@caputchin/preset-excalibur"
+    },
     "packages/game-sdk": {
       "component": "game-sdk",
       "package-name": "@caputchin/game-sdk"

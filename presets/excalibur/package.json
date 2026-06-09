@@ -1,0 +1,73 @@
+{
+  "name": "@caputchin/preset-excalibur",
+  "version": "0.1.0",
+  "description": "Self-contained Caputchin replay preset for the Excalibur.js engine: headless boot, fixed-step pump, deterministic RNG rail, and the conforming run/live adapters. The on-ramp for any Excalibur game on the deterministic-replay platform.",
+  "keywords": [
+    "caputchin",
+    "excalibur",
+    "deterministic",
+    "replay",
+    "captcha",
+    "game",
+    "preset"
+  ],
+  "homepage": "https://github.com/Caputchin/caputchin-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Caputchin/caputchin-sdk",
+    "directory": "presets/excalibur"
+  },
+  "bugs": {
+    "url": "https://github.com/Caputchin/caputchin-sdk/issues"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "require": "./dist/install.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/install.js",
+    "./dist/install.cjs"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs": "typedoc && node ../../scripts/normalize-docs.mjs docs"
+  },
+  "dependencies": {
+    "@caputchin/determinism": "workspace:*",
+    "@caputchin/replay-contract": "workspace:*"
+  },
+  "peerDependencies": {
+    "@caputchin/game-sdk": "^3.0.0",
+    "excalibur": "0.32.0"
+  },
+  "devDependencies": {
+    "@caputchin/game-sdk": "workspace:*",
+    "@caputchin/replay-selfcheck": "workspace:*",
+    "@types/node": "^22.0.0",
+    "excalibur": "0.32.0",
+    "tsup": "^8.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}

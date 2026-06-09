@@ -23,6 +23,7 @@ jobs:
       preset_melonjs_released: ${{ steps.release.outputs['presets/melonjs--release_created'] }}
       preset_phaser_released: ${{ steps.release.outputs['presets/phaser--release_created'] }}
       preset_kaplay_released: ${{ steps.release.outputs['presets/kaplay--release_created'] }}
+      preset_excalibur_released: ${{ steps.release.outputs['presets/excalibur--release_created'] }}
       game_sdk_released: ${{ steps.release.outputs['packages/game-sdk--release_created'] }}
       widget_released: ${{ steps.release.outputs['packages/widget--release_created'] }}
       mcp_released: ${{ steps.release.outputs['packages/mcp--release_created'] }}
@@ -108,6 +109,12 @@ jobs:
       - name: Publish @caputchin/preset-kaplay
         if: ${{ needs.release-please.outputs.preset_kaplay_released == 'true' }}
         run: pnpm --filter @caputchin/preset-kaplay publish --access public --no-git-checks
+
+      # preset-excalibur is self-contained (no engine-kit dep); it only needs
+      # replay-contract + determinism, already published above.
+      - name: Publish @caputchin/preset-excalibur
+        if: ${{ needs.release-please.outputs.preset_excalibur_released == 'true' }}
+        run: pnpm --filter @caputchin/preset-excalibur publish --access public --no-git-checks
 
       - name: Publish @caputchin/game-sdk
         if: ${{ needs.release-please.outputs.game_sdk_released == 'true' }}
