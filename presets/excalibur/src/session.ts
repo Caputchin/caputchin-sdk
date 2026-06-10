@@ -8,7 +8,7 @@
 // runs them as fast as possible. The virtual-time sequence handed to Excalibur is
 // identical either way, so the engine - and the sim it hosts - executes identically.
 
-import type { Engine } from 'excalibur';
+import * as ex from 'excalibur';
 import { rng } from '@caputchin/determinism';
 import type { Seed } from '@caputchin/replay-contract';
 import type { ApiPointerEvent, ExcaliburGame, ExcaliburGameApi, GameContext } from './types';
@@ -25,7 +25,7 @@ export interface Outcome {
 }
 
 export interface RuntimeOptions {
-  readonly engine: Engine;
+  readonly engine: ex.Engine;
   readonly game: ExcaliburGame;
   readonly seed: Seed;
   readonly ctx: GameContext | null;
@@ -143,6 +143,12 @@ export function createRuntime(o: RuntimeOptions): Runtime {
     for (const ev of o.source.eventsForTick(outcome.tick)) {
       if (ev.t === 0) {
         ptrEvents.push({ kind: ev.k, x: ev.x, y: ev.y });
+        // Feed the engine's NATIVE input system so Actors' pointer handlers + the
+        // PointerSystem (hit-testing) run from the recorded trace, identically on both
+        // ends. Live, mount.ts detaches Excalibur's own DOM listeners so this injected
+        // stream is the sole pointer source (no double-dispatch).
+        const kind = ev.k === 0 ? 'down' : ev.k === 1 ? 'move' : 'up';
+        o.engine.input.pointers.triggerEvent(kind, ex.vec(ev.x, ev.y));
         if (ev.k === 0) {
           ptrDown = true;
           ptrX = ev.x;

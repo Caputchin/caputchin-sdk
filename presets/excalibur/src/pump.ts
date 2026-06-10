@@ -62,6 +62,17 @@ export async function pumpHeadless<C = unknown>(
   const runtime = createRuntime({ engine, game, seed, ctx, headless: true, source });
 
   await engine.start();
+  // Native pointer events headless: runTick injects the recorded trace via
+  // engine.input.pointers.triggerEvent, which round-trips the position through the
+  // screen's world<->page<->screen transforms. Those have no real canvas bounds
+  // headless, so force them to identity - the injected world coordinate then reaches
+  // the PointerSystem (Actor hit-testing) unchanged. Enable the receiver so its
+  // `_handle` does not early-return.
+  const scr = engine.screen as unknown as Record<string, (v: ex.Vector) => ex.Vector>;
+  scr.worldToPageCoordinates = (v) => v;
+  scr.pageToScreenCoordinates = (v) => v;
+  scr.screenToWorldCoordinates = (v) => v;
+  engine.input.pointers.toggleEnabled(true);
   // Wire the per-tick sim to the engine's per-`_update` event, then drive the
   // engine by hand. Attached AFTER start() so loading-phase updates (which emit
   // no preupdate anyway) never advance the sim tick.

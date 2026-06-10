@@ -282,6 +282,34 @@ export function installExcaliburDom(scope: object = globalThis): void {
     fonts: { ready: Promise.resolve(), add: noop, load: () => Promise.resolve([]) },
   };
 
+  // Minimal PointerEvent so Excalibur's native pointer pipeline works headless: the
+  // preset injects the recorded trace via `engine.input.pointers.triggerEvent`, which
+  // builds a `window.PointerEvent`; `_handle` then reads pageX/pageY/button/pointerId/
+  // pointerType off it. pageX/pageY mirror clientX/clientY (no scroll in the isolate).
+  class PointerEventStub {
+    readonly type: string;
+    readonly pointerId: number;
+    readonly button: number;
+    readonly pointerType = 'mouse';
+    readonly clientX: number;
+    readonly clientY: number;
+    readonly pageX: number;
+    readonly pageY: number;
+    constructor(type: string, init: AnyRecord = {}) {
+      this.type = type;
+      this.pointerId = (init.pointerId as number) ?? 0;
+      this.button = (init.button as number) ?? 0;
+      const cx = (init.clientX as number) ?? 0;
+      const cy = (init.clientY as number) ?? 0;
+      this.clientX = cx;
+      this.clientY = cy;
+      this.pageX = cx;
+      this.pageY = cy;
+    }
+    preventDefault(): void {}
+    stopPropagation(): void {}
+  }
+
   const screenStub: AnyRecord = {
     width: VIEWPORT_W,
     height: VIEWPORT_H,
@@ -321,6 +349,7 @@ export function installExcaliburDom(scope: object = globalThis): void {
     AudioContext: AudioContextStub,
     webkitAudioContext: AudioContextStub,
     Image: ImageStub,
+    PointerEvent: PointerEventStub,
   });
   win.window = win;
   win.self = win;
@@ -342,6 +371,7 @@ export function installExcaliburDom(scope: object = globalThis): void {
 
   set('window', win);
   set('self', win);
+  set('PointerEvent', PointerEventStub);
   set('document', doc);
   set('navigator', win.navigator);
   set('screen', screenStub);

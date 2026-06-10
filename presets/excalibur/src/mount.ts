@@ -152,6 +152,14 @@ export function mountExcaliburGame(game: ExcaliburGame, args: MountArgs): () => 
   let disposed = false;
   void engine.start().then(() => {
     if (disposed) return;
+    // Drive Actors' native pointer events from the RECORDED trace only: runTick
+    // injects each captured event via engine.input.pointers.triggerEvent, so live
+    // dispatch matches the headless replay exactly. Detach Excalibur's own DOM pointer
+    // listeners so a real device event is not ALSO dispatched to Actors (our own
+    // listeners above still capture it for the recording). The receiver stays enabled
+    // so triggerEvent's `_handle` runs.
+    engine.input.pointers.detach();
+    engine.input.pointers.toggleEnabled(true);
     // Excalibur's standard clock (started by start()) runs the fixed-update loop;
     // each fixed _update emits one preupdate. Attach AFTER start so loading-phase
     // updates (which emit no preupdate) never advance the sim tick.
