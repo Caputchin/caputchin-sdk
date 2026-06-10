@@ -6,10 +6,10 @@
 // advances it one fixed step at a time instead.
 //
 // This shim is KAPLAY-specific and intentionally NOT shared with other engines:
-// per ADR-0077, a union shim is rejected because engines demand conflicting
-// behavior from the same globals (e.g. `getContext('webgl2')` must return a rich
-// stub here but `null` elsewhere). Owning it per-engine is what makes "is this
-// stub correct for KAPLAY" provable.
+// a union shim is rejected because engines demand conflicting behavior from the
+// same globals (e.g. `getContext('webgl2')` must return a rich stub here but
+// `null` elsewhere). Owning it per-engine is what makes "is this stub correct for
+// KAPLAY" provable.
 //
 // Determinism: every stub returns fixed values; no wall clock, no rAF callback
 // ever fires on its own, and the no-op GL/2D contexts swallow all draws (the
