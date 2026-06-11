@@ -1,6 +1,6 @@
 {
   "name": "@caputchin/preset-excalibur",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-contained Caputchin replay preset for the Excalibur.js engine: headless boot, fixed-step pump, deterministic RNG rail, and the conforming run/live adapters. The on-ramp for any Excalibur game on the deterministic-replay platform.",
   "keywords": [
     "caputchin",

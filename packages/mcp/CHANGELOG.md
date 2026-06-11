@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.1.0...mcp-v2.1.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **mcp:** point the widget CDN snippet at [@3](https://github.com/3) (was the stale [@1](https://github.com/1), served an old widget) ([07feb2f](https://github.com/Caputchin/caputchin-sdk/commit/07feb2f0e14f17ccd087d27af96fd15ed2e5f6fd))
+
 ## [2.1.0](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.0.1...mcp-v2.1.0) (2026-06-05)
 
 
