@@ -249,6 +249,43 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.40)(happy-dom@14.12.3)
 
+  presets/excalibur:
+    dependencies:
+      '@caputchin/determinism':
+        specifier: workspace:*
+        version: link:../../kits/determinism
+      '@caputchin/replay-contract':
+        specifier: workspace:*
+        version: link:../../packages/replay-contract
+    devDependencies:
+      '@caputchin/game-sdk':
+        specifier: workspace:*
+        version: link:../../packages/game-sdk
+      '@caputchin/replay-selfcheck':
+        specifier: workspace:*
+        version: link:../../kits/replay-selfcheck
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.18
+      excalibur:
+        specifier: 0.32.0
+        version: 0.32.0
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.14)(typescript@5.9.3)(yaml@2.9.0)
+      typedoc:
+        specifier: ^0.28.19
+        version: 0.28.19(typescript@5.9.3)
+      typedoc-plugin-markdown:
+        specifier: ^4.11.0
+        version: 4.11.0(typedoc@0.28.19(typescript@5.9.3))
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.18)(happy-dom@15.11.7)
+
   presets/kaplay:
     dependencies:
       '@caputchin/determinism':
@@ -1159,6 +1196,9 @@ packages:
   eventsource@3.0.7:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
     engines: {node: '>=18.0.0'}
+
+  excalibur@0.32.0:
+    resolution: {integrity: sha512-anCvsZK2Dh3BTlw/ERHr3fvfqF2vdJHw88soCs3r6EIwxbhibNRILMZw3Ae6GMTY8FkzRfkGLyk7DlEZVesUaw==}
 
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
@@ -2520,6 +2560,8 @@ snapshots:
   eventsource@3.0.7:
     dependencies:
       eventsource-parser: 3.0.8
+
+  excalibur@0.32.0: {}
 
   expect-type@1.3.0: {}
 
