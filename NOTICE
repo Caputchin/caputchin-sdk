@@ -13,3 +13,26 @@ and restricted uses.
 
 Downstream redistributions of this product, or any derivative work, must
 preserve this NOTICE file alongside the LICENSE per Apache-2.0 §4(d).
+
+--------------------------------------------------------------------------------
+THIRD-PARTY SOFTWARE
+--------------------------------------------------------------------------------
+
+The @caputchin/widget package in this SDK bundles third-party software in its
+built output. The per-package NOTICE (packages/widget/NOTICE) carries the full
+attribution; a summary follows.
+
+Cap (https://trycap.dev, https://github.com/tiagozip/cap)
+  Copyright 2025 Tiago
+  Licensed under the Apache License, Version 2.0.
+
+  @caputchin/widget bundles Cap's browser widget (@cap.js/widget) and its
+  proof-of-work solver WebAssembly (@cap.js/wasm) in full. Caputchin uses Cap
+  for the client-side proof-of-work challenge and the related instrumentation.
+
+pako (https://github.com/nodeca/pako)
+  Copyright (C) 2014-2017 by Vitaly Puzrin and Andrei Tuputcyn
+  Licensed under the MIT License (the package is "MIT AND Zlib").
+
+  @caputchin/widget bundles pako's inflate build as a decompression fallback
+  for browsers without the native DecompressionStream API.

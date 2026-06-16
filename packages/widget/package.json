@@ -33,7 +33,8 @@
   },
   "files": [
     "dist",
-    "jsx.d.ts"
+    "jsx.d.ts",
+    "NOTICE"
   ],
   "sideEffects": [
     "./dist/widget.mjs",
