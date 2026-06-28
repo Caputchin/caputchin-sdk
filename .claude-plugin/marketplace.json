@@ -1,0 +1,22 @@
+{
+  "name": "caputchin",
+  "owner": {
+    "name": "Caputchin",
+    "url": "https://caputchin.com"
+  },
+  "metadata": {
+    "description": "Official Caputchin agent skills: integrate verification, verify tokens, manage via MCP, and build verification games."
+  },
+  "plugins": [
+    {
+      "name": "caputchin",
+      "source": "./plugins/caputchin",
+      "description": "Integrate and operate Caputchin (a game-based human-verification and CAPTCHA-alternative service) and build verification games. Bundles two skills: caputchin (widget integration, server-side verify, MCP management, troubleshooting) and caputchin-game-development.",
+      "author": { "name": "Caputchin", "url": "https://caputchin.com" },
+      "homepage": "https://docs.caputchin.com",
+      "license": "Apache-2.0",
+      "category": "developer-tools",
+      "keywords": ["caputchin", "captcha", "bot-protection", "human-verification", "mcp", "game-development"]
+    }
+  ]
+}

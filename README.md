@@ -32,7 +32,7 @@ Per-engine on-ramps for running a game headless and deterministically on the rep
 | Preset | Description |
 |---|---|
 | [`@caputchin/preset-kaplay`](presets/kaplay) | KAPLAY on-ramp: headless boot, fixed-step pump, deterministic RNG rail, and the conforming run/live adapters |
-| [`@caputchin/preset-melonjs`](presets/melonjs) | melonJS framework-as-sim on-ramp with the `defineMelonEngine` adapter |
+| [`@caputchin/preset-melonjs`](presets/melonjs) | melonJS framework-as-sim on-ramp with the `defineMelonGame` adapter |
 | [`@caputchin/preset-phaser`](presets/phaser) | Headless Phaser 4 on-ramp: boot shim, seeded RNG, fixed-step `headlessStep` driver, and build preset |
 | [`bevy/`](presets/bevy) | `cargo-generate` template for a Bevy (Rust to WASM) game; a scaffold, not a published package (excluded from the pnpm workspace) |
 
@@ -53,6 +53,17 @@ Every package and kit documents itself in-repo. Each ships its own `README.md` p
 | Rust replay crate | [`kits/replay-rs`](kits/replay-rs) | [crate README](kits/replay-rs/README.md) |
 
 Per-engine preset guides live in each preset's own `README.md` (linked from the Presets table above). Contributor setup and workflow: [CONTRIBUTING.md](CONTRIBUTING.md). Trademark and naming policy: [TRADEMARK.md](TRADEMARK.md).
+
+## Agent skills
+
+This repo doubles as a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) shipping official [agent skills](https://agentskills.io) that teach AI coding agents how to use Caputchin: integrating the widget, verifying tokens, driving the MCP server, and building verification games.
+
+```text
+/plugin marketplace add Caputchin/caputchin-sdk
+/plugin install caputchin@caputchin
+```
+
+The skills live in [`plugins/caputchin`](plugins/caputchin); distribution to other channels (skills.sh, claude.ai, the Claude API, third-party directories) is documented in [`plugins/caputchin/PUBLISHING.md`](plugins/caputchin/PUBLISHING.md).
 
 ## Requirements
 
@@ -94,7 +105,7 @@ pnpm --filter @caputchin/widget coverage
 Single-line [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <subject>`.
 
 Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-Scopes: `widget`, `game-sdk`, `mcp`, `replay-contract`, `determinism`, `engine-kit`, `replay-selfcheck`, `replay-wasm`, `replay-rs`, `preset-*`, `docs`, `ci`, `deps`.
+Scopes: `widget`, `game-sdk`, `mcp`, `replay-contract`, `determinism`, `engine-kit`, `replay-selfcheck`, `replay-wasm`, `replay-rs`, `preset-*`, `skills`, `docs`, `ci`, `deps`.
 
 ## License
 

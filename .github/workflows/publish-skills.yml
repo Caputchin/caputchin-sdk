@@ -1,0 +1,106 @@
+name: skills
+
+# Validates the public Caputchin agent skills on every change, and on a published
+# release packages each skill and (optionally) publishes it to skills.sh.
+# See plugins/caputchin/PUBLISHING.md for the full four-tier distribution plan.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/caputchin/**"
+      - ".claude-plugin/**"
+      - ".github/workflows/publish-skills.yml"
+  pull_request:
+    paths:
+      - "plugins/caputchin/**"
+      - ".claude-plugin/**"
+      - ".github/workflows/publish-skills.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PyYAML
+        run: python3 -m pip install --quiet pyyaml
+      - name: Validate SKILL.md frontmatter
+        run: |
+          python3 - <<'PY'
+          import glob, sys, re, yaml
+
+          ok = True
+          paths = sorted(glob.glob("plugins/caputchin/skills/*/SKILL.md"))
+          if not paths:
+              print("no SKILL.md files found under plugins/caputchin/skills/*")
+              sys.exit(1)
+
+          def frontmatter(text):
+              if not text.startswith("---"):
+                  return None
+              end = text.find("\n---", 3)
+              return text[3:end] if end != -1 else None
+
+          name_re = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+          for p in paths:
+              raw = frontmatter(open(p, encoding="utf-8").read())
+              if raw is None:
+                  print(f"{p}: missing YAML frontmatter"); ok = False; continue
+              # Parse as real YAML so an unquoted ": " in a value (which breaks
+              # frontmatter at load time) fails here, not silently at install.
+              try:
+                  fm = yaml.safe_load(raw) or {}
+              except yaml.YAMLError as e:
+                  print(f"{p}: invalid YAML frontmatter: {e}"); ok = False; continue
+              name, desc = fm.get("name"), fm.get("description")
+              if not name or not name_re.match(str(name)) or len(str(name)) > 64:
+                  print(f"{p}: invalid name {name!r} (kebab-case, <=64 chars)"); ok = False
+              if not desc:
+                  print(f"{p}: missing description"); ok = False
+              elif len(desc) > 1024:
+                  print(f"{p}: description too long ({len(desc)} > 1024)"); ok = False
+              elif "<" in desc or ">" in desc:
+                  print(f"{p}: description contains angle brackets"); ok = False
+              else:
+                  print(f"{p}: ok ({name})")
+
+          sys.exit(0 if ok else 1)
+          PY
+
+  package:
+    needs: validate
+    if: ${{ github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package each skill into a .skill archive
+        run: |
+          mkdir -p dist-skills
+          for dir in plugins/caputchin/skills/*/; do
+            name="$(basename "$dir")"
+            (cd "$dir" && zip -r "$GITHUB_WORKSPACE/dist-skills/${name}.skill" . -x '*/evals/*' '*.pyc')
+          done
+          ls -l dist-skills
+      - name: Attach archives to the release
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist-skills/*.skill --clobber
+      - name: Publish to skills.sh (no-op until SKILLS_SH_TOKEN is set)
+        env:
+          SKILLS_SH_TOKEN: ${{ secrets.SKILLS_SH_TOKEN }}
+        run: |
+          if [ -z "$SKILLS_SH_TOKEN" ]; then
+            echo "SKILLS_SH_TOKEN not set; skipping skills.sh publish."
+            exit 0
+          fi
+          for dir in plugins/caputchin/skills/*/; do
+            (cd "$dir" && npx --yes skills publish)
+          done

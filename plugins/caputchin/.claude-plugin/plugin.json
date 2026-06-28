@@ -1,0 +1,9 @@
+{
+  "name": "caputchin",
+  "description": "Official Caputchin agent skills: integrate the widget, verify tokens server-side, manage Caputchin through the MCP server, and build verification games.",
+  "author": { "name": "Caputchin", "url": "https://caputchin.com" },
+  "homepage": "https://docs.caputchin.com",
+  "repository": "https://github.com/Caputchin/caputchin-sdk",
+  "license": "Apache-2.0",
+  "keywords": ["caputchin", "captcha", "bot-protection", "human-verification", "mcp", "game-development"]
+}
