@@ -2,15 +2,12 @@
 
 The skills live in this one repo and everything else points back to it. There is
 a single source of truth (`plugins/caputchin/skills/*`), and each distribution
-channel either scrapes this public repo, stores a pointer to it, or takes a
+channel either indexes this public repo, installs from it directly, or takes a
 manual submission that links to it. You do not maintain per-channel copies.
 
-Distribution is organized in four tiers. Tier A and the automation in Tier D are
-built into this repo; Tier B and Tier C also need a one-time human action
-(account, web form, or `git push`), documented here as a runbook.
-
-> Activation note: Tiers B, C, and D only take effect once the repo is pushed to
-> GitHub. Pushing is an explicit, separate operator decision.
+Distribution is organized in four tiers. Tiers A, B, and D are built into this
+repo and run automatically once changes are on `main`. Tier C is a manual
+runbook (web forms / accounts).
 
 ## Tier A: canonical repo + Claude Code marketplace (built)
 
@@ -29,29 +26,40 @@ Users install with:
 /plugin install caputchin@caputchin
 ```
 
-## Tier B: skills.sh + GitHub auto-scrapers (one-time setup)
+## Tier B: skills.sh, gh skill, and GitHub auto-scrapers (no account)
 
-`skills.sh` is a cross-agent, git-based registry: it indexes the public repo and
-serves the skills to 40+ agent clients. It reads each skill's `SKILL.md` name and
-the git remote; the content stays here.
+There is **no skills.sh account or signup**. skills.sh is a discovery CLI over
+public GitHub repos, and GitHub's own `gh skill` is the first-party publisher.
+Neither needs a separate account: `gh skill` authenticates with your existing
+`gh auth`. Because this repo is public with spec-compliant `SKILL.md` files, it
+is already eligible.
 
-One-time, per skill directory (after a push):
+How others find and install the skills (no account on either side):
 
 ```sh
-cd plugins/caputchin/skills/caputchin            && npx skills publish
-cd plugins/caputchin/skills/caputchin-game-development && npx skills publish
+npx skills find caputchin            # search the skills.sh directory
+npx skills add Caputchin/caputchin-sdk   # install (auto-discovers the nested skills)
+gh skill search caputchin            # search via GitHub
+gh skill install Caputchin/caputchin-sdk
 ```
 
-This needs a skills.sh account/token the first time; follow the CLI prompt. The
-CI workflow can automate re-publishing on release (Tier D).
-
-GitHub-scraping indexes (SkillsMP, LobeHub, and similar) pick up public repos
-automatically. To help discovery, set repository topics once:
+Publishing is `gh skill publish` (validates against the agentskills.io spec and
+creates a GitHub release). It is **automated in CI** (Tier D), so a normal skills
+change on `main` publishes itself. To publish a release by hand:
 
 ```sh
-gh repo edit Caputchin/caputchin-sdk \
-  --add-topic agent-skills --add-topic claude-code \
-  --add-topic skill --add-topic caputchin
+gh skill publish                       # interactive: pick a tag, creates a release
+gh skill publish --tag skills-v1.0.0   # non-interactive (CI auto-tags skills-v<run-number>)
+gh skill publish --dry-run             # validate only, no publish
+```
+
+GitHub-scraping indexes (SkillsMP, LobeHub, and similar) pick up public repos
+automatically; the discovery topics (`agent-skills`, `claude-code`,
+`claude-code-plugin`, `skill`, `captcha`) are already set on the repo. Optional
+supply-chain hardening that `gh skill publish` recommends:
+
+```sh
+gh repo edit Caputchin/caputchin-sdk --enable-secret-scanning --enable-secret-scanning-push-protection
 ```
 
 ## Tier C: curated directories (manual submission)
@@ -69,23 +77,26 @@ these verified channels in your docs over the mass-scrape dumps.
 
 ## Tier D: CI automation (built)
 
-`.github/workflows/publish-skills.yml`:
+`.github/workflows/publish-skills.yml`, using GitHub's first-party `gh skill`
+(no external token; it authenticates with the workflow's built-in
+`GITHUB_TOKEN`):
 
-- On pull request and push: validates every `SKILL.md` frontmatter (name format,
-  description length and absence of angle brackets) with a self-contained check,
-  so a malformed skill fails CI.
-- On a published GitHub release (or manual dispatch): builds a `.skill` zip per
-  skill and attaches it to the release, and runs `npx skills publish` for each
-  skill, gated behind the `SKILLS_SH_TOKEN` repository secret (it no-ops until the
-  secret is set, so it never fires prematurely).
+- On pull request and push: `gh skill publish --dry-run` validates every skill
+  against the agentskills.io spec (names, required frontmatter, metadata), so a
+  malformed skill fails CI.
+- On push to `main` that touches the skills (or via manual dispatch):
+  `gh skill publish --tag skills-v<run>` creates a GitHub release for the skills,
+  then attaches a `.skill` zip per skill for claude.ai upload. The `skills-v*`
+  tags are namespaced apart from release-please's package tags (`mcp-v*`,
+  `widget-v*`), so the two release streams do not collide.
 
 ## Other surfaces (manual, portable)
 
 The same `SKILL.md` folders work on other Claude surfaces:
 
-- **claude.ai:** zip a skill folder and upload it in Settings > Features. A `.skill`
-  zip is produced by the CI release job, or locally with the skill-creator
-  `package_skill.py` script.
+- **claude.ai:** upload a skill in Settings > Features. Grab the `.skill` zip
+  attached to the latest `skills-v*` release (built by Tier D), or build one
+  locally with the skill-creator `package_skill.py` script.
 - **Claude API:** upload via the `/v1/skills` endpoints (workspace-wide). Note the
   API code-execution sandbox has no network, so the `caputchin` skill's MCP and
   live-verify steps cannot run there; the instructional content still applies.
