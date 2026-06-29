@@ -9,7 +9,7 @@ import { buildWidgetShellSkin } from '../skin/widget-shell-skin.js';
 import { applySkinVars } from '../skin/css-vars.js';
 import { buildWidgetShellConfig } from '../configurations/widget-shell-config.js';
 import { createGamePresentation } from '../modes/game.js';
-import { resolvePresentationSize } from '../config/effective-size.js';
+import { resolveGameSizing } from '../config/effective-size.js';
 import { createTriggerStrategy } from '../triggers/index.js';
 import { createInitialState, type WidgetState } from '../verify/state.js';
 import type { GameConfig } from '../config/game.js';
@@ -37,7 +37,7 @@ import type { ResolvedAxes } from '../bootstrap/types.js';
  */
 export class CaputchinGame extends HTMLElement {
   /** @internal Custom Element observed attributes. */
-  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'api-host'];
+  static observedAttributes = ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'overlay-width', 'overlay-height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'api-host'];
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
@@ -225,16 +225,29 @@ export class CaputchinGame extends HTMLElement {
 
     const shellConfig = buildWidgetShellConfig(resolved?.config ?? null);
 
-    // Fold the game's preferred footprint into the shell size: a preferred
-    // `"full"` is honored as full-axis only when the embed leaves that axis
-    // unset (preferred px stays on the iframe via applyIframeSize).
-    const effective = resolvePresentationSize(state.config, state.gamePreferred ?? null);
+    // Resolve the two surfaces in one place (entry = the in-page element,
+    // footprint = the game box). Inline → both equal width/height folded with
+    // preferred. Overlay → entry is the RAW width/height (the entry checkbox is
+    // not the game, so preferred must not promote it), footprint folds the
+    // overlay-* attrs with preferred. The footprint is stashed for the iframe
+    // sizer (install-game-frame) alongside the resolved layout.
+    const { entry, footprint } = resolveGameSizing(state.config, state.gamePreferred ?? null, layout);
+    state.resolvedLayout = layout;
+    state.gameFootprint = footprint;
+    // overlay-width / overlay-height only mean something in modal/fullscreen
+    // (inline has one box, sized by width/height). Warn instead of silently
+    // dropping, mirroring the other completeMount ignore-warnings.
+    if (layout === 'inline' && (state.config.overlayWidth !== 'auto' || state.config.overlayHeight !== null)) {
+      fireError(this, 'invalid-config', 'overlay-width / overlay-height are ignored in inline layout; they size the dialog + iframe in modal/fullscreen only');
+    }
     const gp = createGamePresentation({
       host: this,
       root: shadow,
       trigger: derivedTrigger,
-      width: effective.width,
-      height: effective.height,
+      width: entry.width,
+      height: entry.height,
+      footprintWidth: footprint.width,
+      footprintHeight: footprint.height,
       layout,
       manual: isManual,
       shell,

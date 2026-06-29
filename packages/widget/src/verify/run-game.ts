@@ -145,7 +145,8 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   await installGameFrame(
     el,
     presentation,
-    cfg,
+    state.resolvedLayout ?? 'inline',
+    state.gameFootprint ?? { width: 'auto', height: null },
     host,
     (code, message) => {
       // Load failure: abort the in-flight solve (don't release a trace-less
@@ -215,7 +216,8 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
   await installGameFrame(
     el,
     state.gamePresentation ?? null,
-    cfg,
+    state.resolvedLayout ?? 'inline',
+    state.gameFootprint ?? { width: 'auto', height: null },
     host,
     (code, message) => {
       fireError(el, 'game-load-failed', message, code);

@@ -6,6 +6,7 @@ import type { Presentation } from '../modes/index.js';
 import type { GamePresentation } from '../modes/game.js';
 import type { TriggerStrategy, TriggerContext } from '../triggers/index.js';
 import type { Layout } from '@caputchin/game-sdk';
+import type { SizePair } from '../config/effective-size.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /** Per-mount mutable state. Generic in the config shape so both element
@@ -39,6 +40,15 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  `game` block (was the deleted manifest message's preferredWidth/Height).
    *  `layout` feeds the shell pick when the embed leaves `layout` unset. */
   gamePreferred?: { width?: number | 'full'; height?: number | 'full'; layout?: Layout } | null;
+  /** The layout resolved at mount (embed attr, then preferred.layout, then inline).
+   *  `completeMount` sets this before activating the trigger that calls
+   *  `runGame`, so the iframe sizer + `setLayoutContext` get the TRUE layout
+   *  instead of re-deriving it preferred-blind. */
+  resolvedLayout?: Layout | null;
+  /** The resolved game-box footprint (inline iframe, or overlay dialog +
+   *  iframe), already folded with `preferred`. `completeMount` sets this
+   *  alongside `resolvedLayout`; `applyIframeSize` renders it directly. */
+  gameFootprint?: SizePair | null;
   /** Marketplace bundle url + integrity from the SAME mount-time bootstrap
    *  `game` block, so the game-load path reuses that one round trip instead
    *  of a second `/widget/bootstrap` call.

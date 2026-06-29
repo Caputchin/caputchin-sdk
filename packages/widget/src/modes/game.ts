@@ -38,11 +38,21 @@ export interface GamePresentationInput {
    *  should render (still click for modal/fullscreen so the user gets the
    *  entry checkbox; auto for inline since there's no entry surface). */
   trigger: WidgetTrigger;
-  /** Customer's `width` attr. Applied to the OUTER shell (inline frame
-   *  or modal/fullscreen entry checkbox), not the iframe. */
+  /** Size of the in-page element. Inline → the whole game panel; overlay
+   *  (modal/fullscreen) → ONLY the entry checkbox. Never the iframe. Already
+   *  resolved (inline folds the manifest `preferred`; overlay is the raw
+   *  customer `width` so the game's footprint can't promote the entry). */
   width: WidgetWidth;
-  /** Customer's `height` attr. Same routing as width; outer shell only. */
+  /** In-page element height. Same routing as width. */
   height: WidgetHeight;
+  /** Game-box footprint width (inline iframe, or overlay dialog + iframe),
+   *  folded with the manifest `preferred`. In overlay, `'full'` opts the
+   *  dialog into filling that axis (the `data-fill-x` flag). Inline ignores
+   *  it (the panel IS the footprint, sized by `width`). */
+  footprintWidth: WidgetWidth;
+  /** Game-box footprint height. Overlay `'full'` opts the dialog into filling
+   *  the vertical axis. */
+  footprintHeight: WidgetHeight;
   layout: 'inline' | 'modal' | 'fullscreen';
   /** When true: render a `<slot></slot>` in place of the iframe slot so
    *  customer light-DOM children project into the layout shell. The
@@ -240,7 +250,7 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout, manual, width, height, shell, skin, shellConfig } = input;
+  const { host, root: renderRoot, layout, manual, width, height, footprintWidth, footprintHeight, shell, skin, shellConfig } = input;
   let container: HTMLDivElement | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
@@ -285,16 +295,18 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       dialog.dataset.layout = layout;
       dialog.id = `cpt-overlay-${++dialogIdCounter}`;
       if (shell.direction === 'rtl') dialog.setAttribute('dir', 'rtl');
-      // width="full" / height="full" on a game in overlay layout opts the
-      // iframe into filling the dialog along that axis (instead of staying
-      // at manifest preferred size and being centered with backdrop space).
-      // For fullscreen this turns the iframe into a true 100vw / 100vh
-      // surface; for modal it pins the iframe to the dialog's content box.
-      // Driven by the per-axis CSS rules near `data-fill-x` / `data-fill-y`
-      // below; flagged here so the rules can opt the slot out of its
-      // centering layout on the filled axis.
-      if (width === 'full') dialog.dataset.fillX = 'true';
-      if (height === 'full') dialog.dataset.fillY = 'true';
+      // overlay-width="full" / overlay-height="full" (or the manifest
+      // preferred footprint resolving to 'full') opts the iframe into filling
+      // the dialog along that axis, instead of staying at the manifest
+      // preferred size and being centered with backdrop space. For fullscreen
+      // this turns the iframe into a true 100vw / 100vh surface; for modal it
+      // pins the iframe to the dialog's content box. This is the GAME-box
+      // footprint, decoupled from the customer's `width`/`height`, which size
+      // only the entry checkbox below. Driven by the per-axis CSS rules near
+      // `data-fill-x` / `data-fill-y` below; flagged here so the rules can opt
+      // the slot out of its centering layout on the filled axis.
+      if (footprintWidth === 'full') dialog.dataset.fillX = 'true';
+      if (footprintHeight === 'full') dialog.dataset.fillY = 'true';
 
       if (layout === 'fullscreen') {
         const closeBtn = document.createElement('button');

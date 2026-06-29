@@ -166,6 +166,38 @@ describe('inspectGameConfig - height attr', () => {
   });
 });
 
+describe('inspectGameConfig - overlay-width / overlay-height attrs', () => {
+  it('default to auto / null', () => {
+    const r = inspectGameConfig(el({ game: '@x/y' }));
+    expect(r.config.overlayWidth).toBe('auto');
+    expect(r.config.overlayHeight).toBeNull();
+  });
+
+  it('accept full', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', 'overlay-width': 'full', 'overlay-height': 'full' })).config;
+    expect(r.overlayWidth).toBe('full');
+    expect(r.overlayHeight).toBe('full');
+  });
+
+  it('accept pixel values', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', 'overlay-width': '900', 'overlay-height': '600' })).config;
+    expect(r.overlayWidth).toBe(900);
+    expect(r.overlayHeight).toBe(600);
+  });
+
+  it('emit a labelled issue on bogus overlay-width (falls back to auto)', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', 'overlay-width': 'bogus' }));
+    expect(r.config.overlayWidth).toBe('auto');
+    expect(r.issues.some((i) => i.message.includes('overlay-width="bogus"'))).toBe(true);
+  });
+
+  it('emit a labelled issue on bogus overlay-height (ignored, stays null)', () => {
+    const r = inspectGameConfig(el({ game: '@x/y', 'overlay-height': 'bogus' }));
+    expect(r.config.overlayHeight).toBeNull();
+    expect(r.issues.some((i) => i.message.includes('overlay-height="bogus"'))).toBe(true);
+  });
+});
+
 describe('inspectGameConfig - lang attr', () => {
   it('defaults to null when omitted', () => {
     const r = inspectGameConfig(el({ game: '@x/y' }));

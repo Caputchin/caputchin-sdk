@@ -87,6 +87,41 @@ export function isSize(v: string | null): v is WidgetSize {
 }
 
 /**
+ * Parse one width-shaped attribute value (`auto` | `full` | `<px>`). `label`
+ * is the attribute name used in the issue message, so the same parser serves
+ * `width` and the game-only `overlay-width` with identical wording. A
+ * null/empty value defaults to `'auto'`; an unparseable value pushes an issue
+ * and falls back to `'auto'`.
+ */
+export function parseWidthAttr(raw: string | null, label: string, issues: ConfigIssue[]): WidgetWidth {
+  if (raw === null || raw === '') return 'auto';
+  if ((WIDTH_ENUM as ReadonlyArray<string>).includes(raw)) return raw as 'auto' | 'full';
+  const px = parsePixelValue(raw);
+  if (px === null) {
+    issues.push({ message: `${label}="${raw}" is invalid; expected auto|full or a positive pixel value; falling back to "auto"` });
+    return 'auto';
+  }
+  return px;
+}
+
+/**
+ * Parse one height-shaped attribute value (`full` | `<px>`). `label` names the
+ * attribute in the issue message so the same parser serves `height` and the
+ * game-only `overlay-height`. A null/empty value defaults to `null` ("auto");
+ * an unparseable value pushes an issue and is ignored (stays `null`).
+ */
+export function parseHeightAttr(raw: string | null, label: string, issues: ConfigIssue[]): WidgetHeight {
+  if (raw === null || raw === '') return null;
+  if (raw === 'full') return 'full';
+  const px = parsePixelValue(raw);
+  if (px === null) {
+    issues.push({ message: `${label}="${raw}" is invalid; expected full or a positive pixel value; ignoring` });
+    return null;
+  }
+  return px;
+}
+
+/**
  * Parse `trigger`, `width`, `height`, `size` attrs from the element. Used by
  * both widgets; mode/game/layout are widget-specific and parsed in their own
  * inspector.
@@ -98,8 +133,6 @@ export function parseCommonAttrs(el: HTMLElement, issues: ConfigIssue[]): {
   size: WidgetSize;
 } {
   const rawTrigger = el.getAttribute('trigger');
-  const rawWidth = el.getAttribute('width');
-  const rawHeight = el.getAttribute('height');
   const rawSize = el.getAttribute('size');
 
   let trigger: WidgetTrigger;
@@ -110,26 +143,8 @@ export function parseCommonAttrs(el: HTMLElement, issues: ConfigIssue[]): {
     trigger = 'auto';
   }
 
-  let width: WidgetWidth;
-  if (rawWidth === null || rawWidth === '') width = 'auto';
-  else if ((WIDTH_ENUM as ReadonlyArray<string>).includes(rawWidth)) width = rawWidth as 'auto' | 'full';
-  else {
-    const px = parsePixelValue(rawWidth);
-    if (px === null) {
-      issues.push({ message: `width="${rawWidth}" is invalid; expected auto|full or a positive pixel value; falling back to "auto"` });
-      width = 'auto';
-    } else width = px;
-  }
-
-  let height: WidgetHeight = null;
-  if (rawHeight !== null && rawHeight !== '') {
-    if (rawHeight === 'full') height = 'full';
-    else {
-      const px = parsePixelValue(rawHeight);
-      if (px === null) issues.push({ message: `height="${rawHeight}" is invalid; expected full or a positive pixel value; ignoring` });
-      else height = px;
-    }
-  }
+  const width = parseWidthAttr(el.getAttribute('width'), 'width', issues);
+  const height = parseHeightAttr(el.getAttribute('height'), 'height', issues);
 
   let size: WidgetSize;
   if (rawSize === null || rawSize === '') size = 'normal';

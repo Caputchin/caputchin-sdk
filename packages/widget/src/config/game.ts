@@ -1,5 +1,5 @@
 import type { WidgetWidth, WidgetHeight, ConfigIssue, ConfigInspection } from './shared.js';
-import { parseCommonAttrs, validateGameUrl } from './shared.js';
+import { parseCommonAttrs, parseWidthAttr, parseHeightAttr, validateGameUrl } from './shared.js';
 import type { LayoutAttr } from '../layout.js';
 import { isLayoutAttr } from '../layout.js';
 
@@ -32,12 +32,25 @@ export interface GameConfig {
    *  drive completion via `pass()` / `fail()`. Every other trigger is derived
    *  from the layout, so this is `null` unless manual. */
   trigger: GameTrigger;
-  /** Frame width: `auto` (size to content), `full` (span the parent), or a
-   *  positive pixel number. */
+  /** In-page element width: `auto` (size to content), `full` (span the
+   *  parent), or a positive pixel number. In inline layout this sizes the
+   *  whole game panel (the one box). In modal/fullscreen it sizes ONLY the
+   *  in-page entry checkbox; the overlay game box is sized by `overlayWidth`. */
   width: WidgetWidth;
-  /** Frame height: omitted/`null` (auto), `full` (span the parent), or a
-   *  positive pixel number. */
+  /** In-page element height: omitted/`null` (auto), `full`, or a positive
+   *  pixel number. Inline panel height, or (overlay) the entry checkbox
+   *  height; the overlay game box uses `overlayHeight`. */
   height: WidgetHeight;
+  /** `overlay-width` attribute. Sizes the modal/fullscreen game box (the
+   *  `<dialog>` + iframe): `full` fills the dialog along that axis, a positive
+   *  pixel number pins the iframe (the modal shrink-wraps to it). When unset
+   *  (`auto`) the game's manifest `preferred.width` applies. Ignored in inline
+   *  layout (one box, sized by `width`). */
+  overlayWidth: WidgetWidth;
+  /** `overlay-height` attribute. Companion to `overlayWidth` for the vertical
+   *  axis: `full`, a positive pixel number, or unset (`null`) to defer to the
+   *  manifest `preferred.height`. Ignored in inline layout. */
+  overlayHeight: WidgetHeight;
   /** The `game` attribute: a single marketplace game id (`owner/repo`, or
    *  `owner/repo/leaf`), resolved to a bundle server-side. */
   game: string | null;
@@ -92,6 +105,12 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
   // only customer-settable trigger value is "manual"; everything else is
   // layout-derived. Size is always implicit per layout.
   const common = parseCommonAttrs(el, issues);
+  // Overlay game-box footprint. Game-only attrs (not on <caputchin-widget>),
+  // so they parse here rather than in the shared parseCommonAttrs. Same
+  // validated parsers as width/height, labelled so the issue messages name
+  // the right attribute.
+  const overlayWidth = parseWidthAttr(el.getAttribute('overlay-width'), 'overlay-width', issues);
+  const overlayHeight = parseHeightAttr(el.getAttribute('overlay-height'), 'overlay-height', issues);
   let trigger: GameTrigger = null;
   if (rawTrigger !== null && rawTrigger !== '') {
     if (rawTrigger === 'manual') {
@@ -144,6 +163,8 @@ export function inspectGameConfig(el: HTMLElement): ConfigInspection<GameConfig>
       trigger,
       width: common.width,
       height: common.height,
+      overlayWidth,
+      overlayHeight,
       game,
       games,
       gameSrc,

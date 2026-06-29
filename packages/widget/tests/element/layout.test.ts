@@ -184,9 +184,11 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     el.remove();
   });
 
-  it('overlay: width="full" fills the entry surface end-to-end (host + both wrappers, no collapse)', async () => {
-    stubBootstrap({ layout: 'modal', width: 'full' });
-    const el = getGame({ sitekey: 'k', game: '@x/y' });
+  it('overlay: embed width="full" fills the ENTRY surface end-to-end (host + both wrappers, no collapse)', async () => {
+    // Decoupled: the entry is driven by the customer `width` attr, NOT the
+    // game's preferred footprint. Drive entry fill via the embed attribute.
+    stubBootstrap({ layout: 'modal' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', width: 'full' });
     document.body.appendChild(el);
     let container: HTMLElement | null = null;
     let checkboxSlot: HTMLElement | null = null;
@@ -207,22 +209,71 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     el.remove();
   });
 
-  it('overlay: an explicit embed pixel width sizes the entry chain to px', async () => {
-    stubBootstrap({ layout: 'modal', width: 'full' });
-    const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
+  it('overlay: a game preferred.width="full" fills the dialog but leaves the ENTRY auto (decoupled)', async () => {
+    // The game prefers a full footprint; the customer set no width. The dialog
+    // fills, but the in-page entry checkbox stays content-sized — the whole
+    // point of the decoupling.
+    stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    let dialog: HTMLElement | null = null;
+    await vi.waitFor(() => {
+      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+      expect(dialog).not.toBeNull();
+    });
+    expect(dialog!.dataset.fillX).toBe('true');
+    expect(dialog!.dataset.fillY).toBe('true');
+    // Entry NOT promoted by the game's preferred footprint.
+    expect(el.style.width).not.toBe('100%');
+    el.remove();
+  });
+
+  it('overlay: overlay-width="full" fills the dialog while the entry stays auto', async () => {
+    stubBootstrap({ layout: 'modal' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', 'overlay-width': 'full' });
+    document.body.appendChild(el);
+    let dialog: HTMLElement | null = null;
+    await vi.waitFor(() => {
+      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+      expect(dialog).not.toBeNull();
+    });
+    expect(dialog!.dataset.fillX).toBe('true');
+    expect(dialog!.dataset.fillY).toBeUndefined();
+    expect(el.style.width).not.toBe('100%'); // entry untouched
+    el.remove();
+  });
+
+  it('overlay: width="500" entry + overlay-width="full" dialog (full decoupling)', async () => {
+    stubBootstrap({ layout: 'modal' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', width: '500', 'overlay-width': 'full' });
     document.body.appendChild(el);
     let container: HTMLElement | null = null;
-    let checkboxSlot: HTMLElement | null = null;
+    let dialog: HTMLElement | null = null;
     await vi.waitFor(() => {
       container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
-      checkboxSlot = el.shadowRoot?.querySelector('[part="game-overlay-checkbox"]') as HTMLElement | null;
+      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
       expect(container).not.toBeNull();
-      expect(checkboxSlot).not.toBeNull();
+      expect(dialog).not.toBeNull();
     });
-    // Customer px wins over preferred.width="full": host + wrappers all 500px.
+    // Entry pinned to 500px; dialog fills its axis — two independent boxes.
     expect(el.style.width).toBe('500px');
     expect(container!.style.width).toBe('500px');
-    expect(checkboxSlot!.style.width).toBe('500px');
+    expect(dialog!.dataset.fillX).toBe('true');
+    el.remove();
+  });
+
+  it('inline: overlay-* are ignored and fire an invalid-config warning', async () => {
+    stubBootstrap(null);
+    const el = getGame({ sitekey: 'k', game: '@x/y', 'overlay-width': 'full' });
+    const errors: CustomEvent[] = [];
+    el.addEventListener('error', (e) => errors.push(e as CustomEvent));
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    // No overlay box exists inline; the footprint attr does nothing to the panel.
+    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
+    expect(errors.some((e) => (e.detail as { message: string }).message.includes('overlay-width / overlay-height are ignored in inline layout'))).toBe(true);
     el.remove();
   });
 

@@ -21,6 +21,8 @@ function buildOverlay(layout: 'modal' | 'fullscreen') {
     trigger: 'click',
     width: 'auto',
     height: null,
+    footprintWidth: 'auto',
+    footprintHeight: null,
     layout,
     shell: buildWidgetShell(null),
     skin: buildWidgetShellSkin(null),

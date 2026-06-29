@@ -54,7 +54,7 @@ describe('CaputchinWidget lifecycle', () => {
 describe('CaputchinGame lifecycle', () => {
   it('observedAttributes covers game surface', () => {
     expect(CaputchinGame.observedAttributes).toEqual(
-      ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'api-host']
+      ['sitekey', 'no-verify', 'trigger', 'width', 'height', 'overlay-width', 'overlay-height', 'game', 'games', 'game-src', 'layout', 'locale', 'skin', 'api-host']
     );
   });
 

@@ -1,9 +1,9 @@
-import type { GameConfig } from '../config/game.js';
 import { fireError } from '../errors.js';
 import type { IframeHost } from '../iframe/host.js';
 import type { GamePresentation } from '../modes/game.js';
+import type { SizePair } from '../config/effective-size.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
-import type { Seed } from '@caputchin/game-sdk';
+import type { Layout, Seed } from '@caputchin/game-sdk';
 
 const DEFAULT_W = 400;
 const DEFAULT_H = 300;
@@ -18,7 +18,15 @@ const DEFAULT_H = 300;
 export async function installGameFrame(
   el: HTMLElement,
   gp: GamePresentation | null,
-  config: GameConfig,
+  // The layout resolved at mount (embed attr, then preferred.layout, then inline),
+  // passed in rather than re-derived here so `setLayoutContext` matches what
+  // the presentation actually rendered (a `layout="auto"` mount that resolves
+  // to modal via preferred.layout used to land here as 'inline').
+  layout: Layout,
+  // The resolved game-box footprint (already folded with preferred). Sizes the
+  // iframe directly; the customer's `width`/`height` entry sizing lives in the
+  // presentation, not here.
+  footprint: SizePair,
   host: IframeHost,
   onLoadFailed: (code: 'iframe-load-failed', message: string) => void,
   onGameStarted: () => void,
@@ -59,8 +67,7 @@ export async function installGameFrame(
     return;
   }
 
-  const layout = (config.layout && config.layout !== 'auto') ? config.layout : 'inline';
-  applyIframeSize(host, config, preferred);
+  applyIframeSize(host, footprint, preferred);
   host.setLayoutContext(layout);
   // Wait for the per-round seed before kickoff so the game's live run is
   // deterministic under it. awaitSeed resolves null on a /verify/start failure
@@ -72,20 +79,27 @@ export async function installGameFrame(
 }
 
 /**
- * Size the iframe by the game's preferred footprint (or defaults). The
- * customer's `width` / `height` attributes apply to the OUTER shell instead;
- * `width="full"` / `height="full"` stretch the iframe to 100% along that axis.
- * A preferred `"full"` does the same, but only when the customer left that axis
- * unset (width `'auto'`, height `null`) - an explicit customer value wins.
+ * Size the iframe from a pre-resolved footprint pair. Layout-agnostic: the
+ * footprint already folded the game's `preferred` (in `resolveGameSizing`), so
+ * the rules here are purely per-value:
+ * - `'full'` → `100%` (stretch to fill the slot/dialog along that axis).
+ * - a positive pixel number → that px (an explicit footprint, e.g.
+ *   `overlay-width="500"`; a no-op for inline where the slot fill rule wins).
+ * - `'auto'`/`null` → the manifest `preferred` pixel size, else the default.
  */
 export function applyIframeSize(
   host: IframeHost,
-  config: GameConfig,
+  footprint: SizePair,
   preferred: { width?: number | 'full'; height?: number | 'full' } | null,
 ): void {
-  const fullW = config.width === 'full' || (config.width === 'auto' && preferred?.width === 'full');
-  const fullH = config.height === 'full' || (config.height === null && preferred?.height === 'full');
-  const widthCss: number | '100%' = fullW ? '100%' : (typeof preferred?.width === 'number' ? preferred.width : DEFAULT_W);
-  const heightCss: number | '100%' = fullH ? '100%' : (typeof preferred?.height === 'number' ? preferred.height : DEFAULT_H);
-  host.setSize(widthCss, heightCss);
+  const dim = (
+    v: SizePair['width'] | SizePair['height'],
+    pref: number | 'full' | undefined,
+    dflt: number,
+  ): number | '100%' =>
+    v === 'full' ? '100%'
+      : typeof v === 'number' ? v
+      : typeof pref === 'number' ? pref
+      : dflt;
+  host.setSize(dim(footprint.width, preferred?.width, DEFAULT_W), dim(footprint.height, preferred?.height, DEFAULT_H));
 }
