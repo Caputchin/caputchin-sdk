@@ -4,7 +4,6 @@ name: skills
 # every change, and auto-publishes a skills release whenever the skills change on
 # main. Uses GitHub's first-party `gh skill` (no external account or token: it
 # authenticates with the workflow's built-in GITHUB_TOKEN).
-# See plugins/caputchin/PUBLISHING.md for the full distribution plan.
 
 on:
   push:

@@ -28,9 +28,10 @@ game development. `/plugin marketplace update` pulls newer versions.
 ## Use elsewhere
 
 The skill folders under `skills/` are standard `SKILL.md` packages, portable to
-any agent that reads the open Agent Skills format. To publish or mirror them to
-other channels (skills.sh, claude.ai, the Claude API, third-party directories),
-see [PUBLISHING.md](PUBLISHING.md).
+any agent that reads the open [Agent Skills](https://agentskills.io) format. They
+also install via the skills.sh CLI (`npx skills add Caputchin/caputchin-sdk`) or
+GitHub's `gh skill install Caputchin/caputchin-sdk`, and can be uploaded to
+claude.ai or the Claude API as plain `SKILL.md` packages.
 
 ## Security
 

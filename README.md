@@ -63,7 +63,7 @@ This repo doubles as a [Claude Code plugin marketplace](https://code.claude.com/
 /plugin install caputchin@caputchin
 ```
 
-The skills live in [`plugins/caputchin`](plugins/caputchin); distribution to other channels (skills.sh, claude.ai, the Claude API, third-party directories) is documented in [`plugins/caputchin/PUBLISHING.md`](plugins/caputchin/PUBLISHING.md).
+The skills live in [`plugins/caputchin`](plugins/caputchin) and follow the open [Agent Skills](https://agentskills.io) format, so they also install via the skills.sh CLI (`npx skills add Caputchin/caputchin-sdk`) or GitHub's `gh skill install Caputchin/caputchin-sdk`.
 
 ## Requirements
 
