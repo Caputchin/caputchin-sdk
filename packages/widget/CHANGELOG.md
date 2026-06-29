@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.4.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.3.1...widget-v3.4.0) (2026-06-29)
+
+
+### Features
+
+* **widget:** add overlay-width/overlay-height to size the modal/fullscreen game box independently of the entry ([14952e1](https://github.com/Caputchin/caputchin-sdk/commit/14952e105d48add87d9731c626a5370573a22f5d))
+
+
+### Bug Fixes
+
+* **widget:** caputchin-game width=full fills the overlay (modal/fullscreen) entry surface ([e21dcfb](https://github.com/Caputchin/caputchin-sdk/commit/e21dcfbdd340c4d970d3ae096a5f5dac41be060d))
+
 ## [3.3.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.3.0...widget-v3.3.1) (2026-06-29)
 
 
