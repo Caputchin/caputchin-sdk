@@ -1,6 +1,6 @@
 # @caputchin/widget
 
-The customer-facing CAPTCHA web component. Drop `<caputchin-widget>` into any page and it handles challenge flow, game iframe isolation, and token injection automatically.
+The customer-facing CAPTCHA web component. Drop `<caputchin-widget>` (the cap check) or `<caputchin-game>` (a game challenge) into any page and it handles challenge flow, game iframe isolation, and token injection automatically.
 
 ## Install
 
@@ -11,34 +11,32 @@ npm install @caputchin/widget
 Or via CDN (no bundler required):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@caputchin/widget@1/dist/widget.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@caputchin/widget@3/dist/widget.js" async defer></script>
 ```
 
 ## Usage
 
 ```html
+<!-- Plain cap check (checkbox; add the `invisible` attribute for no visible UI) -->
 <caputchin-widget sitekey="cpt_pub_..."></caputchin-widget>
 
-<caputchin-widget
+<!-- Game challenge: use the caputchin-game element -->
+<caputchin-game
   sitekey="cpt_pub_..."
-  game="@cooperative-games/bubble-pop"
-></caputchin-widget>
+  game="owner/repo"
+></caputchin-game>
 
-<!-- game host only, no bot-prevention -->
-<caputchin-widget
-  mode="game-only"
-  game="@cooperative-games/bubble-pop"
-></caputchin-widget>
+<!-- Game host only, no cap verification: omit the sitekey or add `no-verify` -->
+<caputchin-game game="owner/repo" no-verify></caputchin-game>
 ```
 
-The widget injects `<input name="caputchin-token">` into the enclosing form on completion. Post that field to your backend and verify it against `/siteverify`.
+On completion the widget injects `<input name="caputchin-token">` into the enclosing form (and fires a `pass` event carrying the token). Post that field to your backend and verify it against `/siteverify`.
 
-Modes: `auto` (default), `form-submit`, `manual`, `game-only`. The first three run Cap and produce a token; `game-only` skips Cap entirely and just hosts the game. Omitting `sitekey` is shorthand for `game-only`.
+`<caputchin-widget>` runs the cap check; control when it starts with `trigger` (`auto` default, `click`, `form-submit`, or `manual`). `<caputchin-game>` hosts a game challenge and runs the cap gate when a `sitekey` is present and `no-verify` is not set (omit the sitekey or add `no-verify` for game-only).
 
 The game iframe is sandboxed (`allow-scripts` only, opaque origin), so no third-party game script touches the host page.
 
 ## Full reference
 
-[docs/widget.md](../../docs/widget.md): attributes, events, modes, error codes, programmatic API.
-
-[Integration guide](../../docs/guides/integrate-widget.md): end-to-end walkthrough.
+- [API reference](./docs/README.md): attributes, events, error codes, and types, generated from source.
+- [Customer docs portal](https://docs.caputchin.com): guides and end-to-end integration walkthroughs.
