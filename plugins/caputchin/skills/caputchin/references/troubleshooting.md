@@ -16,27 +16,32 @@ instead of the server. Work top-down.
 
 ## Verification keeps failing (`success: false`)
 
-| Reason in `error-codes` / symptom | Cause | Fix |
+| `error-codes` value / symptom | Cause | Fix |
 | --- | --- | --- |
-| Token expired | Verified too late, or the token sat in a queue | Verify on receipt; tokens are short-lived. |
-| Token already used | Verified twice, or replayed | Verify exactly once per token; never cache or reuse. |
-| Key mismatch | The secret does not pair with the site key that issued the token | Use the secret from the same site as the public key on the page. |
-| Wrong secret | Using the public key, a PAT, or a stale secret as `secret` | `secret` is the site secret key, server-side only, not the `cpt_pub_` key and not a PAT. |
-| Domain not allowed | The page origin is not on the site's allowlist | Add the origin in the dashboard (or via `caputchin_update_site`). |
-| Always fails in dev | Localhost not allowed, or clock skew | Allow your dev origin; ensure the server clock is roughly correct (token expiry is time-based). |
+| `timeout-or-duplicate` | Token expired (10 minute TTL) or already verified once | Verify on receipt, exactly once; never cache or reuse. Re-challenge the visitor. |
+| `invalid-input-response` | The `response` token was missing or malformed | Send the real token (the `pass` event's `detail.token`, or the auto-injected `caputchin-token` form field). |
+| `site-mismatch` | The token was issued for a different site than this `secret` | Use the secret from the SAME site as the public key on the page. |
+| Wrong value as `secret` | Passing the `cpt_pub_` public key or a PAT as `secret` | `secret` is the site secret key, server-side only. |
+| Always fails in dev | Server clock skew (the TTL is time-based), or a mismatched key pair | Check the server clock; confirm the secret pairs with the page's public key. |
+
+If a site restricts which origins may embed it, the widget will not issue a token
+on a disallowed origin (you see an `error` event, not a siteverify failure); add
+the origin in the dashboard or via `caputchin_update_site`.
 
 ## CSP: hosts to allow
 
 A locked-down CSP silently breaks the widget. Allow the Caputchin hosts:
 
 ```
-script-src  https://cdn.jsdelivr.net ;   # if loading the widget from the CDN
-connect-src https://verify.caputchin.com ;
-frame-src   https://verify.caputchin.com ;  # for game challenges that mount an iframe
+script-src  https://cdn.jsdelivr.net ;                                  # only if you load widget.js from the CDN
+connect-src https://verify.caputchin.com https://games.caputchin.com ;  # verification + marketplace game bundles
 ```
 
-Adjust hosts if you self-host the bundle or run a custom verification host. After
-changing CSP, hard-reload; the browser caches policy aggressively.
+The game challenge renders in a `srcdoc` iframe (inline HTML), so no external
+`frame-src` host is required. If you load a self-hosted or jsDelivr-hosted custom
+game bundle, add that origin (for example `https://cdn.jsdelivr.net`) to
+`connect-src`. If you run a custom verification host, swap `verify.caputchin.com`
+for it. After changing CSP, hard-reload; the browser caches policy aggressively.
 
 ## The token is null
 

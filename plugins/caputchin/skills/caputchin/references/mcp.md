@@ -17,7 +17,7 @@ access token in `CAPUTCHIN_TOKEN`.
 **Claude Code:**
 
 ```bash
-claude mcp add caputchin --env CAPUTCHIN_TOKEN=cpt_pat_YOUR_TOKEN -- npx -y @caputchin/mcp
+claude mcp add --transport stdio --env CAPUTCHIN_TOKEN=cpt_pat_YOUR_TOKEN caputchin -- npx -y @caputchin/mcp
 ```
 
 **Generic MCP client (`mcpServers` config):**
@@ -26,6 +26,7 @@ claude mcp add caputchin --env CAPUTCHIN_TOKEN=cpt_pat_YOUR_TOKEN -- npx -y @cap
 {
   "mcpServers": {
     "caputchin": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@caputchin/mcp"],
       "env": { "CAPUTCHIN_TOKEN": "cpt_pat_YOUR_TOKEN" }

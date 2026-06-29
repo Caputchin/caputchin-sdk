@@ -48,7 +48,7 @@ already deterministic and need no swap.
 | --- | --- |
 | `rng(seed)` | Seeded PRNG (sfc32, 128-bit state). Bit-identical browser and server. Resumable via `rngFromState`. |
 | `capMath` | Deterministic transcendental math. `capMath.sin/cos/tan/exp/log/pow/...`. |
-| `makeDeterministic(scope)` | Prepare a scope to run deterministically (currently the Math swap); the single composition point for the deterministic environment. |
+| `makeDeterministic(scope?)` | Prepare a scope to run deterministically (currently the Math swap); the single composition point for the deterministic environment. `scope` defaults to `globalThis`. |
 | `seedRandom(seed, scope?)` | Persistently seed an engine's `Math.random` from the seed (for framework engines that read `Math.random` directly and step a fixed loop). `scope` defaults to `globalThis`. |
 | `withDeterministicEnv(env, fn)` | Run `fn` with the full deterministic environment installed and restored afterward (per-step seeding for engines whose render code between steps must not consume the stream). |
 | `applyHeadlessDom`, `freezeClock`, `sealHeadlessAmbient`, `applyShim` | Server / replay-side setup so a browser-targeted engine boots headless under the ban. Live play keeps the real clock and DOM; these are for the replay artifact. |

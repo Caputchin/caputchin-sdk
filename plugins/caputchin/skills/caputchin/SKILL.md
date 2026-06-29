@@ -56,12 +56,14 @@ Client (any HTML page):
 <caputchin-widget sitekey="cpt_pub_YOUR_KEY" invisible trigger="form-submit"></caputchin-widget>
 ```
 
-Read the token from the `pass` event and send it to your backend:
+Inside a `<form>`, the widget auto-injects a hidden `caputchin-token` field, so a
+plain form POST sends the token with no JavaScript. For SPA or fetch flows, read
+it from the `pass` event instead:
 
 ```js
 document.querySelector('caputchin-widget')
   .addEventListener('pass', (e) => {
-    // e.detail.token is the value your server verifies. Submit it with the form.
+    // e.detail.token is the value your server verifies (the `response` param).
   });
 ```
 

@@ -78,19 +78,25 @@ On `caputchin-game` without a sitekey, the `pass` event carries `token: null`
 
 ## Get the token (the part people miss)
 
-The token is delivered through the `pass` event, not a global variable:
+The token reaches your server two ways. Use whichever fits your stack.
+
+**1. Hidden form field (classic form posts).** Put the element inside your
+`<form>`. On success the widget auto-injects a hidden input named
+`caputchin-token`, so a normal submit sends it like any other field; your server
+reads `caputchin-token` from the form body and passes it as the `response` to
+siteverify. With `trigger="form-submit"` the widget runs as the form submits,
+gating the submission on verification. No JavaScript required.
+
+**2. The `pass` event (SPA, fetch, custom flows).** Read the token from the
+event detail and send it yourself:
 
 ```js
 const el = document.querySelector('caputchin-widget'); // or 'caputchin-game'
 el.addEventListener('pass', (e) => {
-  const token = e.detail.token;        // send this to your server
+  const token = e.detail.token;        // send this to your server as `response`
   // e.detail.score, e.detail.durationMs are analytics only, never trust signals
 });
 ```
-
-To block a form until verification completes, use `trigger="form-submit"` so the
-widget runs when the form submits, then submit the token (e.g. write it into a
-hidden field on `pass`, or submit via fetch from the handler).
 
 ## Events you can listen for
 

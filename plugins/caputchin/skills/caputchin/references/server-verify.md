@@ -11,7 +11,7 @@ token fails here.
 | Field | Value |
 | --- | --- |
 | `secret` | Your site secret key. Server-only. Never in client code or a public repo. |
-| `response` | The token from `e.detail.token` (the widget's `pass` event). |
+| `response` | The token: from the widget's `pass` event (`e.detail.token`), or from the auto-injected `caputchin-token` form field on a classic form post. |
 
 Response JSON:
 
@@ -20,9 +20,19 @@ Response JSON:
 | `success` | `true` only when the token is valid, unused, unexpired, and the verification passed. Gate on this. |
 | `error-codes` | Array of reason strings present when `success` is `false`. |
 
-Verify on receipt. The token is single-use and short-lived: do not cache it,
-do not verify it twice, do not accept it from anywhere but the request you are
-checking.
+Verify on receipt. The token is single-use and short-lived (a 10 minute TTL):
+do not cache it, do not verify it twice, do not accept it from anywhere but the
+request you are checking.
+
+### `error-codes` (present when `success` is false)
+
+| Code | Meaning |
+| --- | --- |
+| `timeout-or-duplicate` | The token expired (past its TTL) or was already verified once. Re-challenge the visitor. |
+| `invalid-input-response` | The `response` token was missing or malformed. |
+| `site-mismatch` | The token was issued for a different site than this `secret` belongs to. |
+
+Surface a generic retry message to the visitor; log the code for yourself.
 
 ## Snippets by language
 
