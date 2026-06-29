@@ -184,6 +184,48 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     el.remove();
   });
 
+  it('overlay: width="full" fills the entry surface end-to-end (host + both wrappers, no collapse)', async () => {
+    stubBootstrap({ layout: 'modal', width: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    let container: HTMLElement | null = null;
+    let checkboxSlot: HTMLElement | null = null;
+    await vi.waitFor(() => {
+      container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
+      checkboxSlot = el.shadowRoot?.querySelector('[part="game-overlay-checkbox"]') as HTMLElement | null;
+      expect(container).not.toBeNull();
+      expect(checkboxSlot).not.toBeNull();
+    });
+    // The two wrappers default to display:inline-block (shrink-to-content); a
+    // percentage child collapses against them. The fix flips the whole chain to
+    // block + 100% so the entry checkbox actually spans the customer container.
+    expect(el.style.width).toBe('100%');
+    expect(container!.style.display).toBe('block');
+    expect(container!.style.width).toBe('100%');
+    expect(checkboxSlot!.style.display).toBe('block');
+    expect(checkboxSlot!.style.width).toBe('100%');
+    el.remove();
+  });
+
+  it('overlay: an explicit embed pixel width sizes the entry chain to px', async () => {
+    stubBootstrap({ layout: 'modal', width: 'full' });
+    const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
+    document.body.appendChild(el);
+    let container: HTMLElement | null = null;
+    let checkboxSlot: HTMLElement | null = null;
+    await vi.waitFor(() => {
+      container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
+      checkboxSlot = el.shadowRoot?.querySelector('[part="game-overlay-checkbox"]') as HTMLElement | null;
+      expect(container).not.toBeNull();
+      expect(checkboxSlot).not.toBeNull();
+    });
+    // Customer px wins over preferred.width="full": host + wrappers all 500px.
+    expect(el.style.width).toBe('500px');
+    expect(container!.style.width).toBe('500px');
+    expect(checkboxSlot!.style.width).toBe('500px');
+    el.remove();
+  });
+
   it('an explicit embed width overrides preferred.width="full"', async () => {
     stubBootstrap({ width: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });

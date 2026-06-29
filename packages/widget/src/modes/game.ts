@@ -353,13 +353,30 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         shellConfig,
       });
       subSimple.mount();
-      // Pin checkboxSlot to the customer dims so the simple presentation's
-      // internal width:100% / height:100% root fills the entry surface
-      // instead of shrinking to its intrinsic checkbox-and-brand width.
-      if (typeof width === 'number') checkboxSlot.style.width = `${width}px`;
-      if (width === 'full') checkboxSlot.style.width = '100%';
-      if (typeof height === 'number') checkboxSlot.style.height = `${height}px`;
+      // Pin the entry surface to the customer dims so the simple presentation's
+      // internal width:100% / height:100% root fills it instead of shrinking to
+      // its intrinsic checkbox-and-brand width. The entry chain is
+      // host -> container[game-overlay-host] -> checkboxSlot[game-overlay-checkbox]
+      // -> [simple-checkbox]; the two wrappers default to inline-block
+      // (shrink-to-content) so width="auto" hugs the checkbox. subSimple already
+      // sized `host`, but a pixel/full width on an inline-block wrapper collapses
+      // (a percentage child has no definite parent to resolve against, and a
+      // shrink-to-fit box ignores it) - the inline frame dodges this because its
+      // game-frame is display:flex. So when the customer pins an axis, flip the
+      // wrappers to display:block and carry the size down the whole chain.
+      if (width === 'full') {
+        container.style.display = 'block';
+        container.style.width = '100%';
+        checkboxSlot.style.display = 'block';
+        checkboxSlot.style.width = '100%';
+      } else if (typeof width === 'number') {
+        container.style.display = 'block';
+        container.style.width = `${width}px`;
+        checkboxSlot.style.display = 'block';
+        checkboxSlot.style.width = `${width}px`;
+      }
       if (height === 'full') checkboxSlot.style.height = '100%';
+      else if (typeof height === 'number') checkboxSlot.style.height = `${height}px`;
       subSimple.onActivate(() => {
         this.open();
         if (!firstActivationFired) {
