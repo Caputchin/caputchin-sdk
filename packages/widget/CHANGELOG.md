@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.3.0...widget-v3.3.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **widget:** bundle NOTICE with Cap and pako attribution in the package ([bb4538e](https://github.com/Caputchin/caputchin-sdk/commit/bb4538ea719cee7e565bd0ceab534a2f49568b94))
+
 ## [3.3.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.2.1...widget-v3.3.0) (2026-06-08)
 
 
