@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.1.1...mcp-v2.1.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* **mcp:** widget-snippet emits caputchin-game for game ids and drops the stale mode attribute ([45dca60](https://github.com/Caputchin/caputchin-sdk/commit/45dca6030de64aa7d67a7e179ef095148fbb7eb3))
+
 ## [2.1.1](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.1.0...mcp-v2.1.1) (2026-06-11)
 
 
