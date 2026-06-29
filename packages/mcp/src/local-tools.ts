@@ -40,15 +40,39 @@ export const WidgetSnippetInput = z.object({
     .min(1)
     .nullable()
     .optional()
-    .describe('Marketplace game id, or omit for the invisible default mode.'),
+    .describe(
+      'Marketplace game id (owner/repo). Setting this (or `games`) mounts the game ' +
+        'host element `caputchin-game`; omit both for the plain cap check `caputchin-widget`.',
+    ),
   games: z
     .array(z.string().min(1))
     .optional()
-    .describe('Pool of game ids; the widget picks one at random per challenge.'),
-  mode: z
-    .enum(['auto', 'form-submit', 'manual'])
+    .describe(
+      'Pool of marketplace game ids; the game host picks one at random per challenge. ' +
+        'Mounts `caputchin-game`.',
+    ),
+  layout: z
+    .enum(['auto', 'inline', 'modal', 'fullscreen'])
     .optional()
-    .describe('Widget interaction mode. Defaults to `auto`.'),
+    .describe(
+      'Game presentation for `caputchin-game`: an `inline` panel, a `modal` dialog, or a ' +
+        '`fullscreen` overlay. Defaults to `auto`. Ignored for the plain cap check.',
+    ),
+  trigger: z
+    .enum(['auto', 'click', 'form-submit', 'manual'])
+    .optional()
+    .describe(
+      'When the plain cap check `caputchin-widget` starts: `auto` on mount (default), `click` ' +
+        'on the checkbox, `form-submit` on the enclosing form submit, or `manual` via start(). ' +
+        'Ignored when a game is set.',
+    ),
+  invisible: z
+    .boolean()
+    .optional()
+    .describe(
+      'Render the plain cap check `caputchin-widget` with no visible UI (verification still ' +
+        'runs per trigger). Ignored when a game is set.',
+    ),
 });
 
 export const SiteverifyExampleInput = z.object({
@@ -58,13 +82,24 @@ export const SiteverifyExampleInput = z.object({
 });
 
 export function renderWidgetSnippet(args: z.infer<typeof WidgetSnippetInput>): string {
+  // Two distinct elements: `caputchin-widget` is the cap-only check (trigger /
+  // invisible); `caputchin-game` is the game host (game / games / layout). A game
+  // id picks the game element; otherwise it is the plain cap widget.
+  const games = (args.games ?? []).filter((g) => g.length > 0);
+  const isGame = Boolean(args.game) || games.length > 0;
+  const tag = isGame ? 'caputchin-game' : 'caputchin-widget';
   const attrs: string[] = [`sitekey="${args.sitekey}"`];
-  if (args.game) attrs.push(`game="${args.game}"`);
-  if (args.games && args.games.length > 0) attrs.push(`games="${args.games.join(',')}"`);
-  if (args.mode && args.mode !== 'auto') attrs.push(`mode="${args.mode}"`);
+  if (isGame) {
+    if (args.game) attrs.push(`game="${args.game}"`);
+    if (games.length > 0) attrs.push(`games="${games.join(',')}"`);
+    if (args.layout && args.layout !== 'auto') attrs.push(`layout="${args.layout}"`);
+  } else {
+    if (args.invisible) attrs.push('invisible');
+    if (args.trigger && args.trigger !== 'auto') attrs.push(`trigger="${args.trigger}"`);
+  }
   return [
     `<script src="${WIDGET_CDN_URL}"></script>`,
-    `<caputchin-widget ${attrs.join(' ')}></caputchin-widget>`,
+    `<${tag} ${attrs.join(' ')}></${tag}>`,
   ].join('\n');
 }
 
@@ -155,7 +190,9 @@ export const LOCAL_TOOLS: LocalTool[] = [
   {
     name: 'caputchin_widget_snippet',
     description:
-      'Generate an HTML snippet that mounts the Caputchin widget on a page. Offline; no API call.',
+      'Generate an HTML snippet that mounts the Caputchin widget on a page: the plain cap ' +
+      'check (`caputchin-widget`), or a game challenge (`caputchin-game`) when a game id is ' +
+      'given. Offline; no API call.',
     inputSchema: WidgetSnippetInput,
     handler: async (args) =>
       renderWidgetSnippet(WidgetSnippetInput.parse(args)),

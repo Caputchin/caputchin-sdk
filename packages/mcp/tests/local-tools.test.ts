@@ -6,42 +6,63 @@ import {
 } from '../src/local-tools.js';
 
 describe('renderWidgetSnippet', () => {
-  it('emits a minimal snippet with only the sitekey', () => {
+  it('emits a plain cap widget with only the sitekey', () => {
     const out = renderWidgetSnippet({ sitekey: 'cpt_pub_abc123' });
     expect(out).toContain('cdn.jsdelivr.net/npm/@caputchin/widget@3/dist/widget.js');
-    expect(out).toContain('sitekey="cpt_pub_abc123"');
+    expect(out).toContain('<caputchin-widget sitekey="cpt_pub_abc123"></caputchin-widget>');
+    expect(out).not.toContain('caputchin-game');
     expect(out).not.toContain('game=');
-    expect(out).not.toContain('games=');
     expect(out).not.toContain('mode=');
   });
 
-  it('includes game when supplied', () => {
-    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', game: 'bubble-pop' });
-    expect(out).toContain('game="bubble-pop"');
+  it('mounts the game host when a game id is supplied', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', game: 'owner/bubble-pop' });
+    expect(out).toContain('<caputchin-game ');
+    expect(out).toContain('game="owner/bubble-pop"');
+    expect(out).not.toContain('<caputchin-widget');
   });
 
-  it('joins multiple games with commas', () => {
+  it('joins multiple games with commas on the game host', () => {
     const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', games: ['a', 'b', 'c'] });
+    expect(out).toContain('<caputchin-game ');
     expect(out).toContain('games="a,b,c"');
   });
 
-  it('omits empty games array', () => {
+  it('falls back to the cap widget for an empty games array', () => {
     const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', games: [] });
+    expect(out).toContain('<caputchin-widget ');
+    expect(out).not.toContain('caputchin-game');
     expect(out).not.toContain('games=');
   });
 
-  it('omits mode=auto since auto is the default', () => {
-    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', mode: 'auto' });
-    expect(out).not.toContain('mode=');
+  it('includes a non-auto layout on the game host', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', game: 'a/b', layout: 'modal' });
+    expect(out).toContain('layout="modal"');
   });
 
-  it('includes non-auto mode', () => {
-    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', mode: 'form-submit' });
-    expect(out).toContain('mode="form-submit"');
+  it('omits layout=auto since auto is the default', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', game: 'a/b', layout: 'auto' });
+    expect(out).not.toContain('layout=');
   });
 
-  it('omits game when null', () => {
+  it('omits trigger=auto since auto is the default', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', trigger: 'auto' });
+    expect(out).not.toContain('trigger=');
+  });
+
+  it('includes a non-auto trigger on the cap widget', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', trigger: 'form-submit' });
+    expect(out).toContain('trigger="form-submit"');
+  });
+
+  it('adds the invisible boolean attribute when requested', () => {
+    const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', invisible: true });
+    expect(out).toContain('<caputchin-widget sitekey="cpt_pub_x" invisible></caputchin-widget>');
+  });
+
+  it('uses the cap widget when game is null', () => {
     const out = renderWidgetSnippet({ sitekey: 'cpt_pub_x', game: null });
+    expect(out).toContain('<caputchin-widget ');
     expect(out).not.toContain('game=');
   });
 });
