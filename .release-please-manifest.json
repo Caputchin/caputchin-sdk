@@ -10,6 +10,6 @@
   "presets/kaplay": "0.4.0",
   "presets/excalibur": "0.2.0",
   "packages/game-sdk": "3.2.0",
-  "packages/widget": "3.4.0",
+  "packages/widget": "3.4.1",
   "packages/mcp": "2.1.2"
 }
