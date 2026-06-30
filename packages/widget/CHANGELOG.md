@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.4.0...widget-v3.4.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **widget:** reserve customer width on the loading skeleton for overlay layouts ([7ef6b9b](https://github.com/Caputchin/caputchin-sdk/commit/7ef6b9b20b2b429c94b200680b43de940a4348d8))
+
 ## [3.4.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.3.1...widget-v3.4.0) (2026-06-29)
 
 
