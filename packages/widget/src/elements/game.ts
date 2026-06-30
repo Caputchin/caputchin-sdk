@@ -328,6 +328,13 @@ export class CaputchinGame extends HTMLElement {
     // resolves into). Inline keeps the full game-frame skeleton.
     const layout = this.state.config?.layout;
     if (layout === 'modal' || layout === 'fullscreen') box.dataset['overlay'] = '';
+    // An explicit width (full / pixel) was just reserved on the host by
+    // applyLoadingHostSize; flag the box so the overlay skeleton fills that
+    // reserved width (100%) instead of hugging its min-size floor - so it spans
+    // the same box the entry will. An `auto` width keeps the floor (the entry
+    // is content-width too, so there is nothing to reserve).
+    const w = this.state.config?.width;
+    if (w === 'full' || typeof w === 'number') box.dataset['sized'] = '';
     const spinner = document.createElement('div');
     spinner.setAttribute('part', 'loading-spinner');
     box.appendChild(spinner);
@@ -336,19 +343,28 @@ export class CaputchinGame extends HTMLElement {
 
   /** Provisionally size the host from the embed's width/height attributes so the
    *  loading skeleton occupies the eventual box. Mirrors the full / pixel sizing
-   *  createInlineGame applies later; an `auto` width or unset height is left
-   *  alone so the skeleton's min-size fallback governs that axis. */
+   *  the resolved presentation applies later; an `auto` width or unset height is
+   *  left alone so the skeleton's min-size fallback governs that axis. */
   private applyLoadingHostSize(): void {
     const config = this.state.config;
     if (!config) return;
-    // Only the inline layout sizes the HOST (createInlineGame re-applies it
-    // authoritatively, so nothing leaks). modal / fullscreen size an entry
-    // checkbox via createOverlayGame and never touch host.style, and `auto` may
-    // resolve to either layout post-bootstrap - sizing the host now would leak
-    // game-footprint dims onto an overlay entry. So restrict to explicit inline.
-    if (config.layout !== 'inline') return;
+    // Reserve only the host axes the resolved presentation will RE-APPLY (and
+    // reset on teardown), so nothing the loaded state ignores can leak as a
+    // stale inline style. Width: both layouts host-apply full + pixel (inline
+    // via createInlineGame; overlay via the simple presentation), so reserve it
+    // regardless of layout - including `auto`, which resolves to one of those
+    // post-bootstrap and wants the same footprint either way. Pixel height: also
+    // host-applied in both. Full height is ASYMMETRIC: inline routes it to the
+    // host (createInlineGame re-applies AND resets it), but overlay routes
+    // height="full" to the entry's inner wrapper (createOverlayGame), never the
+    // host - and the simple presentation host-applies only PIXEL height. So a
+    // host height:100% reserved for an overlay (or an `auto` layout that resolves
+    // to one) would STICK: never re-applied, never reset on unmount. Restrict the
+    // full-height host reservation to explicit inline. We reserve only the
+    // customer's OWN dims, never the game's manifest footprint (overlay-decoupled
+    // and unknown pre-bootstrap), so nothing game-sized leaks onto an entry.
     const fullW = config.width === 'full';
-    const fullH = config.height === 'full';
+    const fullH = config.height === 'full' && config.layout === 'inline';
     const pxW = typeof config.width === 'number' ? config.width : null;
     const pxH = typeof config.height === 'number' ? config.height : null;
     if (fullW || fullH || pxW !== null || pxH !== null) this.style.display = 'block';
@@ -427,7 +443,14 @@ const LOADING_SKELETON_CSS = [
   '}',
   // Overlay (modal / fullscreen) entry: compact, checkbox-entry-sized placeholder
   // instead of the tall game-frame box, so it matches the small entry it becomes.
-  '[part="loading"][data-overlay]{width:fit-content;height:auto;min-width:12rem;min-height:3rem}',
+  // Auto width: hug content with the SAME min-width floor the real normal
+  // checkbox uses (min(18rem,100%) in simple.ts), so an auto entry's skeleton
+  // doesn't pop wider on load.
+  '[part="loading"][data-overlay]{width:fit-content;height:auto;min-width:min(18rem,100%);min-height:3rem}',
+  // Pinned width (full / pixel): the host was reserved at that width by
+  // applyLoadingHostSize - fill it so the skeleton spans the same box the entry
+  // will occupy (kills the narrow-flash that pops to full / pixel width on load).
+  '[part="loading"][data-overlay][data-sized]{width:100%}',
   '[part="loading"][data-overlay] [part="loading-spinner"]{width:22px;height:22px}',
   '[part="loading-spinner"]{',
   'width:28px;height:28px;border-radius:50%;',
