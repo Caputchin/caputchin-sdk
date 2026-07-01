@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.4.1...widget-v3.5.0) (2026-07-01)
+
+
+### Features
+
+* **widget:** react to geometry attribute changes at runtime ([8df5772](https://github.com/Caputchin/caputchin-sdk/commit/8df5772cd4ba72910c16aab8212525b5b3e020e4))
+* **widget:** react to skin and locale attribute changes at runtime ([826653f](https://github.com/Caputchin/caputchin-sdk/commit/826653f51c7fd22ce072bcd1d37c1a075d5dc15f))
+
 ## [3.4.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.4.0...widget-v3.4.1) (2026-06-30)
 
 
