@@ -63,7 +63,8 @@ export const WidgetSnippetInput = z.object({
     .optional()
     .describe(
       'When the plain cap check `caputchin-widget` starts: `auto` on mount (default), `click` ' +
-        'on the checkbox, `form-submit` on the enclosing form submit, or `manual` via start(). ' +
+        'on the checkbox, `form-submit` on the enclosing form submit or a click of the checkbox ' +
+        '(a click verifies in place without submitting the form), or `manual` via start(). ' +
         'Ignored when a game is set.',
     ),
   invisible: z

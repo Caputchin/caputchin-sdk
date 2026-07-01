@@ -52,6 +52,31 @@ describe('visible (default) widget presentation', () => {
     el.remove();
     expect(el.shadowRoot!.querySelector('[role="checkbox"]')).toBeNull();
   });
+
+  it('renders an INTERACTIVE checkbox for trigger="form-submit" (clickable, not passive)', async () => {
+    const form = document.createElement('form');
+    document.body.appendChild(form);
+    const el = getWidget({ sitekey: 'k', trigger: 'form-submit' });
+    form.appendChild(el);
+    await flushMount();
+    const shield = el.shadowRoot!.querySelector('[part="simple-shield-box"]');
+    expect(shield).not.toBeNull();
+    expect(shield!.getAttribute('role')).toBe('checkbox');
+    expect(shield!.hasAttribute('data-interactive')).toBe(true);
+    expect((shield as unknown as SVGSVGElement).tabIndex).toBe(0);
+    form.remove();
+  });
+
+  it('renders a PASSIVE shield for trigger="auto" (no click affordance)', async () => {
+    const el = getWidget({ sitekey: 'k', trigger: 'auto' });
+    document.body.appendChild(el);
+    await flushMount();
+    const shield = el.shadowRoot!.querySelector('[part="simple-shield-box"]');
+    expect(shield).not.toBeNull();
+    expect(shield!.getAttribute('role')).toBe('img');
+    expect(shield!.hasAttribute('data-interactive')).toBe(false);
+    el.remove();
+  });
 });
 
 describe('invisible widget presentation', () => {

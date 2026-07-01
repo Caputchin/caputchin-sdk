@@ -10,9 +10,11 @@ import type { ShellPalette, WidgetShellSkin } from '../skin/widget-shell-skin.js
  * no data" tag never gets overridden by the verification state.
  *
  * Indicator shape depends on the trigger:
- * - `trigger="click"` → interactive checkbox the user can click.
- * - everything else  → passive shield SVG. Same state transitions, no
- *   click affordance (the widget drives itself).
+ * - `trigger="click"` / `trigger="form-submit"` → interactive checkbox the
+ *   visitor can click to verify in place. `form-submit` ALSO verifies on the
+ *   enclosing form's submit.
+ * - `auto` / `manual` → passive shield SVG. Same state transitions, no click
+ *   affordance (the widget drives itself).
  *
  * Label width is locked to fit the widest state string so transitions
  * never reflow the host page.
@@ -28,7 +30,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
   let width = input.width;
   let height = input.height;
   let size = input.size;
-  const isInteractive = trigger === 'click';
+  const isInteractive = trigger === 'click' || trigger === 'form-submit';
   // Read from the LIVE `shell` so a post-mount `applyLocale` swap re-labels
   // without rebuilding the label lookup.
   const labelFor = (state: PresentationState): string => ({
@@ -348,7 +350,7 @@ function createShieldIndicator(input: {
       svg.setAttribute('data-state', state);
       switch (state) {
         case 'idle':
-          // Idle gray-stroke shield. Passive (auto/manual/form-submit) gets
+          // Idle gray-stroke shield. Passive (auto/manual) gets
           // a lighter gray to read as "disabled / waiting"; interactive uses
           // the regular gray, with hover-scale + cursor:pointer signalling
           // the action.

@@ -16,8 +16,9 @@ export interface WidgetConfig {
    *  per `trigger`. The default visible form is a checkbox with a brand strip. */
   invisible: boolean;
   /** When verification begins: `auto` on mount, `click` on the checkbox,
-   *  `form-submit` when the enclosing form submits, or `manual` when you call
-   *  `start()` yourself. */
+   *  `form-submit` when the enclosing form submits or the checkbox is clicked
+   *  (a click verifies in place without submitting the form), or `manual` when
+   *  you call `start()` yourself. */
   trigger: WidgetTrigger;
   /** Widget width: `auto` sizes to content, `full` spans the parent, or a
    *  positive pixel number fixes it. */

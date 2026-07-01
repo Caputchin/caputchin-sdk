@@ -188,4 +188,114 @@ describe('form-submit trigger', () => {
     s.forceStart?.(c);
     expect(runs).toBe(1);
   });
+
+  it('verifies in place on click without submitting the form; a later submit passes through', async () => {
+    const { form, el } = withForm();
+    const requestSubmit = vi.fn();
+    form.requestSubmit = requestSubmit;
+    const fake = fakePresentation();
+    const s = createTriggerStrategy('form-submit');
+    let runs = 0;
+    const c: TriggerContext = {
+      el,
+      presentation: fake.presentation,
+      runVerification: () => { runs += 1; return Promise.resolve(); },
+      capClient: null,
+    };
+    s.activate(c);
+
+    // Click the checkbox → verify in place, only once.
+    fake.fireActivate();
+    fake.fireActivate();
+    expect(runs).toBe(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    // A click never auto-submits the form.
+    expect(requestSubmit).not.toHaveBeenCalled();
+
+    // A later native submit passes through (token already injected on the
+    // successful click) with no interception and no second verification.
+    const evt = new Event('submit', { cancelable: true, bubbles: true });
+    form.dispatchEvent(evt);
+    expect(evt.defaultPrevented).toBe(false);
+    expect(runs).toBe(1);
+    expect(requestSubmit).not.toHaveBeenCalled();
+  });
+
+  it('holds a submit that arrives while a click verification is in flight, then releases it once', async () => {
+    const { form, el } = withForm();
+    const requestSubmit = vi.fn();
+    form.requestSubmit = requestSubmit;
+    const fake = fakePresentation();
+    const s = createTriggerStrategy('form-submit');
+    let runs = 0;
+    let resolveVerify: () => void = () => {};
+    const c: TriggerContext = {
+      el,
+      presentation: fake.presentation,
+      runVerification: () => { runs += 1; return new Promise<void>((res) => { resolveVerify = res; }); },
+      capClient: null,
+    };
+    s.activate(c);
+
+    fake.fireActivate(); // click → verification in flight (unsettled)
+    expect(runs).toBe(1);
+
+    const evt = new Event('submit', { cancelable: true, bubbles: true });
+    form.dispatchEvent(evt);
+    // Submit is HELD (default prevented), not leaked; no second verification.
+    expect(evt.defaultPrevented).toBe(true);
+    expect(runs).toBe(1);
+    expect(requestSubmit).not.toHaveBeenCalled();
+
+    // Verification resolves → the held submit is released exactly once.
+    resolveVerify();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(requestSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('defers a submit that arrives while a forceStart verification is in flight', async () => {
+    const { form, el } = withForm();
+    const requestSubmit = vi.fn();
+    form.requestSubmit = requestSubmit;
+    const s = createTriggerStrategy('form-submit');
+    let runs = 0;
+    let resolveVerify: () => void = () => {};
+    const c: TriggerContext = {
+      el,
+      presentation: fakePresentation().presentation,
+      runVerification: () => { runs += 1; return new Promise<void>((res) => { resolveVerify = res; }); },
+      capClient: null,
+    };
+    s.activate(c);
+    s.forceStart?.(c); // in flight
+    expect(runs).toBe(1);
+
+    const evt = new Event('submit', { cancelable: true, bubbles: true });
+    form.dispatchEvent(evt);
+    expect(evt.defaultPrevented).toBe(true);
+    expect(runs).toBe(1);
+
+    resolveVerify();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(requestSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('deactivate tears down the click (onActivate) subscription', () => {
+    const { form, el } = withForm();
+    form.requestSubmit = vi.fn();
+    const fake = fakePresentation();
+    const s = createTriggerStrategy('form-submit');
+    const c: TriggerContext = {
+      el,
+      presentation: fake.presentation,
+      runVerification: () => Promise.resolve(),
+      capClient: null,
+    };
+    s.activate(c);
+    s.deactivate();
+    expect(fake.cleanupCalls()).toBe(1);
+  });
 });

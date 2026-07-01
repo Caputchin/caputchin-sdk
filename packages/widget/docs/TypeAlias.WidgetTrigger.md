@@ -4,4 +4,5 @@
 
 When the widget starts verification. `auto`: on mount. `click`: when the
  visitor activates the checkbox. `form-submit`: when the enclosing `<form>`
- submits. `manual`: only when you call `start()`.
+ submits, or when the visitor clicks the checkbox (a click verifies in place
+ without submitting the form). `manual`: only when you call `start()`.

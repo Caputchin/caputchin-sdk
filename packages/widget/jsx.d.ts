@@ -18,7 +18,9 @@ type CaputchinWidgetAttributes = React.HTMLAttributes<HTMLElement> & {
   sitekey: string;
   /** When the verification runs. "click" renders a badge that opens the
    *  challenge on click; "auto" runs on mount; "form-submit" runs on the host
-   *  form's submit; "manual" runs only via the element's start() method. */
+   *  form's submit AND on a click of the checkbox (a click verifies in place
+   *  without submitting the form); "manual" runs only via the element's start()
+   *  method. */
   trigger?: "auto" | "click" | "form-submit" | "manual";
   /** Mount no visible UI; verification still runs per trigger. */
   invisible?: boolean | string;

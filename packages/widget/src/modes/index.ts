@@ -17,7 +17,8 @@ export interface Presentation {
   /**
    * Register a user-activation handler (e.g. checkbox click). Presentations
    * with no clickable surface (invisible, simple-pill) return a no-op cleanup.
-   * The `click` trigger relies on this; other triggers ignore it.
+   * The `click` and `form-submit` triggers rely on this; `auto` / `manual`
+   * ignore it.
    */
   onActivate(handler: () => void): () => void;
   /**
