@@ -20,6 +20,21 @@ export interface Presentation {
    * The `click` trigger relies on this; other triggers ignore it.
    */
   onActivate(handler: () => void): () => void;
+  /**
+   * Live-apply a new server-resolved skin to the ALREADY-mounted DOM, in place,
+   * without a rebuild (so the verification session + solved state are untouched).
+   * Recolors what CSS custom properties can't reach: the SVG shield
+   * stroke/fill/glyph + spinner (baked raw at mount) and the brand logo asset.
+   * CSS-var-driven surfaces recolor automatically when the owning element
+   * rewrites the host `--cpt-skin-*` vars. No-op before mount.
+   */
+  applySkin(skin: WidgetShellSkin): void;
+  /**
+   * Live-apply a new server-resolved locale to the ALREADY-mounted DOM, in
+   * place: visible strings, aria labels, and text direction (set AND removed).
+   * No-op before mount.
+   */
+  applyLocale(shell: WidgetShell): void;
 }
 
 export interface PresentationFactoryInput {

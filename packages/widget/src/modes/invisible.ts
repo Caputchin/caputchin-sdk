@@ -8,5 +8,8 @@ export function createInvisiblePresentation(): Presentation {
     onActivate(_handler): () => void {
       return () => {};
     },
+    // No DOM, so skin/locale swaps are no-ops (verification still runs headless).
+    applySkin(_skin): void {},
+    applyLocale(_shell): void {},
   };
 }

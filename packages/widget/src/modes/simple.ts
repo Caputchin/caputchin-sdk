@@ -1,6 +1,6 @@
 import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
-import type { ShellStrings } from '../locale/widget-shell.js';
-import type { ShellPalette } from '../skin/widget-shell-skin.js';
+import type { ShellStrings, WidgetShell } from '../locale/widget-shell.js';
+import type { ShellPalette, WidgetShellSkin } from '../skin/widget-shell-skin.js';
 
 /**
  * Caputchin UI for `mode="simple"`. One layout across all triggers:
@@ -18,23 +18,45 @@ import type { ShellPalette } from '../skin/widget-shell-skin.js';
  * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, height, size, shell, skin, shellConfig } = input;
+  const { host, root: renderRoot, trigger, width, height, size, shellConfig } = input;
+  // `shell` / `skin` are mutable so `applyLocale` / `applySkin` can swap the
+  // resolved presets in place (no rebuild); every consumer reads the live vars.
+  let shell = input.shell;
+  let skin = input.skin;
   const isInteractive = trigger === 'click';
   const isFullWidth = width === 'full';
   const isCompact = size === 'compact';
   const pxWidth = typeof width === 'number' ? width : null;
   const pxHeight = typeof height === 'number' ? height : null;
-  const STATE_LABEL_LOCAL: Record<PresentationState, string> = {
+  // Read from the LIVE `shell` so a post-mount `applyLocale` swap re-labels
+  // without rebuilding the label lookup.
+  const labelFor = (state: PresentationState): string => ({
     idle: shell.strings.simpleVerify,
     verifying: shell.strings.simpleVerifying,
     verified: shell.strings.simpleVerified,
     error: shell.strings.simpleFailed,
-  };
+  }[state]);
 
   let root: HTMLDivElement | null = null;
-  let indicator: { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } | null = null;
+  let indicator:
+    | {
+        el: HTMLElement;
+        setState: (s: PresentationState) => void;
+        applyPalette: (p: ShellPalette) => void;
+        applyStrings: (s: ShellStrings) => void;
+        dispose: () => void;
+      }
+    | null = null;
   let label: HTMLSpanElement | null = null;
   let brand: HTMLDivElement | null = null;
+  // Brand refs kept so `applySkin` can swap the logo asset and `applyLocale`
+  // can re-text the wordmark + tagline in place.
+  let logoImg: HTMLImageElement | null = null;
+  let wordmark: HTMLSpanElement | null = null;
+  let tag: HTMLAnchorElement | null = null;
+  // Mirrors the most recent state so `applySkin` (shield recolor) and
+  // `applyLocale` (label re-text) re-render the CURRENT state, not idle.
+  let current: PresentationState = 'idle';
   const activateListeners: Array<() => void> = [];
 
   function onPointer(): void {
@@ -67,13 +89,13 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     // light, all-white for dark). The CSS rule below sizes the <img> to
     // fill the wrapper span. Customer-curated paid skins can swap to any
     // brand mark via the same key.
-    const logoImg = document.createElement('img');
+    logoImg = document.createElement('img');
     logoImg.src = skin.palette.brand_logo;
     logoImg.alt = '';
     logoImg.style.cssText = 'width:100%;height:100%;display:block';
     logoSpan.appendChild(logoImg);
 
-    const wordmark = document.createElement('span');
+    wordmark = document.createElement('span');
     wordmark.setAttribute('part', 'simple-brand-name');
     wordmark.textContent = shell.strings.brandName;
     wordmark.style.cssText = 'font-weight:600;color:inherit';
@@ -81,7 +103,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     homeLink.appendChild(logoSpan);
     homeLink.appendChild(wordmark);
 
-    const tag = document.createElement('a');
+    tag = document.createElement('a');
     tag.setAttribute('part', 'simple-brand-tag');
     tag.href = shellConfig.values.legal_link;
     tag.target = '_blank';
@@ -177,9 +199,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     },
 
     setState(state: PresentationState): void {
+      current = state;
       if (!indicator || !label) return;
       indicator.setState(state);
-      label.textContent = STATE_LABEL_LOCAL[state];
+      label.textContent = labelFor(state);
     },
 
     onActivate(handler: () => void): () => void {
@@ -188,6 +211,28 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         const idx = activateListeners.indexOf(handler);
         if (idx >= 0) activateListeners.splice(idx, 1);
       };
+    },
+
+    applySkin(newSkin: WidgetShellSkin): void {
+      skin = newSkin;
+      if (!root) return;
+      // Shield SVG stroke/fill/glyph + spinner are baked raw at mount (CSS vars
+      // don't reach SVG presentation attributes), so recolor them for the
+      // CURRENT state; the brand logo is a skin asset, not a var.
+      indicator?.applyPalette(newSkin.palette);
+      if (logoImg) logoImg.src = newSkin.palette.brand_logo;
+    },
+
+    applyLocale(newShell: WidgetShell): void {
+      shell = newShell;
+      if (!root) return;
+      if (label) label.textContent = labelFor(current);
+      if (wordmark) wordmark.textContent = newShell.strings.brandName;
+      if (tag) tag.textContent = newShell.strings.brandTag;
+      indicator?.applyStrings(newShell.strings);
+      // Set OR remove: an rtl→ltr switch must drop a stale dir attribute.
+      if (newShell.direction === 'rtl') root.setAttribute('dir', 'rtl');
+      else root.removeAttribute('dir');
     },
   };
 }
@@ -205,8 +250,18 @@ function createShieldIndicator(input: {
   onKey: (e: KeyboardEvent) => void;
   strings: ShellStrings;
   palette: ShellPalette;
-}): { el: HTMLElement; setState: (s: PresentationState) => void; dispose: () => void } {
-  const { interactive, onPointer, onKey, strings, palette } = input;
+}): {
+  el: HTMLElement;
+  setState: (s: PresentationState) => void;
+  applyPalette: (p: ShellPalette) => void;
+  applyStrings: (s: ShellStrings) => void;
+  dispose: () => void;
+} {
+  const { interactive, onPointer, onKey, strings } = input;
+  // Mutable so `applyPalette` can swap the resolved skin palette in place; the
+  // shield/glyph/spinner colors are SVG presentation attributes (not CSS vars),
+  // so they must be re-written from the live palette on a skin change.
+  let palette = input.palette;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('part', 'simple-shield-box');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -257,15 +312,12 @@ function createShieldIndicator(input: {
   glyph.setAttribute('fill', palette.glyph);
   svg.appendChild(glyph);
 
-  return {
-    el: svg as unknown as HTMLElement,
-    dispose() {
-      if (interactive) {
-        svg.removeEventListener('click', onPointer);
-        svg.removeEventListener('keydown', onKey);
-      }
-    },
-    setState(state: PresentationState): void {
+  // Tracks the current state so `applyPalette` can re-run the color assignment
+  // for whatever state is showing (idle/verifying/verified/error).
+  let indState: PresentationState = 'idle';
+
+  function paint(state: PresentationState): void {
+      indState = state;
       glyph.textContent = '';
       spinner.setAttribute('opacity', '0');
       svg.removeAttribute('data-state');
@@ -300,6 +352,26 @@ function createShieldIndicator(input: {
           glyph.setAttribute('fill', palette.glyph);
           if (interactive) svg.setAttribute('aria-checked', 'false');
           break;
+      }
+  }
+
+  return {
+    el: svg as unknown as HTMLElement,
+    setState: paint,
+    applyPalette(newPalette: ShellPalette): void {
+      palette = newPalette;
+      // Spinner stroke is a raw attribute set at build; re-write it, then
+      // repaint the shield/glyph for the current state with the new palette.
+      spinner.setAttribute('stroke', palette.primary);
+      paint(indState);
+    },
+    applyStrings(newStrings: ShellStrings): void {
+      svg.setAttribute('aria-label', interactive ? newStrings.simpleAriaCheckbox : newStrings.simpleAriaStatus);
+    },
+    dispose(): void {
+      if (interactive) {
+        svg.removeEventListener('click', onPointer);
+        svg.removeEventListener('keydown', onKey);
       }
     },
   };

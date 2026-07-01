@@ -32,6 +32,29 @@ export class CaputchinWidget extends HTMLElement {
 
   private state: WidgetState<WidgetConfig> = createInitialState<WidgetConfig>();
 
+  /** API host captured at mount so a live reskin can refetch bootstrap without
+   *  re-deriving it. */
+  private apiHost = '';
+  /** Observed attributes changed since the last microtask flush; coalesced so a
+   *  `skin`+`locale` pair set in one tick triggers ONE refetch. */
+  private readonly dirtyAttrs = new Set<string>();
+  private reinitScheduled = false;
+  /** Monotonic reskin id. A resolved refetch only applies when it is still the
+   *  latest (a rapid second change bumps this and aborts the prior fetch), so
+   *  the newest theme always wins. Element-private (not on the state bag) so it
+   *  never disturbs the solved token / cap session. */
+  private reskinEpoch = 0;
+  private reskinAbort: AbortController | null = null;
+  /** OS color-scheme tracker, installed only when `skin` is auto/absent. */
+  private skinMedia: MediaQueryList | null = null;
+
+  /** OS light/dark flip → live reskin, but only while `skin` is auto/absent
+   *  (an explicit skin attribute wins and is handled by its own attr change). */
+  private readonly onSkinMediaChange = (): void => {
+    if (!this.skinIsAuto()) return;
+    this.markAttrDirty('skin');
+  };
+
   /** @internal Custom Element lifecycle; the browser calls this on mount. */
   connectedCallback(): void {
     const state = this.state;
@@ -50,6 +73,10 @@ export class CaputchinWidget extends HTMLElement {
     // the build-time default without rebuilding the bundle (additive, non-breaking).
     const apiHostAttr = this.getAttribute('api-host');
     const apiHost = (apiHostAttr && apiHostAttr.trim()) ? apiHostAttr.trim() : __CAPUTCHIN_API_HOST__;
+    // Capture the host NOW (before the bootstrap fetch), so a reskin fired during
+    // the mount window uses the real API host, not an empty relative URL that
+    // would hit the customer page origin.
+    this.apiHost = apiHost;
     // Shadow attaches synchronously so the host element keeps its layout
     // box during the bootstrap wait (empty box, no FOUC of bundled).
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
@@ -142,6 +169,16 @@ export class CaputchinWidget extends HTMLElement {
     };
 
     state.trigger.activate(state.triggerCtx);
+
+    // Track OS color scheme so `skin="auto"` (or absent) re-skins live on an OS
+    // light/dark flip. Explicit skins ignore this (see onSkinMediaChange).
+    this.installSkinMedia();
+
+    // Flush any skin/locale change that arrived DURING the mount bootstrap
+    // window: applyAttrChanges defers while the presentation is unmounted, so
+    // the reskin now runs against real DOM and strictly AFTER this mount paint
+    // (newest-wins, no race with the mount fetch).
+    if (this.dirtyAttrs.size > 0) this.applyAttrChanges();
   }
 
   /** @internal Custom Element lifecycle; the browser calls this on removal. */
@@ -149,6 +186,12 @@ export class CaputchinWidget extends HTMLElement {
     const s = this.state;
     // Stop any in-flight bootstrap before tearing down.
     s.bootstrapAbort?.abort();
+    // Stop reactive machinery: OS tracker + any in-flight reskin refetch.
+    this.teardownSkinMedia();
+    this.reskinAbort?.abort();
+    this.reskinAbort = null;
+    this.dirtyAttrs.clear();
+    this.reinitScheduled = false;
     s.trigger?.deactivate();
     s.presentation?.unmount();
     s.capClient?.dispose();
@@ -168,10 +211,120 @@ export class CaputchinWidget extends HTMLElement {
     this.state = createInitialState<WidgetConfig>();
   }
 
-  /** @internal Custom Element lifecycle; attributes are read once at mount. */
-  attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
-    if (this.state.connected && oldValue !== null) {
-      console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
+  /** @internal Custom Element lifecycle; the browser calls this on attr change. */
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    // Fires during upgrade (before connect) for parsed-in attributes; ignore
+    // until the first render is done. A same-value set is a no-op.
+    if (!this.state.connected || oldValue === newValue) return;
+    // `skin` / `locale` re-resolve via a bootstrap refetch and apply in place,
+    // preserving an already-solved token (see reskinRefetch). Everything else
+    // still needs a remount to take effect.
+    if (name === 'skin' || name === 'locale') {
+      this.markAttrDirty(name);
+      return;
     }
+    console.warn(`[caputchin] attribute "${name}" changed after mount and was ignored; remove and re-add the element to apply it`);
+  }
+
+  /** Queue an attribute for the next microtask flush so several attrs set in
+   *  one tick coalesce into a single refetch. */
+  private markAttrDirty(name: string): void {
+    this.dirtyAttrs.add(name);
+    if (this.reinitScheduled) return;
+    this.reinitScheduled = true;
+    queueMicrotask(() => this.applyAttrChanges());
+  }
+
+  /** `skin` is auto when the attribute is missing, empty, or literally `auto`. */
+  private skinIsAuto(): boolean {
+    const attr = this.getAttribute('skin');
+    if (attr === null) return true;
+    const t = attr.trim().toLowerCase();
+    return t === '' || t === 'auto';
+  }
+
+  private installSkinMedia(): void {
+    if (this.skinMedia || typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (!this.skinIsAuto()) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mq.addEventListener('change', this.onSkinMediaChange);
+    this.skinMedia = mq;
+  }
+
+  private teardownSkinMedia(): void {
+    this.skinMedia?.removeEventListener('change', this.onSkinMediaChange);
+    this.skinMedia = null;
+  }
+
+  /** Keep the OS tracker in sync when `skin` flips between explicit and auto at
+   *  runtime: install when it becomes auto, tear down when it becomes explicit. */
+  private syncSkinMedia(): void {
+    if (this.skinIsAuto()) this.installSkinMedia();
+    else this.teardownSkinMedia();
+  }
+
+  private applyAttrChanges(): void {
+    // Reset BEFORE processing so a change during apply reschedules a flush.
+    this.reinitScheduled = false;
+    if (!this.state.connected || !this.state.config) { this.dirtyAttrs.clear(); return; }
+    // Defer while the presentation is still mounting: KEEP dirtyAttrs and let
+    // completeMount flush them, so the reskin applies to real DOM and runs
+    // strictly after the mount paint (no mount-fetch vs reskin-fetch race).
+    if (!this.state.presentation) return;
+    const dirty = new Set(this.dirtyAttrs);
+    this.dirtyAttrs.clear();
+    if (dirty.size === 0) return;
+    // Keep the OS tracker in sync if the skin mode flipped explicit<->auto.
+    if (dirty.has('skin')) this.syncSkinMedia();
+    if (dirty.has('skin') || dirty.has('locale')) this.reskinRefetch();
+  }
+
+  /** Refetch bootstrap with the new signals, then apply the resolved skin/locale
+   *  in place. The solved token + cap session are never touched; on any
+   *  non-`ok` result we keep the current theme (no flash to bundled). */
+  private reskinRefetch(): void {
+    const state = this.state;
+    if (!state.config) return;
+    // Re-inspect so the refetch signals reflect the new attributes; sitekey is
+    // not reactive, so this stays non-inert for a skin/locale-only change.
+    const inspection = inspectWidgetConfig(this);
+    if (inspection.inert || !inspection.config) return;
+    state.config = inspection.config;
+
+    this.reskinEpoch += 1;
+    const epoch = this.reskinEpoch;
+    this.reskinAbort?.abort();
+    const abort = new AbortController();
+    this.reskinAbort = abort;
+
+    void fetchBootstrap({
+      apiHost: this.apiHost,
+      sitekey: state.config.sitekey,
+      locale: resolveLocaleSignal(state.config.locale),
+      skin: resolveSkinSignal(state.config.skin),
+      signal: abort.signal,
+    }).then((result) => {
+      // Only the latest reskin, on the same live mount, applies.
+      if (epoch !== this.reskinEpoch || this.state !== state || !this.state.connected || !this.state.config) return;
+      // Keep the current theme on gate / degrade / failure - never flash to
+      // bundled light (mount already covered first paint).
+      if (result.kind !== 'ok') return;
+      this.applyResolvedAxes(result.response.widget?.resolved ?? null);
+    });
+  }
+
+  private applyResolvedAxes(resolved: ResolvedAxes | null): void {
+    const shell = buildWidgetShell(resolved?.locale ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    // Host-level theme + direction. `dir` is set AND removed so an rtl→ltr
+    // switch doesn't leave a stale attribute.
+    this.setAttribute('data-skin-theme', skin.theme);
+    if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
+    else this.removeAttribute('dir');
+    applySkinVars(this, skin.palette);
+    // In place: no rebuild, no trigger re-arm → solved token + verified visual
+    // survive.
+    this.state.presentation?.applySkin(skin);
+    this.state.presentation?.applyLocale(shell);
   }
 }

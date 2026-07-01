@@ -17,7 +17,8 @@ import { installGameMethods } from '../verify/methods-game.js';
 import { runGame } from '../verify/run-game.js';
 import { runManual } from '../verify/run-manual.js';
 import { emitDegraded } from '../verify/events.js';
-import { fetchBootstrapResilient } from '../bootstrap/client.js';
+import { fetchBootstrap, fetchBootstrapResilient } from '../bootstrap/client.js';
+import type { BootstrapResponse } from '../bootstrap/types.js';
 import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
@@ -41,6 +42,24 @@ export class CaputchinGame extends HTMLElement {
 
   private state: WidgetState<GameConfig> = createInitialState<GameConfig>();
 
+  /** API host captured at mount so a live reskin can refetch bootstrap. */
+  private apiHost = '';
+  /** Observed attributes changed since the last microtask flush; coalesced so a
+   *  `skin`+`locale` pair set in one tick triggers ONE refetch. */
+  private readonly dirtyAttrs = new Set<string>();
+  private reinitScheduled = false;
+  /** Monotonic reskin id; only the latest resolved refetch applies. Kept
+   *  element-private so it never disturbs the solved token / cap session. */
+  private reskinEpoch = 0;
+  private reskinAbort: AbortController | null = null;
+  /** OS color-scheme tracker, installed only when `skin` is auto/absent. */
+  private skinMedia: MediaQueryList | null = null;
+
+  private readonly onSkinMediaChange = (): void => {
+    if (!this.skinIsAuto()) return;
+    this.markAttrDirty('skin');
+  };
+
   /** @internal Custom Element lifecycle; the browser calls this on mount. */
   connectedCallback(): void {
     const state = this.state;
@@ -59,6 +78,9 @@ export class CaputchinGame extends HTMLElement {
     // the build-time default without rebuilding the bundle (additive, non-breaking).
     const apiHostAttr = this.getAttribute('api-host');
     const apiHost = (apiHostAttr && apiHostAttr.trim()) ? apiHostAttr.trim() : __CAPUTCHIN_API_HOST__;
+    // Capture the host NOW (before the bootstrap fetch), so a reskin fired during
+    // the mount window uses the real API host, not an empty relative URL.
+    this.apiHost = apiHost;
     // Shadow attaches synchronously so the host keeps its layout box during
     // the bootstrap wait.
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
@@ -296,6 +318,14 @@ export class CaputchinGame extends HTMLElement {
 
     state.trigger.activate(state.triggerCtx);
 
+    // Track OS color scheme so `skin="auto"` (or absent) re-skins the shell live
+    // on an OS light/dark flip. Explicit skins ignore this (see onSkinMediaChange).
+    this.installSkinMedia();
+
+    // Flush any skin/locale change that arrived DURING the mount bootstrap window
+    // (applyAttrChanges defers while the game presentation is unmounted).
+    if (this.dirtyAttrs.size > 0) this.applyAttrChanges();
+
     // For inline (manual or iframe) verification auto-kicks on mount via the
     // auto trigger above. For modal/fullscreen the simple-click entry opens
     // the dialog AND fires the trigger on the first click. No start() exists
@@ -387,6 +417,12 @@ export class CaputchinGame extends HTMLElement {
     const s = this.state;
     // Stop any in-flight bootstrap + its retry loop before tearing down.
     s.bootstrapAbort?.abort();
+    // Stop reactive machinery: OS tracker + any in-flight reskin refetch.
+    this.teardownSkinMedia();
+    this.reskinAbort?.abort();
+    this.reskinAbort = null;
+    this.dirtyAttrs.clear();
+    this.reinitScheduled = false;
     this.removeLoadingSkeleton();
     s.trigger?.deactivate();
     s.gamePresentation?.unmount();
@@ -410,11 +446,127 @@ export class CaputchinGame extends HTMLElement {
     this.state = createInitialState<GameConfig>();
   }
 
-  /** @internal Custom Element lifecycle; attributes are read once at mount. */
-  attributeChangedCallback(name: string, oldValue: string | null, _newValue: string | null): void {
-    if (this.state.connected && oldValue !== null) {
-      console.warn(`[caputchin] attribute "${name}" changed mid-flight; ignored`);
+  /** @internal Custom Element lifecycle; the browser calls this on attr change. */
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    // Fires during upgrade (before connect) for parsed-in attributes; ignore
+    // until the first render is done. A same-value set is a no-op.
+    if (!this.state.connected || oldValue === newValue) return;
+    // `skin` / `locale` re-resolve via a bootstrap refetch and re-theme the
+    // SHELL in place, preserving an already-solved token. A live in-progress
+    // game keeps its old theme until it next kicks off (D2). Everything else
+    // still needs a remount.
+    if (name === 'skin' || name === 'locale') {
+      this.markAttrDirty(name);
+      return;
     }
+    console.warn(`[caputchin] attribute "${name}" changed after mount and was ignored; remove and re-add the element to apply it`);
+  }
+
+  /** Queue an attribute for the next microtask flush so several attrs set in
+   *  one tick coalesce into a single refetch. */
+  private markAttrDirty(name: string): void {
+    this.dirtyAttrs.add(name);
+    if (this.reinitScheduled) return;
+    this.reinitScheduled = true;
+    queueMicrotask(() => this.applyAttrChanges());
+  }
+
+  /** `skin` is auto when the attribute is missing, empty, or literally `auto`. */
+  private skinIsAuto(): boolean {
+    const attr = this.getAttribute('skin');
+    if (attr === null) return true;
+    const t = attr.trim().toLowerCase();
+    return t === '' || t === 'auto';
+  }
+
+  private installSkinMedia(): void {
+    if (this.skinMedia || typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (!this.skinIsAuto()) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mq.addEventListener('change', this.onSkinMediaChange);
+    this.skinMedia = mq;
+  }
+
+  private teardownSkinMedia(): void {
+    this.skinMedia?.removeEventListener('change', this.onSkinMediaChange);
+    this.skinMedia = null;
+  }
+
+  /** Keep the OS tracker in sync when `skin` flips between explicit and auto at
+   *  runtime: install when it becomes auto, tear down when it becomes explicit. */
+  private syncSkinMedia(): void {
+    if (this.skinIsAuto()) this.installSkinMedia();
+    else this.teardownSkinMedia();
+  }
+
+  private applyAttrChanges(): void {
+    // Reset BEFORE processing so a change during apply reschedules a flush.
+    this.reinitScheduled = false;
+    if (!this.state.connected || !this.state.config) { this.dirtyAttrs.clear(); return; }
+    // Defer while the game shell is still mounting: KEEP dirtyAttrs and let
+    // completeMount flush them, so the reskin applies to real DOM and runs
+    // strictly after the mount paint (no mount-fetch vs reskin-fetch race).
+    if (!this.state.gamePresentation) return;
+    const dirty = new Set(this.dirtyAttrs);
+    this.dirtyAttrs.clear();
+    if (dirty.size === 0) return;
+    if (dirty.has('skin')) this.syncSkinMedia();
+    if (dirty.has('skin') || dirty.has('locale')) this.reskinRefetch();
+  }
+
+  /** Refetch bootstrap with the new signals, then re-theme the shell in place.
+   *  The embedded game's own theme rides the NEXT kickoff (state.gameResolved is
+   *  refreshed here); a live in-progress iframe is left untouched (D2). On any
+   *  non-`ok` result we keep the current theme (no flash to bundled). */
+  private reskinRefetch(): void {
+    const state = this.state;
+    if (!state.config) return;
+    // A pure bundled mount (no sitekey, no game, no games) has nothing for the
+    // server to resolve; there is no theme to refetch.
+    if (state.config.sitekey === null && state.config.game === null && state.config.games === null) return;
+
+    const inspection = inspectGameConfig(this);
+    if (inspection.inert || !inspection.config) return;
+    state.config = inspection.config;
+
+    this.reskinEpoch += 1;
+    const epoch = this.reskinEpoch;
+    this.reskinAbort?.abort();
+    const abort = new AbortController();
+    this.reskinAbort = abort;
+
+    // Single-attempt (snappy): a slow/failed reskin keeps the current theme
+    // rather than blocking behind the resilient retry loop.
+    void fetchBootstrap({
+      apiHost: this.apiHost,
+      sitekey: state.config.sitekey,
+      game: state.config.game ?? null,
+      games: state.config.games ?? null,
+      locale: resolveLocaleSignal(state.config.locale),
+      skin: resolveSkinSignal(state.config.skin),
+      signal: abort.signal,
+    }).then((result) => {
+      if (epoch !== this.reskinEpoch || this.state !== state || !this.state.connected || !this.state.config) return;
+      if (result.kind !== 'ok') return;
+      this.applyResolvedAxes(result.response);
+    });
+  }
+
+  private applyResolvedAxes(response: BootstrapResponse): void {
+    const shell = buildWidgetShell(response.widget?.resolved?.locale ?? null);
+    const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null);
+    // Host-level theme + direction (set AND removed).
+    this.setAttribute('data-skin-theme', skin.theme);
+    if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
+    else this.removeAttribute('dir');
+    applySkinVars(this, skin.palette);
+    // Shell (checkbox entry / inline badge / dialog) re-themes in place.
+    this.state.gamePresentation?.applySkin(skin);
+    this.state.gamePresentation?.applyLocale(shell);
+    // Refresh the resolved GAME axes so a not-yet-opened iframe (modal/fullscreen
+    // pre-open) kicks off in the new theme (D2 case a). Keep the old value if the
+    // refetch carried none.
+    this.state.gameResolved = response.game?.resolved ?? this.state.gameResolved;
   }
 }
 

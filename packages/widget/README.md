@@ -36,6 +36,20 @@ On completion the widget injects `<input name="caputchin-token">` into the enclo
 
 The game iframe is sandboxed (`allow-scripts` only, opaque origin), so no third-party game script touches the host page.
 
+## Live theming and language
+
+`skin` and `locale` are live: change either attribute on a mounted element and it re-themes or re-localizes in place, with no remount and no re-verification. An already-solved token (and the injected `caputchin-token` field) is preserved, so a visitor who has passed the check does not have to solve it again after a theme or language switch.
+
+```js
+const el = document.querySelector('caputchin-widget');
+el.setAttribute('skin', 'dark');   // recolors in place
+el.setAttribute('locale', 'ar');   // re-localizes in place, RTL-aware
+```
+
+When `skin` is `auto` (or unset) the widget follows the visitor's operating-system light/dark preference and updates automatically when it changes. An explicit `skin` value always wins.
+
+For `<caputchin-game>`, a live `skin` or `locale` change re-themes the surrounding widget shell in place. A game that is already open in its iframe keeps its current theme until it next starts.
+
 ## Full reference
 
 - [API reference](./docs/README.md): attributes, events, error codes, and types, generated from source.

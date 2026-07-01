@@ -226,6 +226,14 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     onActivate(_handler: () => void): () => void {
       return () => {};
     },
+    applySkin(newSkin: WidgetShellSkin): void {
+      // Frame border/bg are `var(--cpt-skin-*)` (recolored by the element's host
+      // var rewrite); the embedded badge strip re-skins its own SVG shield.
+      subSimple?.applySkin(newSkin);
+    },
+    applyLocale(newShell: WidgetShell): void {
+      subSimple?.applyLocale(newShell);
+    },
     getIframeSlot(): HTMLElement | null {
       return iframeSlot;
     },
@@ -256,6 +264,8 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   let dialog: HTMLDialogElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
   let subSimple: Presentation | null = null;
+  // Kept (fullscreen only) so `applyLocale` can re-label the close button.
+  let closeBtn: HTMLButtonElement | null = null;
   const activateListeners: Array<() => void> = [];
   let backdropWired = false;
   // Latched once the user makes the first activation. Subsequent activations
@@ -309,7 +319,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       if (footprintHeight === 'full') dialog.dataset.fillY = 'true';
 
       if (layout === 'fullscreen') {
-        const closeBtn = document.createElement('button');
+        closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.setAttribute('part', 'game-overlay-close');
         closeBtn.setAttribute('aria-label', shell.strings.overlayClose);
@@ -408,6 +418,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       dialog = null;
       iframeSlot = null;
       subSimple = null;
+      closeBtn = null;
       activateListeners.length = 0;
       backdropWired = false;
     },
@@ -428,6 +439,22 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         const idx = activateListeners.indexOf(handler);
         if (idx >= 0) activateListeners.splice(idx, 1);
       };
+    },
+
+    applySkin(newSkin: WidgetShellSkin): void {
+      // Dialog / backdrop / close-button colors are `var(--cpt-skin-*)`
+      // (recolored by the element's host var rewrite); the entry checkbox
+      // re-skins its own SVG shield.
+      subSimple?.applySkin(newSkin);
+    },
+
+    applyLocale(newShell: WidgetShell): void {
+      subSimple?.applyLocale(newShell);
+      if (dialog) {
+        if (newShell.direction === 'rtl') dialog.setAttribute('dir', 'rtl');
+        else dialog.removeAttribute('dir');
+      }
+      closeBtn?.setAttribute('aria-label', newShell.strings.overlayClose);
     },
 
     getIframeSlot(): HTMLElement | null {
