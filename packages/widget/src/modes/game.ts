@@ -1,4 +1,4 @@
-import type { Presentation, PresentationState } from './index.js';
+import type { Presentation, PresentationState, GeometryUpdate } from './index.js';
 import type { WidgetTrigger, WidgetWidth, WidgetHeight, WidgetSize } from '../config/shared.js';
 import type { WidgetShell } from '../locale/widget-shell.js';
 import type { WidgetShellSkin } from '../skin/widget-shell-skin.js';
@@ -234,6 +234,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     applyLocale(newShell: WidgetShell): void {
       subSimple?.applyLocale(newShell);
     },
+    // Geometry is applied by re-mounting the game element (recreating the iframe
+    // at the new footprint), not in place, so this is a no-op.
+    applyGeometry(_geometry: GeometryUpdate): void {},
     getIframeSlot(): HTMLElement | null {
       return iframeSlot;
     },
@@ -456,6 +459,9 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       }
       closeBtn?.setAttribute('aria-label', newShell.strings.overlayClose);
     },
+
+    // Geometry is applied by re-mounting the game element, not in place → no-op.
+    applyGeometry(_geometry: GeometryUpdate): void {},
 
     getIframeSlot(): HTMLElement | null {
       return iframeSlot;

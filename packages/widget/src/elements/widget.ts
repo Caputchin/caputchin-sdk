@@ -216,10 +216,10 @@ export class CaputchinWidget extends HTMLElement {
     // Fires during upgrade (before connect) for parsed-in attributes; ignore
     // until the first render is done. A same-value set is a no-op.
     if (!this.state.connected || oldValue === newValue) return;
-    // `skin` / `locale` re-resolve via a bootstrap refetch and apply in place,
-    // preserving an already-solved token (see reskinRefetch). Everything else
-    // still needs a remount to take effect.
-    if (name === 'skin' || name === 'locale') {
+    // Reactive in place, preserving an already-solved token: `skin` / `locale`
+    // (via a bootstrap refetch) and `width` / `height` / `size` (a client-only
+    // resize, no refetch). Everything else still needs a remount.
+    if (name === 'skin' || name === 'locale' || name === 'width' || name === 'height' || name === 'size') {
       this.markAttrDirty(name);
       return;
     }
@@ -277,6 +277,23 @@ export class CaputchinWidget extends HTMLElement {
     // Keep the OS tracker in sync if the skin mode flipped explicit<->auto.
     if (dirty.has('skin')) this.syncSkinMedia();
     if (dirty.has('skin') || dirty.has('locale')) this.reskinRefetch();
+    if (dirty.has('width') || dirty.has('height') || dirty.has('size')) this.applyGeometryChange();
+  }
+
+  /** Live-resize the presentation in place from the current attributes. No
+   *  refetch (geometry does not feed bootstrap) and no session touch (a solved
+   *  token + verified visual survive). */
+  private applyGeometryChange(): void {
+    const state = this.state;
+    if (!state.config) return;
+    const inspection = inspectWidgetConfig(this);
+    if (inspection.inert || !inspection.config) return;
+    state.config = inspection.config;
+    state.presentation?.applyGeometry({
+      width: state.config.width,
+      height: state.config.height,
+      size: state.config.size,
+    });
   }
 
   /** Refetch bootstrap with the new signals, then apply the resolved skin/locale

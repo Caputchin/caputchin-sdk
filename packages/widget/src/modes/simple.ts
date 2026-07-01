@@ -1,4 +1,4 @@
-import type { Presentation, PresentationState, PresentationFactoryInput } from './index.js';
+import type { Presentation, PresentationState, PresentationFactoryInput, GeometryUpdate } from './index.js';
 import type { ShellStrings, WidgetShell } from '../locale/widget-shell.js';
 import type { ShellPalette, WidgetShellSkin } from '../skin/widget-shell-skin.js';
 
@@ -18,16 +18,17 @@ import type { ShellPalette, WidgetShellSkin } from '../skin/widget-shell-skin.js
  * never reflow the host page.
  */
 export function createSimplePresentation(input: PresentationFactoryInput): Presentation {
-  const { host, root: renderRoot, trigger, width, height, size, shellConfig } = input;
+  const { host, root: renderRoot, trigger, shellConfig } = input;
   // `shell` / `skin` are mutable so `applyLocale` / `applySkin` can swap the
-  // resolved presets in place (no rebuild); every consumer reads the live vars.
+  // resolved presets in place (no rebuild); `width` / `height` / `size` are
+  // mutable so `applyGeometry` can live-resize the host + root box. Every
+  // consumer reads the live vars.
   let shell = input.shell;
   let skin = input.skin;
+  let width = input.width;
+  let height = input.height;
+  let size = input.size;
   const isInteractive = trigger === 'click';
-  const isFullWidth = width === 'full';
-  const isCompact = size === 'compact';
-  const pxWidth = typeof width === 'number' ? width : null;
-  const pxHeight = typeof height === 'number' ? height : null;
   // Read from the LIVE `shell` so a post-mount `applyLocale` swap re-labels
   // without rebuilding the label lookup.
   const labelFor = (state: PresentationState): string => ({
@@ -116,6 +117,39 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
     return container;
   }
 
+  // Apply the current width / height / size to the host + root box. Re-runnable:
+  // mount calls it once, applyGeometry re-calls it after a live resize. Fully
+  // resets each axis first so a full<->pixel<->auto transition can't leave a
+  // stale inline style.
+  function applySizing(): void {
+    if (!root) return;
+    const full = width === 'full';
+    const pxW = typeof width === 'number' ? width : null;
+    const pxH = typeof height === 'number' ? height : null;
+    if (size === 'compact') root.setAttribute('data-size', 'compact');
+    else root.removeAttribute('data-size');
+    root.style.boxSizing = 'border-box';
+    root.style.width = full ? '100%' : 'fit-content';
+    root.style.minWidth = full ? '' : 'min(18rem,100%)';
+    root.style.height = '';
+    host.style.display = '';
+    host.style.width = '';
+    host.style.height = '';
+    if (full) {
+      host.style.display = 'block';
+      host.style.width = '100%';
+    } else if (pxW !== null) {
+      host.style.display = 'block';
+      host.style.width = `${pxW}px`;
+      root.style.width = '100%';
+    }
+    if (pxH !== null) {
+      host.style.display ||= 'block';
+      host.style.height = `${pxH}px`;
+      root.style.height = '100%';
+    }
+  }
+
   return {
     mount(): void {
       if (root) return;
@@ -123,9 +157,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
 
       root = document.createElement('div');
       root.setAttribute('part', 'simple-checkbox');
-      if (isCompact) root.setAttribute('data-size', 'compact');
       if (shell.direction === 'rtl') root.setAttribute('dir', 'rtl');
-      const rootStyles = [
+      // Static styles only; width / min-width / density come from applySizing so
+      // a live applyGeometry can re-apply them without rebuilding the element.
+      root.style.cssText = [
         'display:flex',
         'align-items:center',
         'padding:0.5rem 0.75rem',
@@ -136,13 +171,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
         'color:var(--cpt-skin-text_primary)',
         'user-select:none',
         'box-sizing:border-box',
-        isFullWidth ? 'width:100%' : 'width:fit-content',
         'max-width:100%',
         'flex-wrap:wrap',
         'gap:0.75rem',
-      ];
-      if (!isFullWidth) rootStyles.push('min-width:min(18rem,100%)');
-      root.style.cssText = rootStyles.join(';');
+      ].join(';');
 
       indicator = createShieldIndicator({ interactive: isInteractive, onPointer, onKey, strings: shell.strings, palette: skin.palette });
 
@@ -162,21 +194,7 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       brand.style.marginInlineStart = 'auto';
       root.appendChild(brand);
 
-      if (isFullWidth) {
-        host.style.display = 'block';
-        host.style.width = '100%';
-      } else if (pxWidth !== null) {
-        host.style.display = 'block';
-        host.style.width = `${pxWidth}px`;
-        root.style.boxSizing = 'border-box';
-        root.style.width = '100%';
-      }
-      if (pxHeight !== null) {
-        host.style.display ||= 'block';
-        host.style.height = `${pxHeight}px`;
-        root.style.boxSizing = 'border-box';
-        root.style.height = '100%';
-      }
+      applySizing();
       renderRoot.appendChild(root);
 
       this.setState('idle');
@@ -186,11 +204,10 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       if (!root) return;
       indicator?.dispose();
       indicator = null;
-      if (isFullWidth || pxWidth !== null || pxHeight !== null) {
-        host.style.display = '';
-        host.style.width = '';
-        host.style.height = '';
-      }
+      // Unconditionally clear any host box we reserved (no-op when unset).
+      host.style.display = '';
+      host.style.width = '';
+      host.style.height = '';
       root.remove();
       root = null;
       label = null;
@@ -233,6 +250,13 @@ export function createSimplePresentation(input: PresentationFactoryInput): Prese
       // Set OR remove: an rtl→ltr switch must drop a stale dir attribute.
       if (newShell.direction === 'rtl') root.setAttribute('dir', 'rtl');
       else root.removeAttribute('dir');
+    },
+
+    applyGeometry(geometry: GeometryUpdate): void {
+      width = geometry.width;
+      height = geometry.height;
+      if (geometry.size !== undefined) size = geometry.size;
+      applySizing();
     },
   };
 }

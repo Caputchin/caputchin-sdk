@@ -178,7 +178,8 @@ describe('<caputchin-widget> reactive batching + non-reactive attrs', () => {
     await settle();
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    el.setAttribute('width', '500');
+    // `trigger` is observed but non-reactive → still warns.
+    el.setAttribute('trigger', 'auto');
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('ignored'));
 
     warn.mockClear();
@@ -286,6 +287,119 @@ describe('<caputchin-widget> skin="auto" OS tracking', () => {
     listeners.forEach((cb) => cb());
     await settle();
     expect(el.getAttribute('data-skin-theme')).toBe('dark');
+    el.remove();
+  });
+});
+
+describe('<caputchin-widget> geometry reactivity (in place)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('resizes in place on width/size change: same node, no refetch, no re-challenge', async () => {
+    const fn = themedFetch();
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'light' });
+    document.body.appendChild(el);
+    await settle();
+    const rootBefore = el.shadowRoot!.querySelector('[part="simple-checkbox"]');
+    const before = bootstrapCalls(fn);
+
+    el.setAttribute('width', '500');
+    el.setAttribute('size', 'compact');
+    await settle();
+
+    // Same node (in place, not rebuilt) → any solved state survives.
+    expect(el.shadowRoot!.querySelector('[part="simple-checkbox"]')).toBe(rootBefore);
+    expect(el.style.width).toBe('500px');
+    expect(rootBefore!.getAttribute('data-size')).toBe('compact');
+    // Geometry does not feed bootstrap → no refetch, no /verify/start.
+    expect(bootstrapCalls(fn)).toBe(before);
+    expect(fn.mock.calls.some((c) => String(c[0]).includes('/verify/start'))).toBe(false);
+    el.remove();
+  });
+});
+
+describe('<caputchin-game> geometry reactivity (re-mount)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('re-mounts the game (recreates the frame) on a geometry change', async () => {
+    themedFetch();
+    const el = getGame({
+      sitekey: 'cpt_pub_x',
+      'game-src': 'https://example.com/g.js',
+      'no-verify': '',
+      layout: 'inline',
+      skin: 'light',
+      width: '300',
+    });
+    document.body.appendChild(el);
+    await settle();
+    const frameBefore = el.shadowRoot!.querySelector('[part="game-frame"]');
+    expect(frameBefore).not.toBeNull();
+
+    el.setAttribute('width', '500');
+    await settle();
+
+    const frameAfter = el.shadowRoot!.querySelector('[part="game-frame"]');
+    expect(frameAfter).not.toBeNull();
+    // Re-mounted at the new size → a fresh frame node, not the old one.
+    expect(frameAfter).not.toBe(frameBefore);
+    // Theme is preserved across the re-mount (rebuilt at the remembered axes).
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    el.remove();
+  });
+
+  it('preserves the server-picked gated gameId across a geometry re-mount (F1 regression)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      widget: { resolved: { locale: { _lang: 'en', _direction: 'ltr' }, skin: { _theme: 'light', primary: '#2F6640' }, config: null } },
+      game: {
+        url: 'https://games.test.com/leaf.js', integrity: 'sha384-x',
+        runUrl: null, runIntegrity: null, runModules: null, preferred: null,
+        resolved: { locale: null, skin: null, config: null },
+      },
+      requiresGame: true,
+      gameId: 'acme/games/leaf',
+      ticket: 'enc.sig',
+    }), { status: 200 })));
+    // Gated key with NO `game` attribute: the SERVER picks the id.
+    const el = getGame({ sitekey: 'cpt_pub_x', layout: 'inline', width: '300' });
+    document.body.appendChild(el);
+    await settle();
+    type GameState = { state: { config: { game: string | null }; requiresGame?: boolean } };
+    expect((el as unknown as GameState).state.requiresGame).toBe(true);
+    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf'); // stashed at mount
+
+    el.setAttribute('width', '500'); // geometry change → re-mount
+    await settle();
+
+    // The re-mount must KEEP the server-picked id (not drop to null / re-pick
+    // from `games`), or the gated round would fail closed.
+    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
+    el.remove();
+  });
+
+  it('preserves the gated gameId across a live skin reskin (gated overlay opens later)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      widget: { resolved: { locale: { _lang: 'en', _direction: 'ltr' }, skin: { _theme: 'light', primary: '#2F6640' }, config: null } },
+      game: {
+        url: 'https://games.test.com/leaf.js', integrity: 'sha384-x',
+        runUrl: null, runIntegrity: null, runModules: null, preferred: null,
+        resolved: { locale: null, skin: null, config: null },
+      },
+      requiresGame: true,
+      gameId: 'acme/games/leaf',
+      ticket: 'enc.sig',
+    }), { status: 200 })));
+    // Gated modal: the iframe loads on click, so a skin change BEFORE opening must
+    // not drop the id (else the later open goes gameless → fails closed).
+    const el = getGame({ sitekey: 'cpt_pub_x', layout: 'modal' });
+    document.body.appendChild(el);
+    await settle();
+    type GameState = { state: { config: { game: string | null } } };
+    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
+
+    el.setAttribute('skin', 'dark'); // live reskin re-inspects config
+    await settle();
+
+    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
     el.remove();
   });
 });

@@ -44,6 +44,9 @@ export class CaputchinGame extends HTMLElement {
 
   /** API host captured at mount so a live reskin can refetch bootstrap. */
   private apiHost = '';
+  /** Last server-resolved WIDGET axes (shell skin/locale), kept so a geometry
+   *  re-mount rebuilds the shell at the CURRENT theme instead of bundled. */
+  private lastWidgetResolved: ResolvedAxes | null = null;
   /** Observed attributes changed since the last microtask flush; coalesced so a
    *  `skin`+`locale` pair set in one tick triggers ONE refetch. */
   private readonly dirtyAttrs = new Set<string>();
@@ -237,7 +240,9 @@ export class CaputchinGame extends HTMLElement {
 
     // Shell around the game is built from the server-resolved WIDGET axes. The
     // GAME's own resolved axes (state.gameResolved) ride to the iframe kickoff
-    // separately (install-game-frame).
+    // separately (install-game-frame). Remember them so a geometry re-mount
+    // rebuilds the shell at the current theme.
+    this.lastWidgetResolved = resolved;
     const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
@@ -451,11 +456,15 @@ export class CaputchinGame extends HTMLElement {
     // Fires during upgrade (before connect) for parsed-in attributes; ignore
     // until the first render is done. A same-value set is a no-op.
     if (!this.state.connected || oldValue === newValue) return;
-    // `skin` / `locale` re-resolve via a bootstrap refetch and re-theme the
-    // SHELL in place, preserving an already-solved token. A live in-progress
-    // game keeps its old theme until it next kicks off (D2). Everything else
-    // still needs a remount.
-    if (name === 'skin' || name === 'locale') {
+    // Reactive: `skin` / `locale` re-resolve via a bootstrap refetch and re-theme
+    // the SHELL in place (preserving a solved token); geometry (`width` /
+    // `height` / `overlay-width` / `overlay-height`) re-mounts the game at the new
+    // size (recreating the iframe, so the game restarts). Everything else still
+    // needs a manual remount.
+    if (
+      name === 'skin' || name === 'locale' ||
+      name === 'width' || name === 'height' || name === 'overlay-width' || name === 'overlay-height'
+    ) {
       this.markAttrDirty(name);
       return;
     }
@@ -512,6 +521,62 @@ export class CaputchinGame extends HTMLElement {
     if (dirty.size === 0) return;
     if (dirty.has('skin')) this.syncSkinMedia();
     if (dirty.has('skin') || dirty.has('locale')) this.reskinRefetch();
+    if (dirty.has('width') || dirty.has('height') || dirty.has('overlay-width') || dirty.has('overlay-height')) {
+      this.remountGame();
+    }
+  }
+
+  /** Re-inspect the game config from the current attributes, then re-pin the
+   *  server-picked gated gameId. A gated key carries NO `game` attribute (the
+   *  server picks it at bootstrap and stashes it in gameBundle), so an
+   *  attribute-only re-inspection would drop it; the game-load path reads
+   *  `config.game` (`resolveGameId`), so a later kickoff (an overlay opened after
+   *  a live reskin, or a geometry re-mount) would otherwise go gameless / re-pick
+   *  from `games` and the gated round would fail closed. Returns null when the
+   *  re-inspected config is inert. */
+  private reinspectGameConfig(): GameConfig | null {
+    const inspection = inspectGameConfig(this);
+    if (inspection.inert || !inspection.config) return null;
+    const cfg = inspection.config;
+    if (this.state.requiresGame && this.state.gameBundle?.gameId != null) {
+      cfg.game = this.state.gameBundle.gameId;
+    }
+    return cfg;
+  }
+
+  /** Live-resize the game by re-mounting it at the new geometry: tear down the
+   *  shell + iframe + cap session and re-run the mount, which recomputes sizing
+   *  from the new attributes and recreates the iframe at the new footprint. The
+   *  game restarts (accepted for a cosmetic resize). A CAP-VERIFIED game
+   *  (`lockedToken` set, i.e. the cap+game gate released after a solve) is left
+   *  alone: re-mounting would re-challenge a solved verification. A no-verify /
+   *  game-only / manual mount has no token to protect, so it restarts like any
+   *  resize (and may re-emit `pass` on replay). No refetch (geometry does not
+   *  feed bootstrap); the shell rebuilds at the remembered theme. */
+  private remountGame(): void {
+    const state = this.state;
+    if (!state.config || !state.gamePresentation) return;
+    if (state.lockedToken !== null) return; // cap-verified → keep the solved game as-is
+    const cfg = this.reinspectGameConfig();
+    if (!cfg) return;
+
+    // Tear down the visual + iframe + cap session for a fresh round.
+    state.trigger?.deactivate();
+    state.gamePresentation?.unmount();
+    state.iframeHost?.dispose();
+    state.capClient?.dispose();
+    state.gamePresentation = null;
+    state.iframeHost = null;
+    state.trigger = null;
+    state.triggerCtx = null;
+    state.capClient = null;
+    state.widgetId = null;
+    state.gameStartedEmitted = false;
+    state.gameErrored = false;
+    state.firstPassFired = false;
+    state.config = cfg;
+
+    this.completeMount(this.apiHost, this.lastWidgetResolved);
   }
 
   /** Refetch bootstrap with the new signals, then re-theme the shell in place.
@@ -525,9 +590,9 @@ export class CaputchinGame extends HTMLElement {
     // server to resolve; there is no theme to refetch.
     if (state.config.sitekey === null && state.config.game === null && state.config.games === null) return;
 
-    const inspection = inspectGameConfig(this);
-    if (inspection.inert || !inspection.config) return;
-    state.config = inspection.config;
+    const cfg = this.reinspectGameConfig();
+    if (!cfg) return;
+    state.config = cfg;
 
     this.reskinEpoch += 1;
     const epoch = this.reskinEpoch;
@@ -553,6 +618,7 @@ export class CaputchinGame extends HTMLElement {
   }
 
   private applyResolvedAxes(response: BootstrapResponse): void {
+    this.lastWidgetResolved = response.widget?.resolved ?? this.lastWidgetResolved;
     const shell = buildWidgetShell(response.widget?.resolved?.locale ?? null);
     const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null);
     // Host-level theme + direction (set AND removed).

@@ -36,19 +36,23 @@ On completion the widget injects `<input name="caputchin-token">` into the enclo
 
 The game iframe is sandboxed (`allow-scripts` only, opaque origin), so no third-party game script touches the host page.
 
-## Live theming and language
+## Live attributes
 
-`skin` and `locale` are live: change either attribute on a mounted element and it re-themes or re-localizes in place, with no remount and no re-verification. An already-solved token (and the injected `caputchin-token` field) is preserved, so a visitor who has passed the check does not have to solve it again after a theme or language switch.
+Several attributes update in place on a mounted element, with no remount, preserving an already-solved token (and the injected `caputchin-token` field), so a visitor who has passed the check does not have to solve it again after the change:
+
+- `skin` and `locale` re-theme and re-localize in place (RTL-aware). The new preset is resolved from the server, and a solved token is preserved.
+- `width`, `height`, and `size` on `<caputchin-widget>`, and `width`, `height`, `overlay-width`, and `overlay-height` on `<caputchin-game>`, resize live.
 
 ```js
 const el = document.querySelector('caputchin-widget');
 el.setAttribute('skin', 'dark');   // recolors in place
 el.setAttribute('locale', 'ar');   // re-localizes in place, RTL-aware
+el.setAttribute('width', '360');   // resizes in place
 ```
 
 When `skin` is `auto` (or unset) the widget follows the visitor's operating-system light/dark preference and updates automatically when it changes. An explicit `skin` value always wins.
 
-For `<caputchin-game>`, a live `skin` or `locale` change re-themes the surrounding widget shell in place. A game that is already open in its iframe keeps its current theme until it next starts.
+For `<caputchin-game>`, a live `skin` or `locale` change re-themes the surrounding widget shell in place; a game already running in its iframe keeps its current theme until it next starts. A live geometry change re-mounts the game at the new size, which restarts it, except that a finished (already-verified) game keeps its size and is not restarted. Attributes other than the ones listed above are read once at mount; change them by removing and re-adding the element.
 
 ## Full reference
 

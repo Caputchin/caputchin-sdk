@@ -35,6 +35,21 @@ export interface Presentation {
    * No-op before mount.
    */
   applyLocale(shell: WidgetShell): void;
+  /**
+   * Live-apply new sizing (width / height / size) to the ALREADY-mounted DOM in
+   * place, without a rebuild, so the verification session is untouched. Used by
+   * the cap widget (which has no iframe, so an in-place resize preserves a solved
+   * token); the game element re-mounts for geometry instead, so its presentations
+   * no-op this. No-op before mount.
+   */
+  applyGeometry(geometry: GeometryUpdate): void;
+}
+
+/** Sizing inputs for a live in-place resize (see `Presentation.applyGeometry`). */
+export interface GeometryUpdate {
+  width: WidgetWidth;
+  height: WidgetHeight;
+  size?: WidgetSize;
 }
 
 export interface PresentationFactoryInput {
