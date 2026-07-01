@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.1.2...mcp-v2.2.0) (2026-07-01)
+
+
+### Features
+
+* **widget:** make form-submit trigger clickable while keeping submit gating ([258b303](https://github.com/Caputchin/caputchin-sdk/commit/258b30352f7254c49f0a27b141d4d815da86c137))
+
 ## [2.1.2](https://github.com/Caputchin/caputchin-sdk/compare/mcp-v2.1.1...mcp-v2.1.2) (2026-06-29)
 
 
