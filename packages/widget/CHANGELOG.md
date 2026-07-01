@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.5.0...widget-v3.6.0) (2026-07-01)
+
+
+### Features
+
+* **widget:** make form-submit trigger clickable while keeping submit gating ([258b303](https://github.com/Caputchin/caputchin-sdk/commit/258b30352f7254c49f0a27b141d4d815da86c137))
+
 ## [3.5.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.4.1...widget-v3.5.0) (2026-07-01)
 
 
