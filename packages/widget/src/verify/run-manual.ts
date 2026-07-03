@@ -44,7 +44,7 @@ export function runManual(
   // the customer-hosted game must run under the issued seed for its trace to
   // replay - exposing the seed to the manual game is a follow-up (the iframe
   // path is the supported replay path at MVP).
-  const { client, getWrappedToken } = setupCapSession(state, apiHost, cfg.sitekey!, resolveGameId(cfg));
+  const { client, getWrappedToken, isCleared } = setupCapSession(state, apiHost, cfg.sitekey!, resolveGameId(cfg));
   dispatchStart();
-  void awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null);
+  void awaitCapAndEmitPass(el, state, client, getWrappedToken, state.gamePresentation ?? null, isCleared);
 }

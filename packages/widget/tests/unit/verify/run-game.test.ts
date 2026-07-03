@@ -23,6 +23,23 @@ vi.mock('../../../src/iframe/host.js', () => ({
   }),
 }));
 
+// Stubbed cap session for the reuse-cleared describe block below: real
+// setupCapSession pulls in the whole cap.js + custom-fetch machinery, which
+// is exercised elsewhere (cap-session.test.ts, custom-fetch.test.ts). Here
+// the only thing under test is run-game.ts's OWN wiring - does it skip the
+// iframe entirely when the session reports cleared - so the cap session
+// itself is faked with a controllable isCleared().
+const capHoisted = vi.hoisted(() => ({ cleared: false, awaitCapAndEmitPass: vi.fn(async () => {}) }));
+vi.mock('../../../src/verify/cap-session.js', () => ({
+  setupCapSession: vi.fn(() => ({
+    client: { releaseGate: vi.fn(), abortGate: vi.fn() },
+    getWrappedToken: () => null,
+    awaitSeed: async () => null,
+    isCleared: () => capHoisted.cleared,
+  })),
+  awaitCapAndEmitPass: capHoisted.awaitCapAndEmitPass,
+}));
+
 // resolveGameUrl is the seam where the game-load path either reuses the
 // mount-time bootstrap's bundle (single round trip) or falls back to a
 // dedicated /widget/bootstrap resolve. These tests pin: reuse only when
@@ -197,5 +214,57 @@ describe('runGame - no-verify path shows the verifying state', () => {
     const setState = state.gamePresentation!.setState as ReturnType<typeof vi.fn>;
     expect(setState).toHaveBeenCalledWith('error');
     expect(setState).not.toHaveBeenCalledWith('verifying');
+  });
+});
+
+describe('runGame - reuse short-circuit (cleared session)', () => {
+  // A cleared session means the platform already minted a token off a
+  // stored clearance - no game replayed. run-game.ts must find that out
+  // BEFORE constructing the iframe (checked via the mocked cap-session's
+  // isCleared, settled at the same point the seed gate would settle) so no
+  // game bundle ever loads for a visitor who's already verified.
+  const PREFETCHED = { gameId: 'o/r', url: 'https://cdn.test/x.js', integrity: 'sha384-x' };
+
+  function verifyState(over: Partial<WidgetState<GameConfig>> = {}): WidgetState<GameConfig> {
+    return {
+      config: cfg({ game: 'o/r', sitekey: 'k' }), // shouldVerify → true
+      gamePresentation: { setState: vi.fn(), getIframeSlot: () => document.createElement('div') },
+      gameBundle: PREFETCHED,
+      gameResolved: null,
+      gamePreferred: null,
+      gameStartedEmitted: false,
+      gameErrored: false,
+      ...over,
+    } as unknown as WidgetState<GameConfig>;
+  }
+
+  afterEach(() => { capHoisted.cleared = false; capHoisted.awaitCapAndEmitPass.mockClear(); });
+
+  it('cleared: never constructs the iframe, dispatches start, and awaits the cap-session completion', async () => {
+    capHoisted.cleared = true;
+    const { IframeHost } = await import('../../../src/iframe/host.js');
+    vi.mocked(IframeHost).mockClear();
+
+    const host = el();
+    const starts: unknown[] = [];
+    host.addEventListener('start', (e) => starts.push((e as CustomEvent).detail));
+    const state = verifyState();
+
+    await runGame(host, state, 'https://api');
+
+    expect(IframeHost).not.toHaveBeenCalled();
+    expect(starts).toHaveLength(1);
+    expect(capHoisted.awaitCapAndEmitPass).toHaveBeenCalledTimes(1);
+  });
+
+  it('not cleared: constructs the iframe as usual', async () => {
+    capHoisted.cleared = false;
+    const { IframeHost } = await import('../../../src/iframe/host.js');
+    vi.mocked(IframeHost).mockClear();
+
+    const state = verifyState();
+    await runGame(el(), state, 'https://api');
+
+    expect(IframeHost).toHaveBeenCalledTimes(1);
   });
 });

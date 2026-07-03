@@ -111,6 +111,45 @@ describe('createCapClient', () => {
     expect(originalCalls).toEqual(['still-here']);
   });
 
+  it('overrides cap.widget.error so a reuse-cleared solve() failure is suppressed (real errors still log)', async () => {
+    // widgetEl.error stands in for cap.js's real error() here (the file mocks
+    // the whole Cap constructor, so there's no real console.error to spy on
+    // directly): in production error() does console.error("[cap]", message)
+    // THEN dispatches an event, so asserting the override does/doesn't call
+    // through to it is the faithful proxy for "did/didn't console.error".
+    //
+    // custom-fetch.ts's cleared branch hands cap.js a synthetic response it
+    // can't solve, on purpose - solve() failing there is a SUCCESS path (the
+    // token already arrived via onWrappedToken), not a real error, so the
+    // console noise it would otherwise produce must be suppressed. A solve
+    // failure BEFORE that signal fires is a genuine error and must still log.
+    const { Cap } = await import('@cap.js/widget');
+    const capMock = Cap as ReturnType<typeof vi.fn>;
+    const widgetEl = document.createElement('cap-widget') as HTMLElement & { error?: (m: string) => void };
+    const originalCalls: string[] = [];
+    widgetEl.error = (msg: string) => { originalCalls.push(msg); };
+    document.documentElement.appendChild(widgetEl);
+    capMock.mockImplementationOnce(() => ({
+      solve: vi.fn(async () => ({ success: true })),
+      reset: vi.fn(),
+      widget: widgetEl,
+      token: null,
+    }));
+
+    const ctx = { platform: {}, onWrappedToken: vi.fn(), onCleared: vi.fn() };
+    createCapClient(nextId(), 'https://api.test.com', ctx);
+
+    // Not cleared yet: a real error still logs.
+    (widgetEl.error as (m: string) => void)('a-real-error');
+    expect(originalCalls).toEqual(['a-real-error']);
+
+    // custom-fetch.ts fires ctx.onCleared() from the challenge branch once
+    // /verify/start answers cleared; createCapClient wraps it in place.
+    ctx.onCleared();
+    (widgetEl.error as (m: string) => void)('reuse-cleared');
+    expect(originalCalls).toEqual(['a-real-error']);
+  });
+
   it('dispose is safe when the cap-widget is already detached (parentNode null)', async () => {
     // Defense-in-depth: cap.reset() called elsewhere may have already removed
     // the widget. The optional-chain on parentNode keeps dispose() from

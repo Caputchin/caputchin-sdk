@@ -198,3 +198,106 @@ describe('CAP_CUSTOM_FETCH - seed gate', () => {
     await expect(awaitSeed('cpt_never_registered')).resolves.toBeNull();
   });
 });
+
+describe('CAP_CUSTOM_FETCH - reuse clearance', () => {
+  it('challenge response with platform.cleared stashes the token, fires onCleared, and hands cap.js a clean synthetic error (no game/iframe fields to misparse)', async () => {
+    const id = 'cpt_cleared';
+    const onWrappedToken = vi.fn();
+    const onCleared = vi.fn();
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken, onCleared });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response(
+        '{"platform":{"sessionId":"s1","cleared":true,"wrappedToken":"reused-xyz"}}',
+        { headers: { 'content-type': 'application/json' } },
+      )
+    );
+
+    const res = await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+
+    expect(onWrappedToken).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'reused-xyz', score: null, durationMs: null })
+    );
+    expect(onCleared).toHaveBeenCalledOnce();
+    // The seed gate settles null - a cleared session never plays a game.
+    await expect(awaitSeed(id)).resolves.toBeNull();
+    // cap.js gets a synthetic, deliberately-shaped error response instead of
+    // the raw platform body (which has no challenge/token for it to parse).
+    const body = await res.clone().json();
+    expect(body).toEqual({ error: 'reuse-cleared' });
+
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('a challenge response without platform.cleared does not fire onCleared', async () => {
+    const id = 'cpt_not_cleared';
+    const onCleared = vi.fn();
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: () => {}, onCleared });
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('{"platform":{"sessionId":"s1","seed":[1,2,3,4]}}', { headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/challenge`, { method: 'POST', body: '{}' });
+    expect(onCleared).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('redeem response with platform.clearance + persist writes a first-party cookie', async () => {
+    const id = 'cpt_redeem_persist';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: vi.fn(), onCleared: vi.fn() });
+    armRedeemGate(id);
+    releaseRedeemGate(id, {});
+
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response(
+        '{"platform":{"wrappedToken":"w1","clearance":"grant-persist","persist":true,"reuseWindowMs":120000}}',
+        { headers: { 'content-type': 'application/json' } },
+      )
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/redeem`, { method: 'POST', body: '{}' });
+    // Value-specific check (not a blanket "__cptr= is present") so it can't
+    // be spoofed by a leftover empty pair from another test in this file -
+    // happy-dom doesn't honor Max-Age=0 as real cookie deletion.
+    expect(document.cookie).toContain('__cptr=grant-persist');
+
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('redeem response with platform.clearance but no persist does NOT write a cookie', async () => {
+    const id = 'cpt_redeem_nopersist';
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken: vi.fn(), onCleared: vi.fn() });
+    armRedeemGate(id);
+    releaseRedeemGate(id, {});
+
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response(
+        '{"platform":{"wrappedToken":"w1","clearance":"grant-nopersist"}}',
+        { headers: { 'content-type': 'application/json' } },
+      )
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/redeem`, { method: 'POST', body: '{}' });
+    // This exact value never went to the cookie jar (it went to memory).
+    expect(document.cookie).not.toContain('__cptr=grant-nopersist');
+
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+
+  it('redeem response with no platform.clearance does not throw and still delivers the wrapped token', async () => {
+    const id = 'cpt_redeem_noclearance';
+    const onWrappedToken = vi.fn();
+    registerSession(id, { platform: { sitekey: 'k' }, onWrappedToken, onCleared: vi.fn() });
+    armRedeemGate(id);
+    releaseRedeemGate(id, {});
+
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue(
+      new Response('{"platform":{"wrappedToken":"w1"}}', { headers: { 'content-type': 'application/json' } })
+    );
+    await window.CAP_CUSTOM_FETCH!(`https://api.test.com/__cpt/${id}/redeem`, { method: 'POST', body: '{}' });
+    expect(onWrappedToken).toHaveBeenCalledWith(expect.objectContaining({ token: 'w1' }));
+
+    fetchSpy.mockRestore();
+    unregisterSession(id);
+  });
+});

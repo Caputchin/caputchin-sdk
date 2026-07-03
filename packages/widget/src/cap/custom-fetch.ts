@@ -1,9 +1,16 @@
 import type { Seed } from '@caputchin/game-sdk';
 import { assembleWrappedToken, type WrappedToken } from '../token.js';
+import { writeClearance } from '../clearance-store.js';
 
 export interface SessionContext {
   platform: Record<string, unknown>;
   onWrappedToken: (token: WrappedToken) => void;
+  /** Fired when /verify/start answers with a reuse short-circuit (the
+   *  platform minted a token straight off a stored clearance - no Cap
+   *  challenge ran). Set alongside onWrappedToken so the runner's solve
+   *  catch branch (cap.js is about to fail fast on the synthetic response
+   *  below) reaches solved instead of surfacing an error. */
+  onCleared: () => void;
 }
 
 // Shared gate timeout. Both the redeem gate and the seed gate use it as a
@@ -198,10 +205,26 @@ export function installCustomFetch(): void {
       if (startResponse.ok) {
         try {
           const data = await startResponse.clone().json() as {
-            platform?: { sessionId?: unknown; seed?: unknown };
+            platform?: { sessionId?: unknown; seed?: unknown; cleared?: unknown; wrappedToken?: unknown };
           };
           if (typeof data?.platform?.sessionId === 'string') {
             sessionIds.set(widgetId, data.platform.sessionId);
+          }
+          if (data?.platform?.cleared === true && typeof data.platform.wrappedToken === 'string') {
+            // Reuse short-circuit: the stored clearance was still valid, so
+            // the platform minted a fresh token off it directly - there is
+            // no Cap challenge for cap.js to solve. Stash the token + flip
+            // the cleared flag now, then hand cap.js a clean synthetic error
+            // so its solve() fails fast instead of crashing on a missing
+            // challenge shape or firing a stray /verify/pass redeem. No
+            // game, no iframe, no PoW - this session never needed a seed.
+            ctx?.onWrappedToken(assembleWrappedToken({ token: data.platform.wrappedToken }));
+            ctx?.onCleared();
+            settleSeedGate(widgetId, null);
+            return new Response(JSON.stringify({ error: 'reuse-cleared' }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            });
           }
           const seed = data?.platform?.seed;
           const validSeed =
@@ -257,13 +280,24 @@ export function installCustomFetch(): void {
         // own redeem token spread from the cap response. Reading `token` here
         // injects an unverifiable value (unpack-failed downstream). Contract:
         // GameCompleteRedeemed in @caputchin/api-schemas (verify/pass route).
-        const data = await response.clone().json() as { platform?: { wrappedToken?: unknown } };
+        const data = await response.clone().json() as {
+          platform?: { wrappedToken?: unknown; clearance?: unknown; persist?: unknown; reuseWindowMs?: unknown };
+        };
         const wrapped = data?.platform?.wrappedToken;
         if (typeof wrapped === 'string') {
           // The widget surfaces pass/fail only: the authoritative score/durationMs
           // are the server replay's, read by the customer's backend at /siteverify
           // - not relayed through the client pass event.
           ctx.onWrappedToken(assembleWrappedToken({ token: wrapped }));
+        }
+        const clearance = data?.platform?.clearance;
+        if (typeof clearance === 'string') {
+          // Fresh solve granted a reuse clearance (site opted in). persist
+          // picks cookie vs in-memory; reuseWindowMs sizes the cookie TTL
+          // (writeClearance falls back to a default when it's absent).
+          const persist = data?.platform?.persist === true;
+          const reuseWindowMs = typeof data?.platform?.reuseWindowMs === 'number' ? data.platform.reuseWindowMs : undefined;
+          writeClearance(clearance, persist, reuseWindowMs);
         }
       } catch {
         // Body parse failure; token will be absent; element.ts fires verification-failed.

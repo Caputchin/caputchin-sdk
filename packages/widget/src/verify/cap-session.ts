@@ -1,9 +1,10 @@
 import { createCapClient, type CapClient } from '../cap/client.js';
-import { awaitSeed, resolveSeedGate } from '../cap/custom-fetch.js';
+import { awaitSeed, resolveSeedGate, type SessionContext } from '../cap/custom-fetch.js';
 import { fireError } from '../errors.js';
 import { emitPass } from './events.js';
 import { injectTokenIntoEnclosingForm } from './form.js';
 import { makeWidgetId } from './id.js';
+import { readClearance } from '../clearance-store.js';
 import type { WidgetState } from './state.js';
 import type { WrappedToken } from '../token.js';
 import type { Seed } from '@caputchin/game-sdk';
@@ -18,7 +19,9 @@ import type { Seed } from '@caputchin/game-sdk';
  *   2. `awaitCapAndEmitPass`; wait for cap.solve; on success inject the
  *      token into the enclosing form, set verified state, lock the token,
  *      and emit the pass event. On failure / aborted gate, fire the
- *      appropriate error and set error state.
+ *      appropriate error and set error state - UNLESS the platform short-
+ *      circuited on a stored clearance (no game replayed), in which case it
+ *      reaches solved instead (see the cleared branch below).
  *
  * Runners differ on how the gate gets released (immediately vs via iframe
  * postMessage vs via customer pass() method); that's the "strategy"
@@ -31,6 +34,11 @@ export interface CapSessionHandle {
   /** Resolves with the per-round seed once /verify/start responds (null on a
    *  start failure / gameless session) - the game-iframe kickoff waits on it. */
   awaitSeed: () => Promise<Seed | null>;
+  /** True once /verify/start answered with a reuse short-circuit (a stored
+   *  clearance was still valid). Settles alongside awaitSeed - a caller that
+   *  needs to skip an iframe mount should await the seed gate first, then
+   *  check this. */
+  isCleared: () => boolean;
 }
 
 /** Build a cap session and wire it onto `state.capClient` (+ triggerCtx if
@@ -47,11 +55,18 @@ export function setupCapSession(
   ticket: string | null = null,
 ): CapSessionHandle {
   let wrappedToken: WrappedToken | null = null;
+  let cleared = false;
   const platform: Record<string, unknown> = { sitekey, gameId };
   if (ticket) platform.ticket = ticket;
-  const sessionCtx = {
+  // Reuse: forward a stored clearance (if any) so /verify/start can grant an
+  // instant short-circuit. Omitted entirely when nothing is stored - the
+  // server treats that identically to reuse being off.
+  const clearance = readClearance();
+  if (clearance) platform.clearance = clearance;
+  const sessionCtx: SessionContext = {
     platform,
     onWrappedToken: (token: WrappedToken) => { wrappedToken = token; },
+    onCleared: () => { cleared = true; },
   };
 
   // Per-widget id encoded into the Cap library's apiEndpoint path so the
@@ -63,7 +78,28 @@ export function setupCapSession(
   if (state.triggerCtx) state.triggerCtx.capClient = client;
 
   const widgetId = state.widgetId;
-  return { client, getWrappedToken: () => wrappedToken, awaitSeed: () => awaitSeed(widgetId) };
+  return {
+    client,
+    getWrappedToken: () => wrappedToken,
+    awaitSeed: () => awaitSeed(widgetId),
+    isCleared: () => cleared,
+  };
+}
+
+/** The tail shared by every solved path (a genuine cap.js redeem, or a
+ *  reuse short-circuit): inject the token into the enclosing form, flip the
+ *  presentation to verified, lock the token on state, and emit `pass`. */
+function reachSolved(
+  el: HTMLElement,
+  state: WidgetState,
+  presentation: { setState: (s: 'verifying' | 'verified' | 'error' | 'idle') => void } | null,
+  wrappedToken: WrappedToken,
+): void {
+  const { token, score, durationMs } = wrappedToken;
+  injectTokenIntoEnclosingForm(el, token);
+  presentation?.setState('verified');
+  state.lockedToken = token;
+  emitPass(el, { token, score, durationMs });
 }
 
 /** Await cap.solve and complete the verification: inject token into form,
@@ -79,6 +115,7 @@ export async function awaitCapAndEmitPass(
   client: CapClient,
   getWrappedToken: () => WrappedToken | null,
   presentation: { setState: (s: 'verifying' | 'verified' | 'error' | 'idle') => void } | null,
+  isCleared: () => boolean,
 ): Promise<void> {
   try {
     await client.solve();
@@ -97,6 +134,21 @@ export async function awaitCapAndEmitPass(
     // detached) element, leaking the noisy event into the parent UI's log.
     // Drop silently.
     if (!state.connected) return;
+
+    // Reuse short-circuit: /verify/start already handed back a wrapped token
+    // off a stored clearance, then fed cap.js a synthetic response so this
+    // solve() was always going to fail fast (there was never a real
+    // challenge to run). Reach solved instead of treating that as an error.
+    if (isCleared()) {
+      const wrappedToken = getWrappedToken();
+      if (wrappedToken) {
+        reachSolved(el, state, presentation, wrappedToken);
+        return;
+      }
+      // Cleared but no token arrived - custom-fetch always pairs the two, so
+      // this shouldn't happen. Fall through to the normal error path below.
+    }
+
     if (!state.gameErrored) {
       fireError(el, 'verification-failed', String(err), 'cap-solve-failed');
     }
@@ -121,9 +173,5 @@ export async function awaitCapAndEmitPass(
     return;
   }
 
-  const { token, score, durationMs } = wrappedToken;
-  injectTokenIntoEnclosingForm(el, token);
-  presentation?.setState('verified');
-  state.lockedToken = token;
-  emitPass(el, { token, score, durationMs });
+  reachSolved(el, state, presentation, wrappedToken);
 }

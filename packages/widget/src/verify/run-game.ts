@@ -97,7 +97,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   const { url: gameUrl, integrity, gameId } = resolved;
   // On a gated key the server sets the session game from the signed ticket,
   // not from the client gameId. Echo the ticket here.
-  const { client, getWrappedToken, awaitSeed } = setupCapSession(state, apiHost, cfg.sitekey!, gameId, state.gateTicket ?? null);
+  const { client, getWrappedToken, awaitSeed, isCleared } = setupCapSession(state, apiHost, cfg.sitekey!, gameId, state.gateTicket ?? null);
   const dispatchStart = (): void => emitStart(el, gameId);
   const presentation = state.gamePresentation ?? null;
 
@@ -107,7 +107,26 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
     console.warn('[caputchin] game widget mounted without game configured; verification will run but no iframe will mount');
     client.releaseGate({});
     dispatchStart();
-    await awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation);
+    await awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation, isCleared);
+    return;
+  }
+
+  // Start the cap solve NOW (before kickoff) so /verify/start fires and the
+  // seed - or a reuse short-circuit - becomes available; PoW runs in parallel
+  // and solve blocks internally on the redeem gate until the game emits its
+  // trace.
+  const passing = awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation, isCleared);
+
+  // installGameFrame (below) waits on this same seed gate before kickoff;
+  // wait on it here first so a reuse hit skips the iframe mount entirely
+  // instead of loading a game bundle nobody will ever see.
+  await awaitSeed();
+  if (isCleared()) {
+    // No game, no iframe: `passing`'s own catch branch reaches solved from
+    // the stashed wrapped token once cap.js's doomed solve() fails (there
+    // was never a real challenge for it to run).
+    dispatchStart();
+    await passing;
     return;
   }
 
@@ -135,12 +154,6 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
     }
   }, collectSkinAssetOrigins(state.gameResolved?.skin ?? null));
   state.iframeHost = host;
-
-  // Start the cap solve NOW (before kickoff) so /verify/start fires and the seed
-  // becomes available; PoW runs in parallel and solve blocks internally on the
-  // redeem gate until the game emits its trace. installGameFrame waits on the
-  // seed before kickoff.
-  const passing = awaitCapAndEmitPass(el, state, client, getWrappedToken, presentation);
 
   await installGameFrame(
     el,

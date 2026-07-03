@@ -30,6 +30,19 @@ export function createCapClient(
   apiHost: string,
   ctx: SessionContext
 ): CapClient {
+  // Track the reuse short-circuit locally: /verify/start's cleared branch
+  // deliberately hands cap.js a challenge it can't solve so its solve() fails
+  // fast (see custom-fetch.ts) - that failure is EXPECTED here, not a real
+  // error. Wrap ctx.onCleared (fired from the same challenge branch) so the
+  // error override below can tell the two cases apart. Same object reference
+  // custom-fetch.ts holds in its session map, so the wrap is visible to it.
+  let cleared = false;
+  const onSessionCleared = ctx.onCleared;
+  ctx.onCleared = () => {
+    cleared = true;
+    onSessionCleared();
+  };
+
   registerSession(widgetId, ctx);
 
   // Sentinel apiEndpoint; never reaches the server. Custom-fetch parses the
@@ -37,18 +50,22 @@ export function createCapClient(
   // and /v1/verify/pass endpoints.
   const cap = new Cap({ apiEndpoint: `${apiHost}/${CPT_ROUTE_PREFIX}/${widgetId}/` });
 
-  // Silence cap.js's `console.error("[cap]", ...)` for in-flight solves that
-  // fail AFTER the host widget was disposed. cap.js's own solve catch calls
-  // widget.error(message) which both console.errors AND dispatches an error
-  // event; once we've removed the cap-widget from DOM in dispose() the widget
-  // is no longer connected, and surfacing those messages is pure noise (the
-  // host widget the user could see is gone). Override per-instance so other
-  // cap-widgets keep their normal error reporting.
+  // Silence cap.js's `console.error("[cap]", ...)` for:
+  //   1. In-flight solves that fail AFTER the host widget was disposed. Once
+  //      dispose() removes the cap-widget from DOM it's no longer connected,
+  //      and surfacing those messages is pure noise (the host widget the
+  //      user could see is gone).
+  //   2. A reuse short-circuit's expected solve() failure - the platform
+  //      already handed back a valid token via onWrappedToken, so this is a
+  //      SUCCESS path; logging it as a console error would paint a working
+  //      reuse hit as a failure to integrators (or their console monitors).
+  // Override per-instance so other cap-widgets keep their normal reporting.
   const widgetForOverride = (cap as unknown as { widget?: HTMLElement & { error?: (msg: string) => void } }).widget;
   if (widgetForOverride?.error) {
     const originalError = widgetForOverride.error.bind(widgetForOverride);
     widgetForOverride.error = function (message: string): void {
       if (!widgetForOverride.isConnected) return;
+      if (cleared) return;
       originalError(message);
     };
   }

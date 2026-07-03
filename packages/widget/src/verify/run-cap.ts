@@ -12,10 +12,10 @@ export async function runCap(el: HTMLElement, state: WidgetState<WidgetConfig>, 
   if (!state.config) return;
   state.presentation?.setState('verifying');
   // Cap-only widget (no game) → gameId null → server verifies on cap-PoW alone.
-  const { client, getWrappedToken } = setupCapSession(state, apiHost, state.config.sitekey, null);
+  const { client, getWrappedToken, isCleared } = setupCapSession(state, apiHost, state.config.sitekey, null);
   // No game/trace to wait for; release the gate immediately so Cap's redeem
   // can proceed end-to-end.
   client.releaseGate({});
   emitStart(el, null);
-  await awaitCapAndEmitPass(el, state, client, getWrappedToken, state.presentation);
+  await awaitCapAndEmitPass(el, state, client, getWrappedToken, state.presentation, isCleared);
 }

@@ -26,6 +26,7 @@ function listen(el: HTMLElement) {
 }
 
 const token = (): WrappedToken => ({ token: 'wrapped', score: 5, durationMs: 50 } as WrappedToken);
+const notCleared = () => false;
 
 describe('awaitCapAndEmitPass', () => {
   it('happy path: injects form token, sets verified, locks token, emits pass', async () => {
@@ -37,7 +38,7 @@ describe('awaitCapAndEmitPass', () => {
     const pres = presentation();
     const { pass } = listen(el);
 
-    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres);
+    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres, notCleared);
 
     expect(form.querySelector<HTMLInputElement>('input[name="caputchin-token"]')!.value).toBe('wrapped');
     expect(pres.setState).toHaveBeenCalledWith('verified');
@@ -49,7 +50,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { err } = listen(el);
-    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => { throw new Error('nope'); }), () => null, pres);
+    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => { throw new Error('nope'); }), () => null, pres, notCleared);
     expect(err.some((e) => e.detail.code === 'verification-failed')).toBe(true);
     expect(pres.setState).toHaveBeenCalledWith('error');
   });
@@ -59,7 +60,7 @@ describe('awaitCapAndEmitPass', () => {
     const pres = presentation();
     const { err } = listen(el);
     const state = { connected: true, gameErrored: true } as WidgetState;
-    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('nope'); }), () => null, pres);
+    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('nope'); }), () => null, pres, notCleared);
     expect(err).toHaveLength(0);
     expect(pres.setState).toHaveBeenCalledWith('error');
   });
@@ -69,7 +70,7 @@ describe('awaitCapAndEmitPass', () => {
     const pres = presentation();
     const { pass } = listen(el);
     const state = { connected: true, gameErrored: true } as WidgetState;
-    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres);
+    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres, notCleared);
     expect(pass).toHaveLength(0);
     expect(pres.setState).toHaveBeenCalledWith('error');
   });
@@ -78,7 +79,7 @@ describe('awaitCapAndEmitPass', () => {
     const el = document.createElement('div');
     const pres = presentation();
     const { err } = listen(el);
-    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => {}), () => null, pres);
+    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => {}), () => null, pres, notCleared);
     expect(err.some((e) => (e.detail as { originalCode?: string }).originalCode === 'cap-redeem-failed')).toBe(true);
   });
 
@@ -94,7 +95,7 @@ describe('awaitCapAndEmitPass', () => {
     const pres = presentation();
     const { err } = listen(el);
     const state = { connected: false } as WidgetState;
-    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('widget-disposed'); }), () => null, pres);
+    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('widget-disposed'); }), () => null, pres, notCleared);
     expect(err).toHaveLength(0);
     expect(pres.setState).not.toHaveBeenCalled();
   });
@@ -106,8 +107,48 @@ describe('awaitCapAndEmitPass', () => {
     const pres = presentation();
     const { pass } = listen(el);
     const state = { connected: false } as WidgetState;
-    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres);
+    await awaitCapAndEmitPass(el, state, client(async () => {}), () => token(), pres, notCleared);
     expect(pass).toHaveLength(0);
+    expect(pres.setState).not.toHaveBeenCalled();
+  });
+
+  // ---- reuse short-circuit (cleared) ----
+
+  it('cleared: solve rejects (cap.js had no real challenge) but a wrapped token is already stashed - reaches solved, no error', async () => {
+    const form = document.createElement('form');
+    const el = document.createElement('div');
+    form.appendChild(el);
+    document.body.appendChild(form);
+    const state = { connected: true } as WidgetState;
+    const pres = presentation();
+    const { pass, err } = listen(el);
+
+    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('reuse-cleared'); }), () => token(), pres, () => true);
+
+    expect(err).toHaveLength(0);
+    expect(form.querySelector<HTMLInputElement>('input[name="caputchin-token"]')!.value).toBe('wrapped');
+    expect(pres.setState).toHaveBeenCalledWith('verified');
+    expect(state.lockedToken).toBe('wrapped');
+    expect(pass[0].detail).toEqual({ token: 'wrapped', score: 5, durationMs: 50 });
+  });
+
+  it('cleared but no token stashed (shouldn\'t happen): falls through to the normal error path', async () => {
+    const el = document.createElement('div');
+    const pres = presentation();
+    const { err } = listen(el);
+    await awaitCapAndEmitPass(el, { connected: true } as WidgetState, client(async () => { throw new Error('reuse-cleared'); }), () => null, pres, () => true);
+    expect(err.some((e) => e.detail.code === 'verification-failed')).toBe(true);
+    expect(pres.setState).toHaveBeenCalledWith('error');
+  });
+
+  it('cleared + disposed widget: silent, no pass/error emit', async () => {
+    const el = document.createElement('div');
+    const pres = presentation();
+    const { pass, err } = listen(el);
+    const state = { connected: false } as WidgetState;
+    await awaitCapAndEmitPass(el, state, client(async () => { throw new Error('reuse-cleared'); }), () => token(), pres, () => true);
+    expect(pass).toHaveLength(0);
+    expect(err).toHaveLength(0);
     expect(pres.setState).not.toHaveBeenCalled();
   });
 });
