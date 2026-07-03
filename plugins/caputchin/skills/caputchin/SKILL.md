@@ -1,6 +1,6 @@
 ---
 name: caputchin
-description: Integrate and operate Caputchin, a game-based human-verification and bot-protection service (a CAPTCHA alternative). Use this whenever the user is adding bot, spam, or abuse protection to a website, web app, sign-up, login, or form; embedding or configuring the Caputchin widget (the caputchin-widget or caputchin-game custom element); getting or rotating a site key; verifying a Caputchin token on the server with the siteverify endpoint; managing Caputchin sites, secret keys, troops, members, usage stats, audit logs, or security settings through the Caputchin MCP server; or troubleshooting why the widget will not render, the token is rejected, or verification keeps failing. Works with plain HTML and any backend language (stack-agnostic). Reach for it even when the user does not name Caputchin explicitly but clearly needs human verification or wants to stop bots.
+description: Integrate and operate Caputchin, a game-based human-verification and bot-protection service (a CAPTCHA alternative). Use this whenever the user is adding bot, spam, or abuse protection to a website, web app, sign-up, login, or form; embedding or configuring the Caputchin widget (the caputchin-widget or caputchin-game custom element); gating a whole site behind a reverse-proxy interstitial for a host that cannot embed the widget (the Proxy page-gate, e.g. Authelia); getting or rotating a site key; verifying a Caputchin token on the server with the siteverify endpoint; managing Caputchin sites, secret keys, troops, members, usage stats, audit logs, or security settings through the Caputchin MCP server; or troubleshooting why the widget will not render, the token is rejected, or verification keeps failing. Works with plain HTML and any backend language (stack-agnostic). Reach for it even when the user does not name Caputchin explicitly but clearly needs human verification or wants to stop bots.
 license: Apache-2.0
 metadata:
   source: https://github.com/Caputchin/caputchin-sdk
@@ -25,6 +25,8 @@ Verification is always two halves. Get this right and most problems disappear:
 
 The token is single-use and short-lived: verify it server-side immediately, once.
 
+There is a third integration shape for when you cannot do the two halves: the **Proxy page-gate**. Instead of embedding the widget on a page, you put a full-page check in front of a whole site at the customer's reverse proxy. Use it for hosts with no place to embed a script (a compiled login portal, an appliance, Authelia). See [references/proxy-gate.md](references/proxy-gate.md).
+
 Two custom elements ship in `@caputchin/widget`:
 
 | Element | Use it for |
@@ -39,6 +41,7 @@ Each reference is self-contained. Read the one that matches; do not load them al
 | The user wants to... | Read |
 | --- | --- |
 | Put the widget on a page, choose visible vs invisible vs game, wire the token | [references/widget-integration.md](references/widget-integration.md) |
+| Gate a whole site at the reverse proxy, or protect a host that can't embed the widget (e.g. Authelia) | [references/proxy-gate.md](references/proxy-gate.md) |
 | Verify the token on the backend (any language), handle outcomes and errors | [references/server-verify.md](references/server-verify.md) |
 | Create or manage sites, keys, troops, stats, or security via an AI agent | [references/mcp.md](references/mcp.md) |
 | Fix a blank widget, a rejected token, CSP errors, or failing verification | [references/troubleshooting.md](references/troubleshooting.md) |
