@@ -86,6 +86,16 @@ groups below cover the common surface.
 - **Tighten security:** `caputchin_get_site_security` then
   `caputchin_update_site_security` (and the troop-level equivalents for a team
   default).
+- **Develop against auto-pass (preview mode):** while you are still wiring up the
+  widget and your `siteverify` backend, call `caputchin_update_site_security` with
+  `preview_mode: true`. Every verification on that site key then passes
+  automatically (no game, the proof-of-work is not enforced) and `siteverify`
+  returns `success`, so you can build and test the full round-trip before a real
+  challenge works. Sessions are still recorded (flagged as preview in the sessions
+  list and stats), so the dashboard fills with real data. Set `preview_mode: false`
+  (or `null` to inherit the troop default) before production: while it is on the
+  site key has no bot protection. A troop-level `preview_mode` default is inherited
+  by any site key that sets none, so you can flip a whole staging troop at once.
 
 ## Learn more
 

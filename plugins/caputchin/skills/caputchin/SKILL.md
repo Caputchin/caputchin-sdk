@@ -79,6 +79,39 @@ const verdict = await res.json();
 if (!verdict.success) throw new Error(verdict["error-codes"].join(","));
 ```
 
+## While you are still building
+
+Verification only passes when the visitor actually clears the check, which is
+awkward before your challenge is fully wired up. Enable **preview mode** on the
+site key (dashboard Security page, or `caputchin_update_site_security` with
+`preview_mode: true`) and the backend auto-approves every verification for that
+key: no game, no real challenge, and `siteverify` returns `success`. Sessions
+still record (each flagged as a preview session), so you can build the full
+client-and-server round-trip and watch real dashboard data. Turn it off before
+production, because while it is on the site key has no bot protection. Field
+details are in the MCP reference.
+
+## Reduce repeat challenges (verification reuse)
+
+By default every widget mount runs its own check, so a visitor who fails a login
+and retries, or who meets a second protected form, plays again. Turn on
+**verification reuse** for the site key (dashboard Security page, or
+`caputchin_update_site_security` with `reuse: true`) and one successful solve
+grants a short-lived clearance: later mounts skip the game and get a fresh token
+without replaying it. Each reuse still returns a normal single-use token your
+backend verifies exactly as before, so nothing changes on the server side.
+
+Reuse is off by default. Two knobs tune it: `reuse_window_ms` sets how long a
+solve keeps skipping the game (the server clamps it to a safe range), and
+`reuse_persist` decides where the clearance lives. With `reuse_persist: false`
+(the default) it stays in page memory, so it covers a re-render but not a reload.
+With `reuse_persist: true` the widget writes a first-party cookie so it also
+survives a reload and other tabs in the same window, which means you must
+disclose that cookie in your own cookie policy. A troop can force reuse off for
+every key under it with the troop-level `forbid_reuse`. Keep reuse off (or on its
+own dedicated key) for high-value actions where every attempt should cost a fresh
+solve.
+
 ## Rules that keep integrations correct
 
 - **The secret key is server-only.** Never ship it to the browser, a mobile app
