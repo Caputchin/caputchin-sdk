@@ -85,10 +85,11 @@ if (!verdict.success) throw new Error(verdict["error-codes"].join(","));
 ## While you are still building
 
 Verification only passes when the visitor actually clears the check, which is
-awkward before your challenge is fully wired up. Enable **preview mode** on the
-site key (dashboard Security page, or `caputchin_update_site_security` with
-`preview_mode: true`) and the backend auto-approves every verification for that
-key: no game, no real challenge, and `siteverify` returns `success`. Sessions
+slow and flaky while you are still wiring up your integration. Enable **preview
+mode** on the site key (dashboard Security page, or `caputchin_update_site_security`
+with `preview_mode: true`) and the widget still shows the real experience (your
+game and its chrome, or the plain check) but the backend auto-approves every
+verification regardless of the solve, so `siteverify` returns `success`. Sessions
 still record (each flagged as a preview session), so you can build the full
 client-and-server round-trip and watch real dashboard data. Turn it off before
 production, because while it is on the site key has no bot protection. Field
@@ -110,10 +111,10 @@ solve keeps skipping the game (the server clamps it to a safe range), and
 (the default) it stays in page memory, so it covers a re-render but not a reload.
 With `reuse_persist: true` the widget writes a first-party cookie so it also
 survives a reload and other tabs in the same window, which means you must
-disclose that cookie in your own cookie policy. A troop can force reuse off for
-every key under it with the troop-level `forbid_reuse`. Keep reuse off (or on its
-own dedicated key) for high-value actions where every attempt should cost a fresh
-solve.
+disclose that cookie in your own cookie policy. A troop can set the reuse
+default (the same three fields) for all its keys; each key inherits that default
+and can override it. Keep reuse off (or on its own dedicated key) for high-value
+actions where every attempt should cost a fresh solve.
 
 ## Rules that keep integrations correct
 

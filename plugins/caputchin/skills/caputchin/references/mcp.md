@@ -88,10 +88,11 @@ groups below cover the common surface.
   default).
 - **Develop against auto-pass (preview mode):** while you are still wiring up the
   widget and your `siteverify` backend, call `caputchin_update_site_security` with
-  `preview_mode: true`. Every verification on that site key then passes
-  automatically (no game, the proof-of-work is not enforced) and `siteverify`
-  returns `success`, so you can build and test the full round-trip before a real
-  challenge works. Sessions are still recorded (flagged as preview in the sessions
+  `preview_mode: true`. The widget still shows the real experience (the game and
+  its chrome, or the plain check), but every verification on that site key then
+  passes automatically regardless of the solve (the game replay and proof-of-work
+  are not enforced) and `siteverify` returns `success`, so you can build and test
+  the full round-trip against the exact experience visitors see. Sessions are still recorded (flagged as preview in the sessions
   list and stats), so the dashboard fills with real data. Set `preview_mode: false`
   (or `null` to inherit the troop default) before production: while it is on the
   site key has no bot protection. A troop-level `preview_mode` default is inherited
