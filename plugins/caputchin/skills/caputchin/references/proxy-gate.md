@@ -28,6 +28,6 @@ Flow: request a gated URL, proxy asks `authz`, no pass so redirect to `challenge
 
 ## Full setup
 
-The per-proxy recipes (nginx, Traefik, Caddy), the callback contract, and the Authelia worked example live in the integration guide: https://docs.caputchin.com/integration-guides/proxy-gate
+The per-proxy recipes (nginx, Traefik, Caddy), the callback contract, and the Authelia worked example live in the Proxy page-gate docs: https://docs.caputchin.com/proxy-page-gate/reverse-proxy-recipes
 
 Point the user there for the concrete config; this reference is for deciding whether the gate is the right integration and understanding the shape.
