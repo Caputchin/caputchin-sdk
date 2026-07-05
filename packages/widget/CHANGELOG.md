@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.5.0...widget-v3.6.0) (2026-07-05)
+
+
+### Features
+
+* **widget:** add verification reuse clearance client ([0c7ac6f](https://github.com/Caputchin/caputchin-sdk/commit/0c7ac6f5cd067218d1162150c2a16e32c2910012))
+* **widget:** make form-submit trigger clickable while keeping submit gating ([258b303](https://github.com/Caputchin/caputchin-sdk/commit/258b30352f7254c49f0a27b141d4d815da86c137))
+
 ## [3.5.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.4.1...widget-v3.5.0) (2026-07-01)
 
 
