@@ -80,7 +80,7 @@
         "simpleFailed": "失败",
         "brandName": "Caputchin",
         "brandTag": "视而不见",
-        "simpleAriaCheckbox": "验证您是真人",
+        "simpleAriaCheckbox": "验证你是真人",
         "simpleAriaStatus": "Caputchin 验证状态",
         "overlayClose": "关闭",
         "frameTitle": "Caputchin 验证挑战"
@@ -122,7 +122,7 @@
         "simpleFailed": "Échec",
         "brandName": "Caputchin",
         "brandTag": "les yeux fermés",
-        "simpleAriaCheckbox": "Vérifiez que vous êtes humain",
+        "simpleAriaCheckbox": "Vérifie que tu es humain",
         "simpleAriaStatus": "État de vérification Caputchin",
         "overlayClose": "Fermer",
         "frameTitle": "Défi de vérification Caputchin"
@@ -150,7 +150,7 @@
         "simpleFailed": "Ошибка",
         "brandName": "Caputchin",
         "brandTag": "закрываем глаза",
-        "simpleAriaCheckbox": "Подтвердите, что вы человек",
+        "simpleAriaCheckbox": "Подтверди, что ты человек",
         "simpleAriaStatus": "Статус проверки Caputchin",
         "overlayClose": "Закрыть",
         "frameTitle": "Проверочное задание Caputchin"
@@ -192,7 +192,7 @@
         "simpleFailed": "Gagal",
         "brandName": "Caputchin",
         "brandTag": "kami tutup mata",
-        "simpleAriaCheckbox": "Verifikasi bahwa Anda manusia",
+        "simpleAriaCheckbox": "Verifikasi bahwa kamu manusia",
         "simpleAriaStatus": "Status verifikasi Caputchin",
         "overlayClose": "Tutup",
         "frameTitle": "Tantangan verifikasi Caputchin"
