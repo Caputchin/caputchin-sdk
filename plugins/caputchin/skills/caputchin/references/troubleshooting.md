@@ -34,9 +34,12 @@ A locked-down CSP silently breaks the widget. A policy that works, loading the
 widget from the CDN and using marketplace games:
 
 ```
+default-src 'none' ;
 script-src  https://cdn.jsdelivr.net https://games.caputchin.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' ;
 connect-src https://verify.caputchin.com https://cdn.jsdelivr.net ;
 worker-src  blob: ;
+style-src   'unsafe-inline' ;
+img-src     'self' data: https: ;
 ```
 
 Line by line:
@@ -49,7 +52,16 @@ Line by line:
   module from next to the widget script. Without that origin the solver still
   works but silently falls back to a slower JavaScript implementation.
 - `worker-src blob:` is required. The solver runs only in a Web Worker created
-  from a `blob:` URL and has no main-thread fallback.
+  from a `blob:` URL and has no main-thread fallback. Note the fallback chain is
+  `worker-src` -> `child-src` -> `script-src` -> `default-src`, so if you omit
+  `worker-src` the check lands on your `script-src`, which almost certainly has
+  no `blob:`, and verification cannot run at all.
+- `style-src 'unsafe-inline'` is required. The widget injects a `<style>`
+  element into its shadow root and sets inline `style` attributes, which are
+  governed by `style-src-attr` falling back to `style-src`. Without it the
+  widget renders unstyled.
+- `img-src data:` is required for the bundled brand mark, which is an inline
+  `data:` SVG. `https:` covers a white-label logo you host yourself.
 
 The games-only additions look surprising, because the game bundle is not
 something your page loads. The reason is that the game renders in a `srcdoc`
