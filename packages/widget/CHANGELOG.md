@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.6.0...widget-v3.6.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **widget:** use informal register in the human-verification aria label across locales ([72528b2](https://github.com/Caputchin/caputchin-sdk/commit/72528b2d2d21a859352968ecc6c7024f3f9c591d))
+
 ## [3.6.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.5.0...widget-v3.6.0) (2026-07-05)
 
 
