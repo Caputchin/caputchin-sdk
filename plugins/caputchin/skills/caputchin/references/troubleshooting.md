@@ -30,18 +30,43 @@ the origin in the dashboard or via `caputchin_update_site`.
 
 ## CSP: hosts to allow
 
-A locked-down CSP silently breaks the widget. Allow the Caputchin hosts:
+A locked-down CSP silently breaks the widget. A policy that works, loading the
+widget from the CDN and using marketplace games:
 
 ```
-script-src  https://cdn.jsdelivr.net ;                                  # only if you load widget.js from the CDN
-connect-src https://verify.caputchin.com https://games.caputchin.com ;  # verification + marketplace game bundles
+script-src  https://cdn.jsdelivr.net https://games.caputchin.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' ;
+connect-src https://verify.caputchin.com https://cdn.jsdelivr.net ;
+worker-src  blob: ;
 ```
 
-The game challenge renders in a `srcdoc` iframe (inline HTML), so no external
-`frame-src` host is required. If you load a self-hosted or jsDelivr-hosted custom
-game bundle, add that origin (for example `https://cdn.jsdelivr.net`) to
-`connect-src`. If you run a custom verification host, swap `verify.caputchin.com`
-for it. After changing CSP, hard-reload; the browser caches policy aggressively.
+Line by line:
+
+- `script-src` needs the origin you load `widget.js` from. `'unsafe-eval'` is
+  required while instrumentation is on. The rest of that line is games-only:
+  the game bundle origin, `'unsafe-inline'`, and `'wasm-unsafe-eval'`.
+- `connect-src` needs the verification host, plus the origin you load
+  `widget.js` from, because the proof-of-work solver fetches its WebAssembly
+  module from next to the widget script. Without that origin the solver still
+  works but silently falls back to a slower JavaScript implementation.
+- `worker-src blob:` is required. The solver runs only in a Web Worker created
+  from a `blob:` URL and has no main-thread fallback.
+
+The games-only additions look surprising, because the game bundle is not
+something your page loads. The reason is that the game renders in a `srcdoc`
+iframe, and a `srcdoc` document **inherits the embedding page's CSP** on top of
+its own. So the bundle origin belongs in your page's `script-src`, not
+`connect-src`, and the frame's own inline bootstrap needs `'unsafe-inline'`
+there too. Granting these does not widen what the game can reach: the frame
+sets `connect-src 'none'` on itself and is opaque-origin, and your page's
+policy cannot loosen that.
+
+No external `frame-src` host is required: a `srcdoc` frame has no URL to match,
+so it loads even under `frame-src 'none'`. If you run a custom verification
+host, swap `verify.caputchin.com` for it. If you self-host `widget.js` or a
+custom game bundle, use those origins instead. When a game silently fails to
+appear, look for CSP violations reported against `about:srcdoc`: that is the
+frame hitting your page's inherited policy. After changing CSP, hard-reload;
+the browser caches policy aggressively.
 
 ## The token is null
 
