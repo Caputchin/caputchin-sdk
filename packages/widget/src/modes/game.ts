@@ -579,6 +579,14 @@ function mountAspectFit(slot: HTMLElement): AspectFit {
   box.appendChild(sizer);
   slot.appendChild(box);
   let iframe: HTMLIFrameElement | null = null;
+  // The box's content width from the latest ResizeObserver entry. It keeps the
+  // fraction clientWidth rounds away (a 305.5px modal box), so the scaled game
+  // ends on the sizer's edge instead of ~0.5px past it under overflow:hidden.
+  let observedRoom = 0;
+  // The transform this box last wrote and how the iframe read it back (CSSOM
+  // may reserialize the number), so a rerun with an unchanged scale writes
+  // nothing and the iframe style observer it would trigger stays quiet.
+  let written: { value: string; read: string } | null = null;
 
   const fit = (): void => {
     if (!iframe) return;
@@ -590,13 +598,23 @@ function mountAspectFit(slot: HTMLElement): AspectFit {
     sizer.setAttribute('viewBox', `0 0 ${w} ${h}`);
     // A closed dialog (display:none) has no width yet; its opening resize
     // reruns this.
-    const room = box.clientWidth;
+    const room = observedRoom || box.clientWidth;
     if (!room) return;
     const scale = Math.min(1, room / w);
-    iframe.style.transform = scale < 1 ? `scale(${scale})` : '';
+    const transform = scale < 1 ? `scale(${scale})` : '';
+    if (written?.value === transform && written.read === iframe.style.transform) return;
+    iframe.style.transform = transform;
+    written = { value: transform, read: iframe.style.transform };
   };
 
-  const sizes = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+  const sizes =
+    typeof ResizeObserver === 'function'
+      ? new ResizeObserver((entries) => {
+          const entry = entries[entries.length - 1];
+          if (entry) observedRoom = entry.contentRect.width;
+          fit();
+        })
+      : null;
   sizes?.observe(box);
   // The iframe arrives after mount (IframeHost appends it) and its size is an
   // inline style the host rewrites (setSize, the runtime's measured size).

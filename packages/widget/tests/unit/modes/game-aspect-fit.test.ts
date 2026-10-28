@@ -108,32 +108,103 @@ describe('game presentation - fixed-aspect fit box', () => {
     gp.unmount();
   });
 
-  it('rescales when the box resizes (container change, a dialog opening)', async () => {
-    // happy-dom has no ResizeObserver; capture the one the fit box creates.
-    const callbacks: Array<() => void> = [];
+  /**
+   * happy-dom has no ResizeObserver; install one that captures the callback the
+   * fit box creates. `resize(w)` delivers an entry whose content box is `w` wide.
+   */
+  function captureResizeObserver(): { resize(width: number): void; restore(): void; count(): number } {
+    const callbacks: ResizeObserverCallback[] = [];
     const original = globalThis.ResizeObserver;
     globalThis.ResizeObserver = class {
-      constructor(cb: () => void) { callbacks.push(cb); }
+      constructor(cb: ResizeObserverCallback) { callbacks.push(cb); }
       observe(): void {}
       unobserve(): void {}
       disconnect(): void {}
     } as unknown as typeof ResizeObserver;
+    return {
+      resize(width) {
+        const entry = { contentRect: { width } } as ResizeObserverEntry;
+        callbacks[0]!([entry], {} as ResizeObserver);
+      },
+      restore() { globalThis.ResizeObserver = original; },
+      count: () => callbacks.length,
+    };
+  }
+
+  it('rescales when the box resizes (container change, a dialog opening)', async () => {
+    const ro = captureResizeObserver();
     try {
       const { gp } = mount({ layout: 'modal', fixedAspect: true });
       const box = gp.getIframeSlot()!;
       stubRoom(box, 0);
       const iframe = await mountGameIframe(box, 640, 400);
       expect(iframe.style.transform).toBe('');
-      expect(callbacks).toHaveLength(1);
-      stubRoom(box, 160);
-      callbacks[0]!();
+      expect(ro.count()).toBe(1);
+      ro.resize(160);
       expect(iframe.style.transform).toBe('scale(0.25)');
-      stubRoom(box, 640);
-      callbacks[0]!();
+      ro.resize(640);
       expect(iframe.style.transform).toBe('');
       gp.unmount();
     } finally {
-      globalThis.ResizeObserver = original;
+      ro.restore();
+    }
+  });
+
+  it('scales by the observed fractional box width, not the rounded clientWidth', async () => {
+    // A 375px phone modal: the box is 305.5px wide, clientWidth reports 306.
+    const ro = captureResizeObserver();
+    try {
+      const { gp } = mount({ layout: 'modal', fixedAspect: true });
+      const box = gp.getIframeSlot()!;
+      stubRoom(box, 306);
+      const iframe = await mountGameIframe(box, 640, 400);
+      // Before the first entry arrives the rounded clientWidth is the fallback.
+      expect(iframe.style.transform).toBe(`scale(${306 / 640})`);
+      ro.resize(305.5);
+      expect(iframe.style.transform).toBe(`scale(${305.5 / 640})`);
+      // A later iframe style write keeps using the observed width.
+      setIframeSize(iframe, 640, 400);
+      await flush();
+      expect(iframe.style.transform).toBe(`scale(${305.5 / 640})`);
+      gp.unmount();
+    } finally {
+      ro.restore();
+    }
+  });
+
+  it('writes the iframe transform only when the scale changes', async () => {
+    const ro = captureResizeObserver();
+    try {
+      const { gp } = mount({ layout: 'modal', fixedAspect: true });
+      const box = gp.getIframeSlot()!;
+      stubRoom(box, 0);
+      const iframe = await mountGameIframe(box, 640, 400);
+      let writes = 0;
+      const style = iframe.style;
+      let transform = style.transform;
+      Object.defineProperty(style, 'transform', {
+        configurable: true,
+        get: () => transform,
+        set: (v: string) => { writes++; transform = v; },
+      });
+      ro.resize(320);
+      expect(transform).toBe('scale(0.5)');
+      expect(writes).toBe(1);
+      ro.resize(320);
+      setIframeSize(iframe, 640, 400);
+      await flush();
+      expect(writes).toBe(1);
+      // Something else clearing the transform gets it written back.
+      transform = '';
+      ro.resize(320);
+      expect(transform).toBe('scale(0.5)');
+      expect(writes).toBe(2);
+      ro.resize(160);
+      expect(transform).toBe('scale(0.25)');
+      expect(writes).toBe(3);
+      gp.unmount();
+    } finally {
+      ro.restore();
     }
   });
 
