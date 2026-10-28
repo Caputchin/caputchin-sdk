@@ -52,10 +52,13 @@ const bootstrapCalls = (fn: ReturnType<typeof vi.fn>): number =>
 // An inline <caputchin-game> mount is CPU-bound in happy-dom (its CSS
 // declaration parser re-runs on every skin var write): close to 1s per mount
 // alone and several times that under a loaded parallel run. Tests that mount
-// one inline wait on the mounted state with this budget instead of a fixed
-// number of flushes, and get a test timeout that fits two mounts under load.
-const INLINE_WAIT = { timeout: 5_000 };
-const INLINE_GAME_TEST_TIMEOUT = 15_000;
+// one inline (and the widget re-theme test, which slows the same way) wait on
+// the real state with this per-step budget instead of a fixed number of
+// flushes. The test timeout fits two such steps (a mount, then a re-mount or
+// reskin) at their full budget plus slack, so a stuck step fails with its
+// waitFor assertion rather than a bare test timeout.
+const INLINE_WAIT = { timeout: 7_000 };
+const INLINE_GAME_TEST_TIMEOUT = 2 * INLINE_WAIT.timeout + 5_000;
 const gameFrame = (el: HTMLElement): Element | null =>
   el.shadowRoot!.querySelector('[part="game-frame"]');
 
@@ -65,26 +68,32 @@ describe('<caputchin-widget> runtime skin reactivity', () => {
   it('re-themes in place on a skin change (no remount, no re-challenge)', async () => {
     const fn = themedFetch();
     const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'light' });
+    const checkbox = (): Element | null => el.shadowRoot!.querySelector('[part="simple-checkbox"]');
     document.body.appendChild(el);
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
-    const rootBefore = el.shadowRoot!.querySelector('[part="simple-checkbox"]');
-    const before = bootstrapCalls(fn);
+    try {
+      // Mounted once the checkbox exists (the bootstrap resolved and the
+      // presentation was built).
+      await vi.waitFor(() => expect(checkbox()).not.toBeNull(), INLINE_WAIT);
+      expect(el.getAttribute('data-skin-theme')).toBe('light');
+      const rootBefore = checkbox();
+      const before = bootstrapCalls(fn);
 
-    el.setAttribute('skin', 'dark');
-    await settle();
+      el.setAttribute('skin', 'dark');
 
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
-    expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#111111');
-    // Same DOM node → in place, not rebuilt (solved state would survive).
-    expect(el.shadowRoot!.querySelector('[part="simple-checkbox"]')).toBe(rootBefore);
-    // Shield SVG recolored (idle interactive stroke = text_muted).
-    expect(el.shadowRoot!.querySelector('[part="simple-shield-box"] path')!.getAttribute('stroke')).toBe('#555555');
-    // Exactly one extra bootstrap; never a /verify/start re-challenge.
-    expect(bootstrapCalls(fn)).toBe(before + 1);
-    expect(fn.mock.calls.some((c) => String(c[0]).includes('/verify/start'))).toBe(false);
-    el.remove();
-  });
+      // The reskin refetch resolved and re-themed the host.
+      await vi.waitFor(() => expect(el.getAttribute('data-skin-theme')).toBe('dark'), INLINE_WAIT);
+      expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#111111');
+      // Same DOM node → in place, not rebuilt (solved state would survive).
+      expect(checkbox()).toBe(rootBefore);
+      // Shield SVG recolored (idle interactive stroke = text_muted).
+      expect(el.shadowRoot!.querySelector('[part="simple-shield-box"] path')!.getAttribute('stroke')).toBe('#555555');
+      // Exactly one extra bootstrap; never a /verify/start re-challenge.
+      expect(bootstrapCalls(fn)).toBe(before + 1);
+      expect(fn.mock.calls.some((c) => String(c[0]).includes('/verify/start'))).toBe(false);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('keeps the current theme when the reskin refetch fails (no flash to bundled)', async () => {
     let call = 0;
@@ -391,19 +400,28 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
     // Gated key with NO `game` attribute: the SERVER picks the id.
     const el = getGame({ sitekey: 'cpt_pub_x', layout: 'inline', width: '300' });
     document.body.appendChild(el);
-    await settle();
     type GameState = { state: { config: { game: string | null }; requiresGame?: boolean } };
-    expect((el as unknown as GameState).state.requiresGame).toBe(true);
-    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf'); // stashed at mount
+    try {
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      expect((el as unknown as GameState).state.requiresGame).toBe(true);
+      expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf'); // stashed at mount
+      const frameBefore = gameFrame(el);
 
-    el.setAttribute('width', '500'); // geometry change → re-mount
-    await settle();
+      el.setAttribute('width', '500'); // geometry change → re-mount
 
-    // The re-mount must KEEP the server-picked id (not drop to null / re-pick
-    // from `games`), or the gated round would fail closed.
-    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
-    el.remove();
-  });
+      // Re-mounted → a fresh frame node.
+      await vi.waitFor(() => {
+        const frameAfter = gameFrame(el);
+        expect(frameAfter).not.toBeNull();
+        expect(frameAfter).not.toBe(frameBefore);
+      }, INLINE_WAIT);
+      // The re-mount must KEEP the server-picked id (not drop to null / re-pick
+      // from `games`), or the gated round would fail closed.
+      expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('preserves the gated gameId across a live skin reskin (gated overlay opens later)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
@@ -480,27 +498,35 @@ describe('<caputchin-game> shell skin reactivity', () => {
       skin: 'dark',
     });
     document.body.appendChild(el);
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+    try {
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      expect(el.getAttribute('data-skin-theme')).toBe('dark');
 
-    el.setAttribute('skin', 'light');
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
-    el.remove();
-  });
+      el.setAttribute('skin', 'light');
+
+      await vi.waitFor(() => expect(el.getAttribute('data-skin-theme')).toBe('light'), INLINE_WAIT);
+      // Re-themed after the reskin refetch was made (and failed).
+      expect(call).toBe(2);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('a pure bundled game mount (game-src only) follows a skin change without a refetch', async () => {
     const fn = vi.fn(() => Promise.resolve(new Response('nope', { status: 500 })));
     vi.stubGlobal('fetch', fn);
     const el = getGame({ 'game-src': 'https://example.com/g.js', 'no-verify': '', layout: 'inline', skin: 'dark' });
     document.body.appendChild(el);
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+    try {
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      expect(el.getAttribute('data-skin-theme')).toBe('dark');
 
-    el.setAttribute('skin', 'light');
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
-    expect(bootstrapCalls(fn)).toBe(0);
-    el.remove();
-  });
+      el.setAttribute('skin', 'light');
+
+      await vi.waitFor(() => expect(el.getAttribute('data-skin-theme')).toBe('light'), INLINE_WAIT);
+      expect(bootstrapCalls(fn)).toBe(0);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
