@@ -582,17 +582,21 @@ export class CaputchinGame extends HTMLElement {
   /** Refetch bootstrap with the new signals, then re-theme the shell in place.
    *  The embedded game's own theme rides the NEXT kickoff (state.gameResolved is
    *  refreshed here); a live in-progress iframe is left untouched (D2). On any
-   *  non-`ok` result we keep the current theme (no flash to bundled). */
+   *  non-`ok` result we keep a server-resolved theme (no flash to bundled). */
   private reskinRefetch(): void {
     const state = this.state;
     if (!state.config) return;
-    // A pure bundled mount (no sitekey, no game, no games) has nothing for the
-    // server to resolve; there is no theme to refetch.
-    if (state.config.sitekey === null && state.config.game === null && state.config.games === null) return;
+    const bundledOnly = state.config.sitekey === null && state.config.game === null && state.config.games === null;
 
     const cfg = this.reinspectGameConfig();
     if (!cfg) return;
     state.config = cfg;
+    // A pure bundled mount (no sitekey, no game, no games) has nothing for the
+    // server to resolve: re-pick the bundled preset for the new skin signal.
+    if (bundledOnly) {
+      this.applyWidgetAxes(null);
+      return;
+    }
 
     this.reskinEpoch += 1;
     const epoch = this.reskinEpoch;

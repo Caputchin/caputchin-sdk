@@ -465,4 +465,19 @@ describe('<caputchin-game> shell skin reactivity', () => {
     expect(el.getAttribute('data-skin-theme')).toBe('light');
     el.remove();
   });
+
+  it('a pure bundled game mount (game-src only) follows a skin change without a refetch', async () => {
+    const fn = vi.fn(() => Promise.resolve(new Response('nope', { status: 500 })));
+    vi.stubGlobal('fetch', fn);
+    const el = getGame({ 'game-src': 'https://example.com/g.js', 'no-verify': '', layout: 'inline', skin: 'dark' });
+    document.body.appendChild(el);
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+
+    el.setAttribute('skin', 'light');
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    expect(bootstrapCalls(fn)).toBe(0);
+    el.remove();
+  });
 });
