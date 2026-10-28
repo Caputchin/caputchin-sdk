@@ -612,15 +612,30 @@ export class CaputchinGame extends HTMLElement {
       signal: abort.signal,
     }).then((result) => {
       if (epoch !== this.reskinEpoch || this.state !== state || !this.state.connected || !this.state.config) return;
-      if (result.kind !== 'ok') return;
+      // Keep the current server-resolved theme on a failed refetch. A skin that
+      // is already the bundled fallback re-picks the bundled preset for the new
+      // signal (dark <-> light).
+      if (result.kind !== 'ok') {
+        if (!this.lastWidgetResolved?.skin) this.applyWidgetAxes(this.lastWidgetResolved);
+        return;
+      }
       this.applyResolvedAxes(result.response);
     });
   }
 
   private applyResolvedAxes(response: BootstrapResponse): void {
     this.lastWidgetResolved = response.widget?.resolved ?? this.lastWidgetResolved;
-    const shell = buildWidgetShell(response.widget?.resolved?.locale ?? null);
-    const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
+    this.applyWidgetAxes(response.widget?.resolved ?? null);
+    // Refresh the resolved GAME axes so a not-yet-opened iframe (modal/fullscreen
+    // pre-open) kicks off in the new theme (D2 case a). Keep the old value if the
+    // refetch carried none.
+    this.state.gameResolved = response.game?.resolved ?? this.state.gameResolved;
+  }
+
+  /** Re-theme the shell in place from resolved widget axes (null = bundled). */
+  private applyWidgetAxes(resolved: ResolvedAxes | null): void {
+    const shell = buildWidgetShell(resolved?.locale ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     // Host-level theme + direction (set AND removed).
     this.setAttribute('data-skin-theme', skin.theme);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
@@ -629,10 +644,6 @@ export class CaputchinGame extends HTMLElement {
     // Shell (checkbox entry / inline badge / dialog) re-themes in place.
     this.state.gamePresentation?.applySkin(skin);
     this.state.gamePresentation?.applyLocale(shell);
-    // Refresh the resolved GAME axes so a not-yet-opened iframe (modal/fullscreen
-    // pre-open) kicks off in the new theme (D2 case a). Keep the old value if the
-    // refetch carried none.
-    this.state.gameResolved = response.game?.resolved ?? this.state.gameResolved;
   }
 }
 
