@@ -44,6 +44,10 @@ export class CaputchinWidget extends HTMLElement {
    *  the newest theme always wins. Element-private (not on the state bag) so it
    *  never disturbs the solved token / cap session. */
   private reskinEpoch = 0;
+  /** Widget axes the server resolved for the current paint (null = degraded
+   *  mount). A failed reskin re-applies them so a bundled-fallback skin still
+   *  follows the new skin signal. */
+  private lastResolved: ResolvedAxes | null = null;
   private reskinAbort: AbortController | null = null;
   /** OS color-scheme tracker, installed only when `skin` is auto/absent. */
   private skinMedia: MediaQueryList | null = null;
@@ -138,10 +142,11 @@ export class CaputchinWidget extends HTMLElement {
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
+    this.lastResolved = resolved;
     const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
@@ -323,16 +328,21 @@ export class CaputchinWidget extends HTMLElement {
     }).then((result) => {
       // Only the latest reskin, on the same live mount, applies.
       if (epoch !== this.reskinEpoch || this.state !== state || !this.state.connected || !this.state.config) return;
-      // Keep the current theme on gate / degrade / failure - never flash to
-      // bundled light (mount already covered first paint).
-      if (result.kind !== 'ok') return;
+      // Keep the current server-resolved theme on gate / degrade / failure -
+      // never flash to bundled. A skin that is already the bundled fallback
+      // re-picks the bundled preset for the new signal (dark <-> light).
+      if (result.kind !== 'ok') {
+        if (!this.lastResolved?.skin) this.applyResolvedAxes(this.lastResolved);
+        return;
+      }
       this.applyResolvedAxes(result.response.widget?.resolved ?? null);
     });
   }
 
   private applyResolvedAxes(resolved: ResolvedAxes | null): void {
+    this.lastResolved = resolved;
     const shell = buildWidgetShell(resolved?.locale ?? null);
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     // Host-level theme + direction. `dir` is set AND removed so an rtl→ltr
     // switch doesn't leave a stale attribute.
     this.setAttribute('data-skin-theme', skin.theme);

@@ -97,6 +97,20 @@ describe('<caputchin-widget> runtime skin reactivity', () => {
     el.remove();
   });
 
+  it('a degraded mount follows a skin change on the bundled fallback while the refetch still fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('nope', { status: 500 }))));
+    const el = getWidget({ sitekey: 'k', trigger: 'click', skin: 'dark' });
+    document.body.appendChild(el);
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+
+    el.setAttribute('skin', 'light');
+    await settle();
+    // No server skin to keep: the bundled preset follows the new signal.
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    el.remove();
+  });
+
   it('a skin change DURING the mount window uses the api host and wins (F1 regression)', async () => {
     const urls: string[] = [];
     let call = 0;
@@ -424,6 +438,46 @@ describe('<caputchin-game> shell skin reactivity', () => {
     await settle();
     expect(el.getAttribute('data-skin-theme')).toBe('dark');
     expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#111111');
+    el.remove();
+  });
+
+  it('a degraded game mount follows a skin change on the bundled fallback while the refetch still fails', async () => {
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(() => {
+      call += 1;
+      // Mount: a per-attempt timeout (terminal, no retry loop). Reskin: a 500.
+      if (call === 1) return Promise.reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      return Promise.resolve(new Response('nope', { status: 500 }));
+    }));
+    const el = getGame({
+      sitekey: 'cpt_pub_x',
+      'game-src': 'https://example.com/g.js',
+      'no-verify': '',
+      layout: 'inline',
+      skin: 'dark',
+    });
+    document.body.appendChild(el);
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+
+    el.setAttribute('skin', 'light');
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    el.remove();
+  });
+
+  it('a pure bundled game mount (game-src only) follows a skin change without a refetch', async () => {
+    const fn = vi.fn(() => Promise.resolve(new Response('nope', { status: 500 })));
+    vi.stubGlobal('fetch', fn);
+    const el = getGame({ 'game-src': 'https://example.com/g.js', 'no-verify': '', layout: 'inline', skin: 'dark' });
+    document.body.appendChild(el);
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+
+    el.setAttribute('skin', 'light');
+    await settle();
+    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    expect(bootstrapCalls(fn)).toBe(0);
     el.remove();
   });
 });

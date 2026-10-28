@@ -246,7 +246,7 @@ export class CaputchinGame extends HTMLElement {
     const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
@@ -582,17 +582,21 @@ export class CaputchinGame extends HTMLElement {
   /** Refetch bootstrap with the new signals, then re-theme the shell in place.
    *  The embedded game's own theme rides the NEXT kickoff (state.gameResolved is
    *  refreshed here); a live in-progress iframe is left untouched (D2). On any
-   *  non-`ok` result we keep the current theme (no flash to bundled). */
+   *  non-`ok` result we keep a server-resolved theme (no flash to bundled). */
   private reskinRefetch(): void {
     const state = this.state;
     if (!state.config) return;
-    // A pure bundled mount (no sitekey, no game, no games) has nothing for the
-    // server to resolve; there is no theme to refetch.
-    if (state.config.sitekey === null && state.config.game === null && state.config.games === null) return;
+    const bundledOnly = state.config.sitekey === null && state.config.game === null && state.config.games === null;
 
     const cfg = this.reinspectGameConfig();
     if (!cfg) return;
     state.config = cfg;
+    // A pure bundled mount (no sitekey, no game, no games) has nothing for the
+    // server to resolve: re-pick the bundled preset for the new skin signal.
+    if (bundledOnly) {
+      this.applyWidgetAxes(null);
+      return;
+    }
 
     this.reskinEpoch += 1;
     const epoch = this.reskinEpoch;
@@ -612,15 +616,30 @@ export class CaputchinGame extends HTMLElement {
       signal: abort.signal,
     }).then((result) => {
       if (epoch !== this.reskinEpoch || this.state !== state || !this.state.connected || !this.state.config) return;
-      if (result.kind !== 'ok') return;
+      // Keep the current server-resolved theme on a failed refetch. A skin that
+      // is already the bundled fallback re-picks the bundled preset for the new
+      // signal (dark <-> light).
+      if (result.kind !== 'ok') {
+        if (!this.lastWidgetResolved?.skin) this.applyWidgetAxes(this.lastWidgetResolved);
+        return;
+      }
       this.applyResolvedAxes(result.response);
     });
   }
 
   private applyResolvedAxes(response: BootstrapResponse): void {
     this.lastWidgetResolved = response.widget?.resolved ?? this.lastWidgetResolved;
-    const shell = buildWidgetShell(response.widget?.resolved?.locale ?? null);
-    const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null);
+    this.applyWidgetAxes(response.widget?.resolved ?? null);
+    // Refresh the resolved GAME axes so a not-yet-opened iframe (modal/fullscreen
+    // pre-open) kicks off in the new theme (D2 case a). Keep the old value if the
+    // refetch carried none.
+    this.state.gameResolved = response.game?.resolved ?? this.state.gameResolved;
+  }
+
+  /** Re-theme the shell in place from resolved widget axes (null = bundled). */
+  private applyWidgetAxes(resolved: ResolvedAxes | null): void {
+    const shell = buildWidgetShell(resolved?.locale ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     // Host-level theme + direction (set AND removed).
     this.setAttribute('data-skin-theme', skin.theme);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
@@ -629,10 +648,6 @@ export class CaputchinGame extends HTMLElement {
     // Shell (checkbox entry / inline badge / dialog) re-themes in place.
     this.state.gamePresentation?.applySkin(skin);
     this.state.gamePresentation?.applyLocale(shell);
-    // Refresh the resolved GAME axes so a not-yet-opened iframe (modal/fullscreen
-    // pre-open) kicks off in the new theme (D2 case a). Keep the old value if the
-    // refetch carried none.
-    this.state.gameResolved = response.game?.resolved ?? this.state.gameResolved;
   }
 }
 
