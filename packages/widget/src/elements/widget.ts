@@ -141,7 +141,7 @@ export class CaputchinWidget extends HTMLElement {
     const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
@@ -332,7 +332,7 @@ export class CaputchinWidget extends HTMLElement {
 
   private applyResolvedAxes(resolved: ResolvedAxes | null): void {
     const shell = buildWidgetShell(resolved?.locale ?? null);
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     // Host-level theme + direction. `dir` is set AND removed so an rtl→ltr
     // switch doesn't leave a stale attribute.
     this.setAttribute('data-skin-theme', skin.theme);

@@ -246,7 +246,7 @@ export class CaputchinGame extends HTMLElement {
     const shell = buildWidgetShell(resolved?.locale ?? null);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');
 
-    const skin = buildWidgetShellSkin(resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     this.setAttribute('data-skin-theme', skin.theme);
     applySkinVars(this, skin.palette);
 
@@ -620,7 +620,7 @@ export class CaputchinGame extends HTMLElement {
   private applyResolvedAxes(response: BootstrapResponse): void {
     this.lastWidgetResolved = response.widget?.resolved ?? this.lastWidgetResolved;
     const shell = buildWidgetShell(response.widget?.resolved?.locale ?? null);
-    const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null);
+    const skin = buildWidgetShellSkin(response.widget?.resolved?.skin ?? null, resolveSkinSignal(this.state.config?.skin));
     // Host-level theme + direction (set AND removed).
     this.setAttribute('data-skin-theme', skin.theme);
     if (shell.direction === 'rtl') this.setAttribute('dir', 'rtl');

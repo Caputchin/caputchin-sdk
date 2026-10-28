@@ -5,6 +5,7 @@ import { CaputchinWidget } from '../../src/elements/widget.js';
 import { CaputchinGame } from '../../src/elements/game.js';
 import { installCustomFetch } from '../../src/cap/custom-fetch.js';
 import { getWidget, getGame } from '../fixtures/test-element.js';
+import widgetManifest from '../../caputchin.json';
 
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
 (globalThis as Record<string, unknown>)['__IFRAME_RUNTIME__'] = '';
@@ -104,6 +105,50 @@ describe('bootstrap degrade is observable (not silent)', () => {
     await flush();
     expect(reasons).toContain('timeout');
     el.remove();
+  });
+
+  it('a degraded <caputchin-widget skin="dark"> mounts the bundled dark palette', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('{}', { status: 401 }));
+    const el = getWidget({ sitekey: 'k', skin: 'dark' });
+    const reasons: string[] = [];
+    el.addEventListener('degraded', (e) => reasons.push((e as CustomEvent).detail.reason));
+    document.body.appendChild(el);
+    await flush();
+    expect(reasons).toEqual(['http']);
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
+    el.remove();
+  });
+
+  it('a degraded <caputchin-game skin="dark"> mounts the bundled dark palette', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+    const el = getGame({ game: '@x/y', skin: 'dark' });
+    document.body.appendChild(el);
+    await flush();
+    expect(el.getAttribute('data-skin-theme')).toBe('dark');
+    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
+    el.remove();
+  });
+
+  it('a degraded widget with skin auto follows prefers-color-scheme: dark', async () => {
+    const matchMedia = vi.fn((query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    vi.stubGlobal('matchMedia', matchMedia);
+    try {
+      vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network'));
+      const el = getWidget({ sitekey: 'k' });
+      document.body.appendChild(el);
+      await flush();
+      expect(el.getAttribute('data-skin-theme')).toBe('dark');
+      el.remove();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+    }
   });
 
   it('aborts the in-flight bootstrap on disconnect (no late mount, no throw)', async () => {
