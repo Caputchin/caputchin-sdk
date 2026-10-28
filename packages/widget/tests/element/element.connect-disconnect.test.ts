@@ -131,13 +131,15 @@ describe('bootstrap degrade is observable (not silent)', () => {
   });
 
   it('a degraded widget with skin auto follows prefers-color-scheme: dark', async () => {
-    const matchMedia = vi.fn((query: string) => ({
-      matches: query === '(prefers-color-scheme: dark)',
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    }));
-    vi.stubGlobal('matchMedia', matchMedia);
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(prefers-color-scheme: dark)',
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }) as unknown as MediaQueryList,
+    );
     try {
       vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network'));
       const el = getWidget({ sitekey: 'k' });
@@ -146,8 +148,7 @@ describe('bootstrap degrade is observable (not silent)', () => {
       expect(el.getAttribute('data-skin-theme')).toBe('dark');
       el.remove();
     } finally {
-      vi.unstubAllGlobals();
-      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+      matchMedia.mockRestore();
     }
   });
 
