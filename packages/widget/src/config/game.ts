@@ -34,7 +34,9 @@ export interface GameConfig {
   trigger: GameTrigger;
   /** In-page element width: `auto` (size to content), `full` (span the
    *  parent), or a positive pixel number. In inline layout this sizes the
-   *  whole game panel (the one box). In modal/fullscreen it sizes ONLY the
+   *  whole game panel (the one box); with `auto` the panel never grows past
+   *  its container, so a game wider than it narrows to fit (a responsive
+   *  game reflows at its preferred height). In modal/fullscreen it sizes ONLY the
    *  in-page entry checkbox; the overlay game box is sized by `overlayWidth`. */
   width: WidgetWidth;
   /** In-page element height: omitted/`null` (auto), `full`, or a positive
