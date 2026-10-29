@@ -290,3 +290,65 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     el.remove();
   });
 });
+
+describe('CaputchinGame - inline auto width stays inside its container', () => {
+  function stubBootstrap(preferred: Record<string, unknown> | null): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ game: { preferred }, requiresGame: false }), { status: 200 }),
+      ),
+    );
+  }
+
+  afterEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+  });
+
+  it('caps the shrink-to-content host at its container and narrows the iframe to the frame', async () => {
+    // A 600px game on a 375 phone: the host's fit-content width is the
+    // iframe's preferred width, so without a host cap the frame's
+    // max-width:100% never binds and the page scrolls sideways.
+    stubBootstrap({ width: 600, height: 150 });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.style.maxWidth).toBe('100%');
+    expect(el.style.width).toBe('');
+    const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
+      .map((s) => s.textContent ?? '')
+      .join('');
+    expect(css).toContain(
+      '[part="game-frame"][data-layout="inline"] [part="game-iframe-slot"] iframe{max-width:100%}',
+    );
+    el.remove();
+    expect(el.style.maxWidth).toBe('');
+  });
+
+  it('keeps a customer inline max-width and leaves it on unmount', async () => {
+    stubBootstrap({ width: 600, height: 150 });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    el.style.maxWidth = '300px';
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.style.maxWidth).toBe('300px');
+    el.remove();
+    expect(el.style.maxWidth).toBe('300px');
+  });
+
+  it('leaves a customer pixel width uncapped', async () => {
+    stubBootstrap({ width: 600, height: 150 });
+    const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.style.width).toBe('500px');
+    expect(el.style.maxWidth).toBe('');
+    el.remove();
+  });
+});

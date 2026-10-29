@@ -93,6 +93,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
   let iframeSlot: HTMLDivElement | null = null;
   let badgeSlot: HTMLDivElement | null = null;
   let subSimple: Presentation | null = null;
+  // True only while the host max-width cap below is ours, so unmount never
+  // clears a max-width the customer set inline on the element.
+  let ownsHostMaxWidth = false;
 
   return {
     mount(): void {
@@ -174,6 +177,18 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         // sits at the manifest preferred size, leaving a visible gap.
         host.style.display = '';
         host.style.width = '';
+        // Cap the shrink-to-content host at its container. Without it the
+        // host's fit-content width IS the iframe's preferred width, so the
+        // frame's max-width:100% resolves against that and never binds: a
+        // 600px game on a 375 phone overflows the page sideways. With the
+        // host capped, the frame shrinks to the container and the inline
+        // iframe max-width rule below narrows the game into it (a responsive
+        // game reflows to the new width, its height stays the preferred one).
+        // A customer's own inline max-width wins and is left in place.
+        if (!host.style.maxWidth) {
+          host.style.maxWidth = '100%';
+          ownsHostMaxWidth = true;
+        }
       }
       if (isFullHeight) {
         // height="full" in inline mode means "fit the parent vertically when
@@ -210,6 +225,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       if (!frame) return;
       subSimple?.unmount();
       frame.remove();
+      if (ownsHostMaxWidth) {
+        host.style.maxWidth = '';
+        ownsHostMaxWidth = false;
+      }
       if (isFullWidth || isFullHeight || pxWidth !== null || pxHeight !== null) {
         host.style.display = '';
         host.style.width = '';
@@ -539,6 +558,12 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-frame"][data-layout="inline"][data-width="full"]{width:100%}',
     '[part="game-iframe-slot"]{display:flex;flex-direction:column}',
     '[part="game-iframe-slot"] iframe{display:block;border:0;background:var(--cpt-skin-surface_bg)}',
+    // Inline: a game whose preferred (or auto-measured) width exceeds the
+    // frame narrows to it instead of being cut at the frame's edge. The frame
+    // is capped by its host (max-width:100% set at mount for width="auto"),
+    // so this is what keeps a wide game inside a phone-width container. The
+    // overlay dialog has its own clamp below.
+    '[part="game-frame"][data-layout="inline"] [part="game-iframe-slot"] iframe{max-width:100%}',
     // When the customer pins the inline frame size (width/height attr), the
     // iframe stretches to fill the slot instead of staying at the game's
     // manifest preferred size.
