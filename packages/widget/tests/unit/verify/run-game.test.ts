@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { resolveGameUrl, runGame } from '../../../src/verify/run-game.js';
+import { adoptLateSizing, resolveGameUrl, runGame } from '../../../src/verify/run-game.js';
+import { createGamePresentation } from '../../../src/modes/game.js';
+import { buildWidgetShell } from '../../../src/locale/widget-shell.js';
+import { buildWidgetShellSkin } from '../../../src/skin/widget-shell-skin.js';
+import { buildWidgetShellConfig } from '../../../src/configurations/widget-shell-config.js';
 import type { GameConfig } from '../../../src/config/game.js';
 import type { WidgetState } from '../../../src/verify/state.js';
 import type { IframeToWidget } from '../../../src/protocol/messages.js';
@@ -8,11 +12,14 @@ import type { IframeToWidget } from '../../../src/protocol/messages.js';
 // Mock IframeHost so the no-verify run path is exercised without building a real
 // srcdoc iframe (the iframe-runtime define is absent under vitest). The captured
 // onMessage lets a test drive game-pass / game-error after mount.
-const hoisted = vi.hoisted(() => ({ onMessage: null as ((m: IframeToWidget) => void) | null }));
+const hoisted = vi.hoisted(() => ({
+  onMessage: null as ((m: IframeToWidget) => void) | null,
+  host: null as { mount: ReturnType<typeof vi.fn>; setSize: ReturnType<typeof vi.fn> } | null,
+}));
 vi.mock('../../../src/iframe/host.js', () => ({
   IframeHost: vi.fn(function (this: unknown, _u: unknown, _i: unknown, _id: unknown, _el: unknown, onMessage: (m: IframeToWidget) => void) {
     hoisted.onMessage = onMessage;
-    return {
+    const host = {
       mount: vi.fn(),
       getIframe: () => ({}) as HTMLIFrameElement,
       setSize: vi.fn(),
@@ -20,6 +27,8 @@ vi.mock('../../../src/iframe/host.js', () => ({
       kickoff: vi.fn(),
       dispose: vi.fn(),
     };
+    hoisted.host = host;
+    return host;
   }),
 }));
 
@@ -77,7 +86,12 @@ describe('resolveGameUrl - bootstrap-bundle reuse', () => {
   it('falls back to a fresh resolve when no bundle was prefetched', async () => {
     const fetchFn = mockFetch({ url: 'https://cdn.test/y.js', integrity: 'sha384-y' });
     const r = await resolveGameUrl(el(), cfg({ game: 'o/r' }), 'https://api', vi.fn(), null);
-    expect(r).toEqual({ url: 'https://cdn.test/y.js', integrity: 'sha384-y', gameId: 'o/r' });
+    expect(r).toEqual({
+      url: 'https://cdn.test/y.js',
+      integrity: 'sha384-y',
+      gameId: 'o/r',
+      sizing: { preferred: null, responsive: undefined },
+    });
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
@@ -266,5 +280,136 @@ describe('runGame - reuse short-circuit (cleared session)', () => {
     await runGame(el(), state, 'https://api');
 
     expect(IframeHost).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('runGame - a degraded mount adopts the bundle resolve sizing', () => {
+  // A degraded bootstrap leaves the mount with no game block: no preferred
+  // footprint, responsive by default. The bundle resolve that follows returns
+  // the game block, so a fixed-aspect game gets its size and the fit box.
+  function degradedState(layout: 'inline' | 'modal', fetchBlock: unknown): WidgetState<GameConfig> {
+    mockFetch(fetchBlock);
+    const shadowHost = document.createElement('div');
+    document.body.appendChild(shadowHost);
+    const gp = createGamePresentation({
+      host: document.createElement('div'),
+      root: shadowHost.attachShadow({ mode: 'open' }),
+      trigger: layout === 'inline' ? 'auto' : 'click',
+      width: 'auto',
+      height: null,
+      footprintWidth: 'auto',
+      footprintHeight: null,
+      layout,
+      fixedAspect: false,
+      shell: buildWidgetShell(null),
+      skin: buildWidgetShellSkin(null),
+      shellConfig: buildWidgetShellConfig(null),
+    });
+    gp.mount();
+    return {
+      config: cfg({ game: 'caputchin/games/phobos', sitekey: null as unknown as string }),
+      gamePresentation: gp,
+      gameBundle: null,
+      gameResolved: null,
+      gamePreferred: null,
+      gameResponsive: true,
+      resolvedLayout: layout,
+      gameFootprint: { width: 'auto', height: null },
+      gameStartedEmitted: false,
+      gameErrored: false,
+    } as unknown as WidgetState<GameConfig>;
+  }
+
+  for (const layout of ['inline', 'modal'] as const) {
+    it(`${layout}: a fixed-aspect game mounts into the fit box at its preferred size`, async () => {
+      const state = degradedState(layout, {
+        url: 'https://cdn.test/phobos.js',
+        integrity: 'sha384-p',
+        preferred: { width: 640, height: 400 },
+        responsive: false,
+      });
+      await runGame(el(), state, 'https://api');
+      expect(state.gameResponsive).toBe(false);
+      expect(state.gamePreferred).toEqual({ width: 640, height: 400 });
+      const slot = hoisted.host!.mount.mock.calls[0]![0] as HTMLElement;
+      expect(slot.getAttribute('part')).toBe('game-fit-box');
+      expect(hoisted.host!.setSize).toHaveBeenCalledWith(640, 400);
+      state.gamePresentation!.unmount();
+    });
+  }
+
+  it('the verify runner adopts it too (sitekey mount)', async () => {
+    capHoisted.cleared = false;
+    const state = degradedState('inline', {
+      url: 'https://cdn.test/phobos.js',
+      integrity: 'sha384-p',
+      preferred: { width: 640, height: 400 },
+      responsive: false,
+    });
+    state.config = cfg({ game: 'caputchin/games/phobos', sitekey: 'k' });
+    await runGame(el(), state, 'https://api');
+    const slot = hoisted.host!.mount.mock.calls[0]![0] as HTMLElement;
+    expect(slot.getAttribute('part')).toBe('game-fit-box');
+    expect(hoisted.host!.setSize).toHaveBeenCalledWith(640, 400);
+    state.gamePresentation!.unmount();
+  });
+
+  it('a responsive game keeps the plain slot and still gets its preferred size', async () => {
+    const state = degradedState('inline', {
+      url: 'https://cdn.test/g.js',
+      integrity: 'sha384-g',
+      preferred: { width: 600, height: 150 },
+    });
+    await runGame(el(), state, 'https://api');
+    expect(state.gameResponsive).toBe(true);
+    const slot = hoisted.host!.mount.mock.calls[0]![0] as HTMLElement;
+    expect(slot.getAttribute('part')).toBe('game-iframe-slot');
+    expect(hoisted.host!.setSize).toHaveBeenCalledWith(600, 150);
+    state.gamePresentation!.unmount();
+  });
+});
+
+describe('adoptLateSizing', () => {
+  function bare(over: Partial<WidgetState<GameConfig>> = {}): WidgetState<GameConfig> {
+    return {
+      gamePresentation: { useFixedAspect: vi.fn() },
+      gameBundle: null,
+      gamePreferred: null,
+      gameResponsive: true,
+      ...over,
+    } as unknown as WidgetState<GameConfig>;
+  }
+
+  it('adopts only the pixel axes (a full axis and the layout shaped the mount)', () => {
+    const state = bare();
+    adoptLateSizing(state, { preferred: { width: 'full', height: 400, layout: 'modal' }, responsive: undefined });
+    expect(state.gamePreferred).toEqual({ height: 400 });
+    expect(state.gameResponsive).toBe(true);
+    expect(state.gamePresentation!.useFixedAspect).not.toHaveBeenCalled();
+  });
+
+  it('keeps the fill path for a fixed-aspect game with a full axis (as a normal mount does)', () => {
+    const state = bare();
+    adoptLateSizing(state, { preferred: { width: 'full', height: 400 }, responsive: false });
+    expect(state.gameResponsive).toBe(true);
+    expect(state.gamePresentation!.useFixedAspect).not.toHaveBeenCalled();
+  });
+
+  it('keeps the mount data when the bootstrap did carry a game block', () => {
+    const state = bare({
+      gameBundle: { gameId: 'o/r', url: 'https://cdn.test/x.js', integrity: 'sha384-x' },
+      gamePreferred: { width: 300, height: 200 },
+    });
+    adoptLateSizing(state, { preferred: { width: 640, height: 400 }, responsive: false });
+    expect(state.gamePreferred).toEqual({ width: 300, height: 200 });
+    expect(state.gameResponsive).toBe(true);
+    expect(state.gamePresentation!.useFixedAspect).not.toHaveBeenCalled();
+  });
+
+  it('does nothing without a fresh resolve (game-src or a reused bundle)', () => {
+    const state = bare();
+    adoptLateSizing(state, undefined);
+    expect(state.gamePreferred).toBeNull();
+    expect(state.gamePresentation!.useFixedAspect).not.toHaveBeenCalled();
   });
 });

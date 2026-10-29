@@ -9,6 +9,7 @@ import { installGameFrame } from './install-game-frame.js';
 import type { WidgetState } from './state.js';
 import { shouldVerify } from '../config/game.js';
 import type { GameConfig } from '../config/game.js';
+import type { BootstrapGameBlock } from '../bootstrap/types.js';
 
 /**
  * Orchestrator for `<caputchin-game>` iframe paths.
@@ -51,10 +52,11 @@ export async function resolveGameUrl(
   apiHost: string,
   onError: () => void,
   prefetched: WidgetState<GameConfig>['gameBundle'] = null,
-): Promise<{ url: string | null; integrity: string | null; gameId: string | null }> {
+): Promise<ResolvedGameUrl> {
   const gameId = resolveGameId(cfg);
   let url: string | null = cfg.gameSrc;
   let integrity: string | null = null;
+  let sizing: ResolvedGameUrl['sizing'];
   if (gameId && !url) {
     // Reuse the mount-time bootstrap's bundle when it was fetched for THIS
     // id (single round trip). A `games` pool pick can differ from
@@ -80,9 +82,54 @@ export async function resolveGameUrl(
       }
       url = resolution.url;
       integrity = resolution.integrity;
+      sizing = { preferred: resolution.preferred, responsive: resolution.responsive };
     }
   }
-  return { url, integrity, gameId };
+  return { url, integrity, gameId, sizing };
+}
+
+/** What resolveGameUrl found. `sizing` is set only when it ran a fresh
+ *  bundle resolve: that reply carries the game's preferred footprint and
+ *  responsive flag, which adoptLateSizing may still apply. */
+export interface ResolvedGameUrl {
+  url: string | null;
+  integrity: string | null;
+  gameId: string | null;
+  sizing?: {
+    preferred: BootstrapGameBlock['preferred'];
+    responsive: boolean | undefined;
+  };
+}
+
+/** A mount whose bootstrap brought no game block (a degraded bootstrap: timeout,
+ *  5xx, network) built its presentation with no preferred footprint and as a
+ *  responsive game, so a fixed-aspect game would sit at the 400x300 default and
+ *  letterbox. The bundle resolve that follows hits the same endpoint and does
+ *  carry both, so adopt what still applies before the iframe is installed: the
+ *  pixel preferred size (installGameFrame reads it from state) and a fixed
+ *  aspect (the presentation switches to its fit box). A preferred `full` axis
+ *  and the preferred layout shaped the presentation at mount, so they are not
+ *  re-applied, and a `full` axis also keeps the fill path a normal mount gives.
+ *  A mount that did get a game block keeps it: a `games` pool pick resolved
+ *  fresh here is sized against the presentation built at mount. */
+export function adoptLateSizing(
+  state: WidgetState<GameConfig>,
+  sizing: ResolvedGameUrl['sizing'],
+): void {
+  if (!sizing || state.gameBundle) return;
+  const { width, height } = sizing.preferred ?? {};
+  if (typeof width === 'number' || typeof height === 'number') {
+    state.gamePreferred = {
+      ...(typeof width === 'number' ? { width } : {}),
+      ...(typeof height === 'number' ? { height } : {}),
+    };
+  }
+  // A fixed-aspect game with a `full` axis takes the fill path on a normal
+  // mount (that axis stretches instead), so it gets no fit box here either.
+  if (sizing.responsive === false && width !== 'full' && height !== 'full') {
+    state.gameResponsive = false;
+    state.gamePresentation?.useFixedAspect();
+  }
 }
 
 async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>, apiHost: string): Promise<void> {
@@ -95,6 +142,7 @@ async function runGameWithVerify(el: HTMLElement, state: WidgetState<GameConfig>
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
+  adoptLateSizing(state, resolved.sizing);
   // On a gated key the server sets the session game from the signed ticket,
   // not from the client gameId. Echo the ticket here.
   const { client, getWrappedToken, awaitSeed, isCleared } = setupCapSession(state, apiHost, cfg.sitekey!, gameId, state.gateTicket ?? null);
@@ -194,6 +242,7 @@ async function runGameOnly(el: HTMLElement, state: WidgetState<GameConfig>, apiH
   if (resolved.url === null && resolved.gameId !== null) return; // resolveGameUrl already fired the error
 
   const { url: gameUrl, integrity, gameId } = resolved;
+  adoptLateSizing(state, resolved.sizing);
   if (gameId === null && gameUrl === null) {
     console.warn('[caputchin] game widget mounted without sitekey + without game configured; widget is inert');
     return;

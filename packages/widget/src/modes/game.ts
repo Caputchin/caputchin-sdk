@@ -26,6 +26,13 @@ export interface GamePresentation extends Presentation {
   open(): void;
   /** Close the overlay. No-op for inline. */
   close(): void;
+  /** Switch to the fixed-aspect fit box after mount, for a mount that learns
+   *  the game is fixed-aspect only once it resolves the game bundle (its
+   *  bootstrap degraded). Call before the iframe is installed; a no-op once the
+   *  iframe is in the slot, when the fit box already exists, or where the mount
+   *  rule for `fixedAspect` would not use it (manual, customer-sized panel,
+   *  filled overlay axis). */
+  useFixedAspect(): void;
 }
 
 export interface GamePresentationInput {
@@ -100,6 +107,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
   let badgeSlot: HTMLDivElement | null = null;
   let subSimple: Presentation | null = null;
   let aspectFit: AspectFit | null = null;
+  // Only when the game sizes the panel: a customer width/height pins the panel
+  // and the iframe fills it (data-fill rules below).
+  const canFit = !manual && width === 'auto' && height === null;
 
   return {
     mount(): void {
@@ -120,9 +130,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
-      } else if (fixedAspect && width === 'auto' && height === null) {
-        // Only when the game sizes the panel: a customer width/height pins
-        // the panel and the iframe fills it (data-fill rules below).
+      } else if (fixedAspect && canFit) {
         aspectFit = mountAspectFit(iframeSlot);
       }
 
@@ -262,6 +270,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     getIframeSlot(): HTMLElement | null {
       return aspectFit?.box ?? iframeSlot;
     },
+    useFixedAspect(): void {
+      if (!canFit || aspectFit || !iframeSlot || iframeSlot.querySelector('iframe')) return;
+      aspectFit = mountAspectFit(iframeSlot);
+    },
     open(): void {},
     close(): void {},
   };
@@ -286,6 +298,8 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   const { host, root: renderRoot, layout, manual, fixedAspect, width, height, footprintWidth, footprintHeight, shell, skin, shellConfig } = input;
   let container: HTMLDivElement | null = null;
   let aspectFit: AspectFit | null = null;
+  // A filled axis stretches the iframe to the dialog instead of the fit box.
+  const canFit = !manual && footprintWidth !== 'full' && footprintHeight !== 'full';
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
@@ -361,8 +375,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
-      } else if (fixedAspect && footprintWidth !== 'full' && footprintHeight !== 'full') {
-        // A filled axis stretches the iframe to the dialog instead.
+      } else if (fixedAspect && canFit) {
         aspectFit = mountAspectFit(iframeSlot);
       }
       dialog.appendChild(iframeSlot);
@@ -493,6 +506,10 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
 
     getIframeSlot(): HTMLElement | null {
       return aspectFit?.box ?? iframeSlot;
+    },
+    useFixedAspect(): void {
+      if (!canFit || aspectFit || !iframeSlot || iframeSlot.querySelector('iframe')) return;
+      aspectFit = mountAspectFit(iframeSlot);
     },
 
     open(): void {

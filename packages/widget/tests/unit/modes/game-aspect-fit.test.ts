@@ -258,3 +258,65 @@ describe('game presentation - fixed-aspect fit box', () => {
     gp.unmount();
   });
 });
+
+// A mount whose bootstrap degraded learns the game is fixed-aspect only from the
+// bundle resolve that runs after mount (run-game adoptLateSizing), so the
+// presentation switches to the fit box before the iframe is installed.
+describe('game presentation - useFixedAspect (late fixed aspect)', () => {
+  for (const layout of ['inline', 'modal', 'fullscreen'] as const) {
+    it(`${layout}: a responsive mount switches to the fit box and scales the game`, async () => {
+      const { gp } = mount({ layout, fixedAspect: false });
+      const slot = gp.getIframeSlot()!;
+      expect(slot.getAttribute('part')).toBe('game-iframe-slot');
+      gp.useFixedAspect();
+      const box = gp.getIframeSlot()!;
+      expect(box.getAttribute('part')).toBe('game-fit-box');
+      expect(box.parentElement).toBe(slot);
+      stubRoom(box, 320);
+      const iframe = await mountGameIframe(box, 640, 400);
+      expect(iframe.style.transform).toBe('scale(0.5)');
+      gp.unmount();
+    });
+  }
+
+  it('is idempotent (one fit box)', () => {
+    const { gp } = mount({ fixedAspect: false });
+    gp.useFixedAspect();
+    const box = gp.getIframeSlot();
+    gp.useFixedAspect();
+    expect(gp.getIframeSlot()).toBe(box);
+    expect(box!.parentElement!.querySelectorAll('[part="game-fit-box"]')).toHaveLength(1);
+    gp.unmount();
+  });
+
+  it('leaves an installed iframe where it is', () => {
+    const { gp } = mount({ fixedAspect: false });
+    const slot = gp.getIframeSlot()!;
+    slot.appendChild(document.createElement('iframe'));
+    gp.useFixedAspect();
+    expect(gp.getIframeSlot()).toBe(slot);
+    expect(slot.querySelector('[part="game-fit-box"]')).toBeNull();
+    gp.unmount();
+  });
+
+  it('keeps the fill path where the mount rule would (customer size, full overlay axis, manual)', () => {
+    const cases: Array<Partial<GamePresentationInput>> = [
+      { width: 500 },
+      { width: 'full' },
+      { height: 300 },
+      { height: 'full' },
+      { layout: 'modal', footprintWidth: 'full' },
+      { layout: 'fullscreen', footprintHeight: 'full' },
+      { manual: true },
+      { layout: 'modal', manual: true },
+    ];
+    for (const over of cases) {
+      const { gp } = mount({ fixedAspect: false, ...over });
+      const slot = gp.getIframeSlot()!;
+      gp.useFixedAspect();
+      expect(gp.getIframeSlot()).toBe(slot);
+      expect(slot.querySelector('[part="game-fit-box"]')).toBeNull();
+      gp.unmount();
+    }
+  });
+});
