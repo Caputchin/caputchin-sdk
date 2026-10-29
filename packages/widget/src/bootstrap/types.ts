@@ -44,6 +44,11 @@ export interface BootstrapGameBlock {
   // `layout` is the game's preferred shell; the widget honors it only when the
   // embed leaves `layout` unset (default `auto`).
   preferred: { width?: number | 'full'; height?: number | 'full'; layout?: Layout } | null;
+  // False when the game's caputchin.json sets `marketplace.support.responsive:
+  // false` (a fixed-aspect game): the widget scales it down whole, aspect kept,
+  // in a box narrower than its size instead of narrowing it. Absent (a platform
+  // that predates the field) means responsive.
+  responsive?: boolean;
   resolved: ResolvedAxes;
 }
 
