@@ -58,6 +58,12 @@ export interface GamePresentationInput {
    *  customer light-DOM children project into the layout shell. The
    *  element skips iframe construction entirely. */
   manual?: boolean;
+  /** True for a fixed-aspect game (bootstrap `game.responsive === false`).
+   *  Where the game box is sized by the game itself (inline `width`/`height`
+   *  auto; overlay footprint not `full`), the iframe keeps its own pixel size
+   *  and is scaled down whole, aspect kept, when the room is narrower than it,
+   *  instead of being narrowed (which a non-responsive game letterboxes). */
+  fixedAspect?: boolean;
   /** Pre-resolved shell (strings + direction). Threaded down from the
    *  `<caputchin-game>` element so the embedded simple presentation and
    *  the overlay dialog share the customer's `lang` selection. */
@@ -84,7 +90,7 @@ export function createGamePresentation(input: GamePresentationInput): GamePresen
 // ---------------- inline ----------------
 
 function createInlineGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, width, height, manual, shell, skin, shellConfig } = input;
+  const { host, root: renderRoot, width, height, manual, fixedAspect, shell, skin, shellConfig } = input;
   const isFullWidth = width === 'full';
   const isFullHeight = height === 'full';
   const pxWidth = typeof width === 'number' ? width : null;
@@ -93,6 +99,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
   let iframeSlot: HTMLDivElement | null = null;
   let badgeSlot: HTMLDivElement | null = null;
   let subSimple: Presentation | null = null;
+  let aspectFit: AspectFit | null = null;
   // True only while the host max-width cap below is ours, so unmount never
   // clears a max-width the customer set inline on the element.
   let ownsHostMaxWidth = false;
@@ -116,6 +123,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
+      } else if (fixedAspect && width === 'auto' && height === null) {
+        // Only when the game sizes the panel: a customer width/height pins
+        // the panel and the iframe fills it (data-fill rules below).
+        aspectFit = mountAspectFit(iframeSlot);
       }
 
       badgeSlot = document.createElement('div');
@@ -224,6 +235,8 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     unmount(): void {
       if (!frame) return;
       subSimple?.unmount();
+      aspectFit?.dispose();
+      aspectFit = null;
       frame.remove();
       if (ownsHostMaxWidth) {
         host.style.maxWidth = '';
@@ -257,7 +270,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     // at the new footprint), not in place, so this is a no-op.
     applyGeometry(_geometry: GeometryUpdate): void {},
     getIframeSlot(): HTMLElement | null {
-      return iframeSlot;
+      return aspectFit?.box ?? iframeSlot;
     },
     open(): void {},
     close(): void {},
@@ -280,8 +293,9 @@ function signalVisibility(slot: HTMLElement | null, visible: boolean): void {
 }
 
 function createOverlayGame(input: GamePresentationInput): GamePresentation {
-  const { host, root: renderRoot, layout, manual, width, height, footprintWidth, footprintHeight, shell, skin, shellConfig } = input;
+  const { host, root: renderRoot, layout, manual, fixedAspect, width, height, footprintWidth, footprintHeight, shell, skin, shellConfig } = input;
   let container: HTMLDivElement | null = null;
+  let aspectFit: AspectFit | null = null;
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
@@ -357,6 +371,9 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
+      } else if (fixedAspect && footprintWidth !== 'full' && footprintHeight !== 'full') {
+        // A filled axis stretches the iframe to the dialog instead.
+        aspectFit = mountAspectFit(iframeSlot);
       }
       dialog.appendChild(iframeSlot);
 
@@ -434,6 +451,8 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
       if (!container) return;
       subSimple?.unmount();
       this.close();
+      aspectFit?.dispose();
+      aspectFit = null;
       container.remove();
       container = null;
       checkboxSlot = null;
@@ -483,7 +502,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
     applyGeometry(_geometry: GeometryUpdate): void {},
 
     getIframeSlot(): HTMLElement | null {
-      return iframeSlot;
+      return aspectFit?.box ?? iframeSlot;
     },
 
     open(): void {
@@ -526,6 +545,88 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         dialog.removeAttribute('open');
         dialog.dispatchEvent(new Event('close'));
       }
+    },
+  };
+}
+
+// ---------------- fixed-aspect fit ----------------
+
+interface AspectFit {
+  /** The box the iframe is mounted into (returned as the iframe slot). */
+  box: HTMLDivElement;
+  dispose(): void;
+}
+
+/** A pixel length from an inline style, else null (`100%`, empty). */
+function stylePx(v: string): number | null {
+  return v.endsWith('px') ? parseFloat(v) || null : null;
+}
+
+/**
+ * Scale-to-fit box for a fixed-aspect game, the way the marketplace preview
+ * scales a non-responsive game. The iframe keeps its own pixel size (the
+ * preferred footprint, or what the runtime measured) so the game lays out
+ * exactly as designed, absolutely placed over an empty `<svg>` sizer whose
+ * viewBox carries that size. The layout's CSS caps the sizer to the room
+ * (`max-width:100%`, plus the viewport height in modal/fullscreen) and its
+ * height follows the viewBox aspect; the iframe is `transform: scale()`d by
+ * the box's used width over its own. The sizer is a replaced element on
+ * purpose: like the iframe it stands in for, its min-content contribution
+ * under a percentage max-width is zero, so it never widens a grid or flex
+ * track the host sits in (a plain div with a pixel width would, and push a
+ * phone page sideways). Pointer input still maps (hit-testing follows the
+ * transform) and the game never sees a narrower viewport. The scale is
+ * recomputed when the box resizes (container, viewport, a dialog opening from
+ * `display:none`) or the host writes a new iframe size.
+ */
+function mountAspectFit(slot: HTMLElement): AspectFit {
+  const box = document.createElement('div');
+  box.setAttribute('part', 'game-fit-box');
+  const sizer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  sizer.setAttribute('part', 'game-fit-sizer');
+  sizer.setAttribute('aria-hidden', 'true');
+  sizer.setAttribute('viewBox', '0 0 4 3');
+  box.appendChild(sizer);
+  slot.appendChild(box);
+  let iframe: HTMLIFrameElement | null = null;
+
+  const fit = (): void => {
+    if (!iframe) return;
+    const w = stylePx(iframe.style.width) ?? iframe.offsetWidth;
+    const h = stylePx(iframe.style.height) ?? iframe.offsetHeight;
+    if (!w || !h) return;
+    box.style.setProperty('--cpt-fit-w', `${w}px`);
+    box.style.setProperty('--cpt-fit-ratio', String(w / h));
+    sizer.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    // A closed dialog (display:none) has no width yet; its opening resize
+    // reruns this.
+    const room = box.clientWidth;
+    if (!room) return;
+    const scale = Math.min(1, room / w);
+    iframe.style.transform = scale < 1 ? `scale(${scale})` : '';
+  };
+
+  const sizes = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+  sizes?.observe(box);
+  // The iframe arrives after mount (IframeHost appends it) and its size is an
+  // inline style the host rewrites (setSize, the runtime's measured size).
+  const iframeStyle = new MutationObserver(fit);
+  const children = new MutationObserver(() => {
+    const next = box.querySelector('iframe');
+    if (next === iframe) return;
+    iframeStyle.disconnect();
+    iframe = next;
+    if (iframe) iframeStyle.observe(iframe, { attributes: true, attributeFilter: ['style'] });
+    fit();
+  });
+  children.observe(box, { childList: true });
+
+  return {
+    box,
+    dispose(): void {
+      sizes?.disconnect();
+      iframeStyle.disconnect();
+      children.disconnect();
     },
   };
 }
@@ -642,6 +743,31 @@ function ensureGameStyles(root: ShadowRoot): void {
     '[part="game-overlay-dialog"][data-fill-x="true"] [part="game-iframe-slot"] iframe{width:100%!important}',
     '[part="game-overlay-dialog"][data-fill-y="true"] [part="game-iframe-slot"]{align-items:stretch}',
     '[part="game-overlay-dialog"][data-fill-y="true"] [part="game-iframe-slot"] iframe{height:100%!important}',
+    // Fixed-aspect fit box (mountAspectFit): the sizer is as wide as the game,
+    // capped to the room, its height from the viewBox aspect; the box hugs it.
+    // The iframe sits at its own pixel size at the box's top-left corner and
+    // is scaled down by script. !important beats the inline and overlay iframe
+    // max-width/max-height clamps above, which would otherwise narrow the game
+    // instead of letting the box scale it.
+    '[part="game-fit-box"]{position:relative;overflow:hidden;flex:0 1 auto;min-width:0;max-width:100%}',
+    // Inline: hug the sizer on the start side (the frame can be wider than a
+    // small game, e.g. the badge row). Inline only: in the overlay slot the
+    // cross axis is vertical and the box stays centered.
+    '[part="game-frame"][data-layout="inline"] [part="game-fit-box"]{align-self:flex-start}',
+    '[part="game-fit-sizer"]{display:block;width:var(--cpt-fit-w,400px);max-width:100%;height:auto;pointer-events:none}',
+    '[part="game-fit-box"] iframe{position:absolute;top:0;left:0;transform-origin:0 0;max-width:none!important;max-height:none!important}',
+    // Overlay: also keep the scaled game within the viewport height (modal:
+    // the 90vh dialog cap minus its 1rem padding; fullscreen: the viewport),
+    // width bounded to height x aspect so a landscape phone fits the game too.
+    '[part="game-overlay-dialog"][data-layout="modal"] [part="game-fit-sizer"]{width:min(var(--cpt-fit-w,400px),calc((90vh - 2rem) * var(--cpt-fit-ratio,1.3333)))}',
+    '[part="game-overlay-dialog"][data-layout="fullscreen"] [part="game-fit-sizer"]{width:min(var(--cpt-fit-w,400px),calc(100vh * var(--cpt-fit-ratio,1.3333)))}',
+    // dvh behind @supports, not as a second declaration: with var() inside, an
+    // unsupported unit is only found at computed-value time and would unset
+    // the width instead of falling back to the vh line.
+    '@supports (height:1dvh){',
+      '[part="game-overlay-dialog"][data-layout="modal"] [part="game-fit-sizer"]{width:min(var(--cpt-fit-w,400px),calc((90dvh - 2rem) * var(--cpt-fit-ratio,1.3333)))}',
+      '[part="game-overlay-dialog"][data-layout="fullscreen"] [part="game-fit-sizer"]{width:min(var(--cpt-fit-w,400px),calc(100dvh * var(--cpt-fit-ratio,1.3333)))}',
+    '}',
     '[part="game-overlay-close"]{position:absolute;top:0.5rem;inset-inline-end:0.75rem;width:2rem;height:2rem;border:0;border-radius:50%;background:var(--cpt-skin-close_btn_bg);color:var(--cpt-skin-text_primary);font-size:1.5rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}',
 
     // --- show / hide animation (CSS @starting-style + transition-behavior:allow-discrete) ---

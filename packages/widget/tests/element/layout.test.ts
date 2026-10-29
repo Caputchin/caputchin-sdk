@@ -352,3 +352,50 @@ describe('CaputchinGame - inline auto width stays inside its container', () => {
     el.remove();
   });
 });
+
+describe('CaputchinGame - fixed-aspect game from bootstrap', () => {
+  function stubBootstrap(game: Record<string, unknown>): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ game, requiresGame: false }), { status: 200 })),
+    );
+  }
+
+  afterEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })));
+  });
+
+  async function slotPart(el: HTMLElement): Promise<string | null> {
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-iframe-slot"]')).not.toBeNull();
+    });
+    const state = (el as unknown as { state: { gamePresentation: { getIframeSlot(): HTMLElement | null } | null } }).state;
+    return state.gamePresentation?.getIframeSlot()?.getAttribute('part') ?? null;
+  }
+
+  for (const layout of ['inline', 'modal', 'fullscreen'] as const) {
+    it(`${layout}: responsive:false mounts the game into the scale-to-fit box`, async () => {
+      stubBootstrap({ preferred: { width: 640, height: 400 }, responsive: false });
+      const el = getGame({ sitekey: 'k', game: '@x/y', layout });
+      document.body.appendChild(el);
+      expect(await slotPart(el)).toBe('game-fit-box');
+      el.remove();
+    });
+  }
+
+  it('responsive:true keeps the plain slot (the game reflows)', async () => {
+    stubBootstrap({ preferred: { width: 640, height: 400 }, responsive: true });
+    const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
+    document.body.appendChild(el);
+    expect(await slotPart(el)).toBe('game-iframe-slot');
+    el.remove();
+  });
+
+  it('a bootstrap without the field (older platform) counts as responsive', async () => {
+    stubBootstrap({ preferred: { width: 640, height: 400 } });
+    const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
+    document.body.appendChild(el);
+    expect(await slotPart(el)).toBe('game-iframe-slot');
+    el.remove();
+  });
+});
