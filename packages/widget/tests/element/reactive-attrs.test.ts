@@ -49,6 +49,16 @@ function themedFetch(): ReturnType<typeof vi.fn> {
 const bootstrapCalls = (fn: ReturnType<typeof vi.fn>): number =>
   fn.mock.calls.filter((c) => String(c[0]).includes('/widget/bootstrap')).length;
 
+// An inline <caputchin-game> mount is CPU-bound in happy-dom (its CSS
+// declaration parser re-runs on every skin var write): close to 1s per mount
+// alone and several times that under a loaded parallel run. Tests that mount
+// one inline wait on the mounted state with this budget instead of a fixed
+// number of flushes, and get a test timeout that fits two mounts under load.
+const INLINE_WAIT = { timeout: 5_000 };
+const INLINE_GAME_TEST_TIMEOUT = 15_000;
+const gameFrame = (el: HTMLElement): Element | null =>
+  el.shadowRoot!.querySelector('[part="game-frame"]');
+
 describe('<caputchin-widget> runtime skin reactivity', () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -345,21 +355,26 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
       width: '300',
     });
     document.body.appendChild(el);
-    await settle();
-    const frameBefore = el.shadowRoot!.querySelector('[part="game-frame"]');
-    expect(frameBefore).not.toBeNull();
+    try {
+      // Mounted once the game frame exists (the bootstrap resolved and the
+      // shell + frame were built).
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      const frameBefore = gameFrame(el);
 
-    el.setAttribute('width', '500');
-    await settle();
+      el.setAttribute('width', '500');
 
-    const frameAfter = el.shadowRoot!.querySelector('[part="game-frame"]');
-    expect(frameAfter).not.toBeNull();
-    // Re-mounted at the new size → a fresh frame node, not the old one.
-    expect(frameAfter).not.toBe(frameBefore);
-    // Theme is preserved across the re-mount (rebuilt at the remembered axes).
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
-    el.remove();
-  });
+      // Re-mounted at the new size → a fresh frame node, not the old one.
+      await vi.waitFor(() => {
+        const frameAfter = gameFrame(el);
+        expect(frameAfter).not.toBeNull();
+        expect(frameAfter).not.toBe(frameBefore);
+      }, INLINE_WAIT);
+      // Theme is preserved across the re-mount (rebuilt at the remembered axes).
+      expect(el.getAttribute('data-skin-theme')).toBe('light');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('preserves the server-picked gated gameId across a geometry re-mount (F1 regression)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
@@ -431,15 +446,23 @@ describe('<caputchin-game> shell skin reactivity', () => {
       skin: 'light',
     });
     document.body.appendChild(el);
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('light');
+    try {
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      expect(el.getAttribute('data-skin-theme')).toBe('light');
+      const frameBefore = gameFrame(el);
 
-    el.setAttribute('skin', 'dark');
-    await settle();
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
-    expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#111111');
-    el.remove();
-  });
+      el.setAttribute('skin', 'dark');
+
+      // The reskin refetch resolved and re-themed the host (theme + vars are
+      // written together).
+      await vi.waitFor(() => expect(el.getAttribute('data-skin-theme')).toBe('dark'), INLINE_WAIT);
+      expect(el.style.getPropertyValue('--cpt-skin-primary')).toBe('#111111');
+      // In place: the live frame is kept, not re-mounted.
+      expect(gameFrame(el)).toBe(frameBefore);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('a degraded game mount follows a skin change on the bundled fallback while the refetch still fails', async () => {
     let call = 0;
