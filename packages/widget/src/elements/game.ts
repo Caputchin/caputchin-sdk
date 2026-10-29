@@ -174,6 +174,7 @@ export class CaputchinGame extends HTMLElement {
       // via state; the shell AROUND the game consumes the widget block.
       this.state.gameResolved = bootstrap?.game?.resolved ?? null;
       this.state.gamePreferred = bootstrap?.game?.preferred ?? null;
+      this.state.gameResponsive = bootstrap?.game?.responsive !== false;
       // Server gate: when the server gated this key it PICKED the game from
       // the per-site pool + signed a ticket. The server pick overrides the
       // client game/games/game-src attrs; stash the ticket to echo at
@@ -277,6 +278,7 @@ export class CaputchinGame extends HTMLElement {
       footprintHeight: footprint.height,
       layout,
       manual: isManual,
+      fixedAspect: state.gameResponsive === false,
       shell,
       skin,
       shellConfig,
