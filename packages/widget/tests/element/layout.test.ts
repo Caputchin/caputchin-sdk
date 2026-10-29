@@ -327,6 +327,19 @@ describe('CaputchinGame - inline auto width stays inside its container', () => {
     expect(el.style.maxWidth).toBe('');
   });
 
+  it('keeps a customer inline max-width and leaves it on unmount', async () => {
+    stubBootstrap({ width: 600, height: 150 });
+    const el = getGame({ sitekey: 'k', game: '@x/y' });
+    el.style.maxWidth = '300px';
+    document.body.appendChild(el);
+    await vi.waitFor(() => {
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+    });
+    expect(el.style.maxWidth).toBe('300px');
+    el.remove();
+    expect(el.style.maxWidth).toBe('300px');
+  });
+
   it('leaves a customer pixel width uncapped', async () => {
     stubBootstrap({ width: 600, height: 150 });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
