@@ -2,7 +2,10 @@
 // /v1/widget/bootstrap endpoint (which replaced the dedicated
 // /api/v1/games/resolve endpoint). The same response shape powers the
 // widget's white-label override fetch at mount time; for marketplace lookups
-// specifically we only consume `game.url` + `game.integrity`.
+// we consume `game.url` + `game.integrity`, plus the game's `preferred` and
+// `responsive` so a mount whose own bootstrap degraded can still size the game.
+
+import type { BootstrapGameBlock } from './bootstrap/types.js';
 
 export interface ResolvedGame {
   url: string;
@@ -10,13 +13,14 @@ export interface ResolvedGame {
 }
 
 export type ResolutionResult =
-  | { ok: true; url: string; integrity: string }
+  | {
+      ok: true;
+      url: string;
+      integrity: string;
+      preferred: BootstrapGameBlock['preferred'];
+      responsive: boolean | undefined;
+    }
   | { ok: false; code: 'resolve-failed'; message: string };
-
-interface BootstrapGameBlock {
-  url: string | null;
-  integrity: string | null;
-}
 
 export async function fetchMarketplaceResolution(
   id: string,
@@ -40,7 +44,7 @@ export async function fetchMarketplaceResolution(
         message: `Widget bootstrap returned ${res.status} for game "${id}"`,
       };
     }
-    const raw = (await res.json()) as { game?: BootstrapGameBlock | null };
+    const raw = (await res.json()) as { game?: Partial<BootstrapGameBlock> | null };
     const game = raw.game ?? null;
     if (!game || typeof game.url !== 'string' || typeof game.integrity !== 'string') {
       // Not a marketplace game (no url) or wrapper-only collection row;
@@ -52,7 +56,13 @@ export async function fetchMarketplaceResolution(
         message: `Widget bootstrap returned no marketplace bundle for game "${id}"`,
       };
     }
-    return { ok: true, url: game.url, integrity: game.integrity };
+    return {
+      ok: true,
+      url: game.url,
+      integrity: game.integrity,
+      preferred: game.preferred ?? null,
+      responsive: game.responsive,
+    };
   } catch (err) {
     return {
       ok: false,

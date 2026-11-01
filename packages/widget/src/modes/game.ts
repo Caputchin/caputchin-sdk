@@ -26,6 +26,13 @@ export interface GamePresentation extends Presentation {
   open(): void;
   /** Close the overlay. No-op for inline. */
   close(): void;
+  /** Switch to the fixed-aspect fit box after mount, for a mount that learns
+   *  the game is fixed-aspect only once it resolves the game bundle (its
+   *  bootstrap degraded). Call before the iframe is installed; a no-op once the
+   *  iframe is in the slot, when the fit box already exists, or where the mount
+   *  rule for `fixedAspect` would not use it (manual, customer-sized panel,
+   *  filled overlay axis). */
+  useFixedAspect(): void;
 }
 
 export interface GamePresentationInput {
@@ -100,6 +107,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
   let badgeSlot: HTMLDivElement | null = null;
   let subSimple: Presentation | null = null;
   let aspectFit: AspectFit | null = null;
+  // Only when the game sizes the panel: a customer width/height pins the panel
+  // and the iframe fills it (data-fill rules below).
+  const canFit = !manual && width === 'auto' && height === null;
   // True only while the host max-width cap below is ours, so unmount never
   // clears a max-width the customer set inline on the element.
   let ownsHostMaxWidth = false;
@@ -123,9 +133,7 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
-      } else if (fixedAspect && width === 'auto' && height === null) {
-        // Only when the game sizes the panel: a customer width/height pins
-        // the panel and the iframe fills it (data-fill rules below).
+      } else if (fixedAspect && canFit) {
         aspectFit = mountAspectFit(iframeSlot);
       }
 
@@ -272,6 +280,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
     getIframeSlot(): HTMLElement | null {
       return aspectFit?.box ?? iframeSlot;
     },
+    useFixedAspect(): void {
+      if (!canFit || aspectFit || !iframeSlot || iframeSlot.querySelector('iframe')) return;
+      aspectFit = mountAspectFit(iframeSlot);
+    },
     open(): void {},
     close(): void {},
   };
@@ -296,6 +308,8 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
   const { host, root: renderRoot, layout, manual, fixedAspect, width, height, footprintWidth, footprintHeight, shell, skin, shellConfig } = input;
   let container: HTMLDivElement | null = null;
   let aspectFit: AspectFit | null = null;
+  // A filled axis stretches the iframe to the dialog instead of the fit box.
+  const canFit = !manual && footprintWidth !== 'full' && footprintHeight !== 'full';
   let checkboxSlot: HTMLDivElement | null = null;
   let dialog: HTMLDialogElement | null = null;
   let iframeSlot: HTMLDivElement | null = null;
@@ -371,8 +385,7 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
         const slot = document.createElement('slot');
         slot.setAttribute('part', 'game-slot');
         iframeSlot.appendChild(slot);
-      } else if (fixedAspect && footprintWidth !== 'full' && footprintHeight !== 'full') {
-        // A filled axis stretches the iframe to the dialog instead.
+      } else if (fixedAspect && canFit) {
         aspectFit = mountAspectFit(iframeSlot);
       }
       dialog.appendChild(iframeSlot);
@@ -504,6 +517,10 @@ function createOverlayGame(input: GamePresentationInput): GamePresentation {
     getIframeSlot(): HTMLElement | null {
       return aspectFit?.box ?? iframeSlot;
     },
+    useFixedAspect(): void {
+      if (!canFit || aspectFit || !iframeSlot || iframeSlot.querySelector('iframe')) return;
+      aspectFit = mountAspectFit(iframeSlot);
+    },
 
     open(): void {
       if (!dialog) return;
@@ -589,6 +606,14 @@ function mountAspectFit(slot: HTMLElement): AspectFit {
   box.appendChild(sizer);
   slot.appendChild(box);
   let iframe: HTMLIFrameElement | null = null;
+  // The box's content width from the latest ResizeObserver entry. It keeps the
+  // fraction clientWidth rounds away (a 305.5px modal box), so the scaled game
+  // ends on the sizer's edge instead of ~0.5px past it under overflow:hidden.
+  let observedRoom = 0;
+  // The transform this box last wrote and how the iframe read it back (CSSOM
+  // may reserialize the number), so a rerun with an unchanged scale writes
+  // nothing and the iframe style observer it would trigger stays quiet.
+  let written: { value: string; read: string } | null = null;
 
   const fit = (): void => {
     if (!iframe) return;
@@ -600,13 +625,23 @@ function mountAspectFit(slot: HTMLElement): AspectFit {
     sizer.setAttribute('viewBox', `0 0 ${w} ${h}`);
     // A closed dialog (display:none) has no width yet; its opening resize
     // reruns this.
-    const room = box.clientWidth;
+    const room = observedRoom || box.clientWidth;
     if (!room) return;
     const scale = Math.min(1, room / w);
-    iframe.style.transform = scale < 1 ? `scale(${scale})` : '';
+    const transform = scale < 1 ? `scale(${scale})` : '';
+    if (written?.value === transform && written.read === iframe.style.transform) return;
+    iframe.style.transform = transform;
+    written = { value: transform, read: iframe.style.transform };
   };
 
-  const sizes = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+  const sizes =
+    typeof ResizeObserver === 'function'
+      ? new ResizeObserver((entries) => {
+          const entry = entries[entries.length - 1];
+          if (entry) observedRoom = entry.contentRect.width;
+          fit();
+        })
+      : null;
   sizes?.observe(box);
   // The iframe arrives after mount (IframeHost appends it) and its size is an
   // inline style the host rewrites (setSize, the runtime's measured size).

@@ -108,32 +108,103 @@ describe('game presentation - fixed-aspect fit box', () => {
     gp.unmount();
   });
 
-  it('rescales when the box resizes (container change, a dialog opening)', async () => {
-    // happy-dom has no ResizeObserver; capture the one the fit box creates.
-    const callbacks: Array<() => void> = [];
+  /**
+   * happy-dom has no ResizeObserver; install one that captures the callback the
+   * fit box creates. `resize(w)` delivers an entry whose content box is `w` wide.
+   */
+  function captureResizeObserver(): { resize(width: number): void; restore(): void; count(): number } {
+    const callbacks: ResizeObserverCallback[] = [];
     const original = globalThis.ResizeObserver;
     globalThis.ResizeObserver = class {
-      constructor(cb: () => void) { callbacks.push(cb); }
+      constructor(cb: ResizeObserverCallback) { callbacks.push(cb); }
       observe(): void {}
       unobserve(): void {}
       disconnect(): void {}
     } as unknown as typeof ResizeObserver;
+    return {
+      resize(width) {
+        const entry = { contentRect: { width } } as ResizeObserverEntry;
+        callbacks[0]!([entry], {} as ResizeObserver);
+      },
+      restore() { globalThis.ResizeObserver = original; },
+      count: () => callbacks.length,
+    };
+  }
+
+  it('rescales when the box resizes (container change, a dialog opening)', async () => {
+    const ro = captureResizeObserver();
     try {
       const { gp } = mount({ layout: 'modal', fixedAspect: true });
       const box = gp.getIframeSlot()!;
       stubRoom(box, 0);
       const iframe = await mountGameIframe(box, 640, 400);
       expect(iframe.style.transform).toBe('');
-      expect(callbacks).toHaveLength(1);
-      stubRoom(box, 160);
-      callbacks[0]!();
+      expect(ro.count()).toBe(1);
+      ro.resize(160);
       expect(iframe.style.transform).toBe('scale(0.25)');
-      stubRoom(box, 640);
-      callbacks[0]!();
+      ro.resize(640);
       expect(iframe.style.transform).toBe('');
       gp.unmount();
     } finally {
-      globalThis.ResizeObserver = original;
+      ro.restore();
+    }
+  });
+
+  it('scales by the observed fractional box width, not the rounded clientWidth', async () => {
+    // A 375px phone modal: the box is 305.5px wide, clientWidth reports 306.
+    const ro = captureResizeObserver();
+    try {
+      const { gp } = mount({ layout: 'modal', fixedAspect: true });
+      const box = gp.getIframeSlot()!;
+      stubRoom(box, 306);
+      const iframe = await mountGameIframe(box, 640, 400);
+      // Before the first entry arrives the rounded clientWidth is the fallback.
+      expect(iframe.style.transform).toBe(`scale(${306 / 640})`);
+      ro.resize(305.5);
+      expect(iframe.style.transform).toBe(`scale(${305.5 / 640})`);
+      // A later iframe style write keeps using the observed width.
+      setIframeSize(iframe, 640, 400);
+      await flush();
+      expect(iframe.style.transform).toBe(`scale(${305.5 / 640})`);
+      gp.unmount();
+    } finally {
+      ro.restore();
+    }
+  });
+
+  it('writes the iframe transform only when the scale changes', async () => {
+    const ro = captureResizeObserver();
+    try {
+      const { gp } = mount({ layout: 'modal', fixedAspect: true });
+      const box = gp.getIframeSlot()!;
+      stubRoom(box, 0);
+      const iframe = await mountGameIframe(box, 640, 400);
+      let writes = 0;
+      const style = iframe.style;
+      let transform = style.transform;
+      Object.defineProperty(style, 'transform', {
+        configurable: true,
+        get: () => transform,
+        set: (v: string) => { writes++; transform = v; },
+      });
+      ro.resize(320);
+      expect(transform).toBe('scale(0.5)');
+      expect(writes).toBe(1);
+      ro.resize(320);
+      setIframeSize(iframe, 640, 400);
+      await flush();
+      expect(writes).toBe(1);
+      // Something else clearing the transform gets it written back.
+      transform = '';
+      ro.resize(320);
+      expect(transform).toBe('scale(0.5)');
+      expect(writes).toBe(2);
+      ro.resize(160);
+      expect(transform).toBe('scale(0.25)');
+      expect(writes).toBe(3);
+      gp.unmount();
+    } finally {
+      ro.restore();
     }
   });
 
@@ -185,5 +256,67 @@ describe('game presentation - fixed-aspect fit box', () => {
     expect(css).toContain('[part="game-frame"][data-layout="inline"] [part="game-fit-box"]{align-self:flex-start}');
     expect(css).toContain('[part="game-overlay-dialog"][data-layout="modal"] [part="game-fit-sizer"]{width:min(var(--cpt-fit-w,400px),calc((90dvh - 2rem) * var(--cpt-fit-ratio,1.3333)))}');
     gp.unmount();
+  });
+});
+
+// A mount whose bootstrap degraded learns the game is fixed-aspect only from the
+// bundle resolve that runs after mount (run-game adoptLateSizing), so the
+// presentation switches to the fit box before the iframe is installed.
+describe('game presentation - useFixedAspect (late fixed aspect)', () => {
+  for (const layout of ['inline', 'modal', 'fullscreen'] as const) {
+    it(`${layout}: a responsive mount switches to the fit box and scales the game`, async () => {
+      const { gp } = mount({ layout, fixedAspect: false });
+      const slot = gp.getIframeSlot()!;
+      expect(slot.getAttribute('part')).toBe('game-iframe-slot');
+      gp.useFixedAspect();
+      const box = gp.getIframeSlot()!;
+      expect(box.getAttribute('part')).toBe('game-fit-box');
+      expect(box.parentElement).toBe(slot);
+      stubRoom(box, 320);
+      const iframe = await mountGameIframe(box, 640, 400);
+      expect(iframe.style.transform).toBe('scale(0.5)');
+      gp.unmount();
+    });
+  }
+
+  it('is idempotent (one fit box)', () => {
+    const { gp } = mount({ fixedAspect: false });
+    gp.useFixedAspect();
+    const box = gp.getIframeSlot();
+    gp.useFixedAspect();
+    expect(gp.getIframeSlot()).toBe(box);
+    expect(box!.parentElement!.querySelectorAll('[part="game-fit-box"]')).toHaveLength(1);
+    gp.unmount();
+  });
+
+  it('leaves an installed iframe where it is', () => {
+    const { gp } = mount({ fixedAspect: false });
+    const slot = gp.getIframeSlot()!;
+    slot.appendChild(document.createElement('iframe'));
+    gp.useFixedAspect();
+    expect(gp.getIframeSlot()).toBe(slot);
+    expect(slot.querySelector('[part="game-fit-box"]')).toBeNull();
+    gp.unmount();
+  });
+
+  it('keeps the fill path where the mount rule would (customer size, full overlay axis, manual)', () => {
+    const cases: Array<Partial<GamePresentationInput>> = [
+      { width: 500 },
+      { width: 'full' },
+      { height: 300 },
+      { height: 'full' },
+      { layout: 'modal', footprintWidth: 'full' },
+      { layout: 'fullscreen', footprintHeight: 'full' },
+      { manual: true },
+      { layout: 'modal', manual: true },
+    ];
+    for (const over of cases) {
+      const { gp } = mount({ fixedAspect: false, ...over });
+      const slot = gp.getIframeSlot()!;
+      gp.useFixedAspect();
+      expect(gp.getIframeSlot()).toBe(slot);
+      expect(slot.querySelector('[part="game-fit-box"]')).toBeNull();
+      gp.unmount();
+    }
   });
 });
