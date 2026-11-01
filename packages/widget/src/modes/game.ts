@@ -110,6 +110,9 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
   // Only when the game sizes the panel: a customer width/height pins the panel
   // and the iframe fills it (data-fill rules below).
   const canFit = !manual && width === 'auto' && height === null;
+  // True only while the host max-width cap below is ours, so unmount never
+  // clears a max-width the customer set inline on the element.
+  let ownsHostMaxWidth = false;
 
   return {
     mount(): void {
@@ -200,7 +203,11 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
         // host capped, the frame shrinks to the container and the inline
         // iframe max-width rule below narrows the game into it (a responsive
         // game reflows to the new width, its height stays the preferred one).
-        host.style.maxWidth = '100%';
+        // A customer's own inline max-width wins and is left in place.
+        if (!host.style.maxWidth) {
+          host.style.maxWidth = '100%';
+          ownsHostMaxWidth = true;
+        }
       }
       if (isFullHeight) {
         // height="full" in inline mode means "fit the parent vertically when
@@ -239,7 +246,10 @@ function createInlineGame(input: GamePresentationInput): GamePresentation {
       aspectFit?.dispose();
       aspectFit = null;
       frame.remove();
-      host.style.maxWidth = '';
+      if (ownsHostMaxWidth) {
+        host.style.maxWidth = '';
+        ownsHostMaxWidth = false;
+      }
       if (isFullWidth || isFullHeight || pxWidth !== null || pxHeight !== null) {
         host.style.display = '';
         host.style.width = '';
