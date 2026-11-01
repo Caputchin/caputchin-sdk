@@ -40,6 +40,10 @@ export interface WidgetState<C extends WidgetConfig | GameConfig = WidgetConfig 
    *  `game` block (was the deleted manifest message's preferredWidth/Height).
    *  `layout` feeds the shell pick when the embed leaves `layout` unset. */
   gamePreferred?: { width?: number | 'full'; height?: number | 'full'; layout?: Layout } | null;
+  /** False only when the bootstrap `game` block says `responsive: false` (a
+   *  fixed-aspect game): the presentation then scales the game down whole in a
+   *  box narrower than its size. True when the field is absent or no bootstrap ran. */
+  gameResponsive?: boolean;
   /** The layout resolved at mount (embed attr, then preferred.layout, then inline).
    *  `completeMount` sets this before activating the trigger that calls
    *  `runGame`, so the iframe sizer + `setLayoutContext` get the TRUE layout
@@ -83,6 +87,7 @@ export function createInitialState<C extends WidgetConfig | GameConfig>(): Widge
     firstPassFired: false,
     gameResolved: null,
     gamePreferred: null,
+    gameResponsive: true,
     gameBundle: null,
     requiresGame: false,
     gateTicket: null,

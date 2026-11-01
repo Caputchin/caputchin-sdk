@@ -11,11 +11,15 @@ pnpm verify || exit 1
 # the CI docs-sync gate so a TSDoc/API edit that wasn't re-generated can't land
 # stale. The central tsconfig `paths` resolve cross-package types from source, so
 # this needs no build.
+# Drift = what the regen changed relative to the index: unstaged edits and
+# new untracked pages. Regenerated docs already staged with the commit are the
+# point of the gate, not drift (a plain `git status` lists them too, so every
+# commit carrying a docs regen would fail).
 pnpm run docs || exit 1
-docs_drift="$(git status --porcelain -- packages/*/docs)"
+docs_drift="$(git diff --name-only -- 'packages/*/docs/*' 'kits/*/docs/*'; git ls-files --others --exclude-standard -- 'packages/*/docs/*' 'kits/*/docs/*')"
 if [ -n "$docs_drift" ]; then
   echo "$docs_drift"
   echo "ERROR: SDK reference docs are stale. The regen above updated them in your tree." >&2
-  echo "Review, then 'git add packages/*/docs' and re-commit (or 'pnpm run docs' yourself)." >&2
+  echo "Review, then 'git add packages/*/docs kits/*/docs' and re-commit (or 'pnpm run docs' yourself)." >&2
   exit 1
 fi

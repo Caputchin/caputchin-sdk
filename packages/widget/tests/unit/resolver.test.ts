@@ -24,6 +24,42 @@ describe('fetchMarketplaceResolution (calls /v1/widget/bootstrap)', () => {
     }
   });
 
+  it('carries the game block preferred footprint + responsive flag', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({
+        widget: null,
+        game: {
+          url: 'https://cdn.example.com/game.js',
+          integrity: 'sha384-abc',
+          preferred: { width: 640, height: 400, layout: 'modal' },
+          responsive: false,
+        },
+      }),
+      { status: 200 }
+    ));
+    const r = await fetchMarketplaceResolution('@org/game', API_HOST, null);
+    expect(r).toEqual({
+      ok: true,
+      url: 'https://cdn.example.com/game.js',
+      integrity: 'sha384-abc',
+      preferred: { width: 640, height: 400, layout: 'modal' },
+      responsive: false,
+    });
+  });
+
+  it('reports no preferred and an unset responsive for a block without them', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ widget: null, game: { url: 'https://x.com/g.js', integrity: 'sha384-x' } }),
+      { status: 200 }
+    ));
+    const r = await fetchMarketplaceResolution('@org/game', API_HOST, null);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.preferred).toBeNull();
+      expect(r.responsive).toBeUndefined();
+    }
+  });
+
   it('resolves keyless: no sitekey still hits bootstrap with game only', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(
       JSON.stringify({
