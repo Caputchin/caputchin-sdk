@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.7.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.7.0...widget-v3.7.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **widget:** give a degraded game mount the resolved bundle's sizing so a fixed-aspect game uses the fit box ([05fdf48](https://github.com/Caputchin/caputchin-sdk/commit/05fdf480330c23af846b37291e918d9a5a0c11c8))
+* **widget:** hold a form-submit submit that arrives before the widget mounts (CAP-258) ([c47ac0e](https://github.com/Caputchin/caputchin-sdk/commit/c47ac0ec0045fcc16e381f44050e9e6f77267770))
+* **widget:** hold a form-submit submit that arrives before the widget mounts (CAP-258) ([3099b0d](https://github.com/Caputchin/caputchin-sdk/commit/3099b0deb2c5c6a22b700119c589c511ad869827))
+* **widget:** send a Traditional Chinese visitor's next languages so the server can serve them ([3db8f20](https://github.com/Caputchin/caputchin-sdk/commit/3db8f209c2e671ccd9ada7017d4983f7c84ef2d0))
+* **widget:** send a Traditional Chinese visitor's next languages so the server can serve them ([7e24b0a](https://github.com/Caputchin/caputchin-sdk/commit/7e24b0a8e5f0f38a68366c8120ccad8cfe321ecb))
+
 ## [3.7.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.6.0...widget-v3.7.0) (2026-10-29)
 
 
