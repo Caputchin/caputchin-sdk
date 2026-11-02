@@ -62,19 +62,46 @@ export function resolveLocaleSignal(attr: string | null | undefined): string | n
   return readNavLang();
 }
 
-/** The navigator languages after the primary one (at most two), sent only when
- *  the `locale` attribute is missing and the shell ships no language for the
+/** The navigator languages after the primary one, at most two, skipping any
+ *  that shares a match key with an earlier one (`en-US, en` adds nothing the
+ *  server could match). Null when there are none. */
+function nextNavLangs(): string[] | null {
+  const langs = navigator.languages ?? [];
+  const primary = langs[0];
+  if (!primary) return null;
+  const seen = new Set([languageMatchKey(primary)]);
+  const next: string[] = [];
+  for (const tag of langs.slice(1)) {
+    const key = languageMatchKey(tag);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push(tag);
+    if (next.length === MAX_NEXT_LANGS) break;
+  }
+  return next.length > 0 ? next : null;
+}
+
+/** The next navigator languages `<caputchin-widget>` sends, only when the
+ *  `locale` attribute is missing and the shell ships no language for the
  *  primary one (a `zh-TW, ja` visitor sends `ja`), so the server can serve the
  *  visitor's next language before English. Null otherwise, which keeps the
  *  bootstrap cache key to one language for every visitor the shell already
  *  speaks to. */
 export function resolveNextLangsSignal(attr: string | null | undefined): string[] | null {
   if (!isAttrMissing(attr) || typeof navigator === 'undefined') return null;
-  const langs = navigator.languages ?? [];
-  const primary = langs[0];
+  const primary = navigator.languages?.[0];
   if (!primary || SHIPPED_LANGS.has(languageMatchKey(primary))) return null;
-  const next = langs.slice(1, 1 + MAX_NEXT_LANGS);
-  return next.length > 0 ? next : null;
+  return nextNavLangs();
+}
+
+/** The next navigator languages `<caputchin-game>` sends whenever the `locale`
+ *  attribute is missing. The game's own locale presets decide what the visitor
+ *  sees, and the element cannot know them before the bootstrap (the server may
+ *  pick the game), so a `ko, ja` visitor sends `ja` in case the game has no
+ *  Korean. */
+export function resolveGameNextLangsSignal(attr: string | null | undefined): string[] | null {
+  if (!isAttrMissing(attr) || typeof navigator === 'undefined') return null;
+  return nextNavLangs();
 }
 
 /** The skin the element sends to the bootstrap: the explicit attribute when

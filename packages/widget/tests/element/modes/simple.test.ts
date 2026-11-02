@@ -154,6 +154,19 @@ describe('widget lang attribute', () => {
     el.remove();
   });
 
+  it('with no locale attr a visitor whose language the shell ships sends no next languages', async () => {
+    const fetchFn = stubBootstrap({});
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ko', 'ja']);
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
+    document.body.appendChild(el);
+    await flushMount();
+    const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
+    expect(params.get('locale')).toBe('ko');
+    expect(params.get('langs')).toBeNull();
+    vi.restoreAllMocks();
+    el.remove();
+  });
+
   it('bundled English fallback when the server resolves nothing', async () => {
     stubBootstrap({});
     const el = getWidget({ sitekey: 'k', trigger: 'click' });
