@@ -448,7 +448,9 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
       expect(bootstrapCalls(fn)).toBe(before + 1);
       // The reskin refetch asked for the pinned id, and the id is still pinned
       // for the later overlay open.
-      expect(String(fn.mock.calls.at(-1)![0])).toContain('game=acme%2Fgames%2Fleaf');
+      const reskinUrl = fn.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/widget/bootstrap')).at(-1);
+      expect(reskinUrl, 'reskin bootstrap call').toBeDefined();
+      expect(reskinUrl).toContain('game=acme%2Fgames%2Fleaf');
       expect(gameId()).toBe('acme/games/leaf');
     } finally {
       el.remove();
