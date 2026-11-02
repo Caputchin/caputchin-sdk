@@ -19,3 +19,11 @@ export function injectHiddenInput(form: HTMLFormElement, token: string): void {
   input.value = token;
   form.appendChild(input);
 }
+
+/** `form.requestSubmit()` that keeps the original submit button (its
+ *  name/value and `formaction` / `formnovalidate`) when it still belongs to
+ *  the form; requestSubmit throws on a submitter from another form. */
+export function requestSubmitFrom(form: HTMLFormElement, submitter: HTMLElement | null): void {
+  const own = submitter && (submitter as HTMLButtonElement | HTMLInputElement).form === form ? submitter : undefined;
+  form.requestSubmit(own);
+}
