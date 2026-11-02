@@ -29,6 +29,13 @@ describe('buildBootstrapUrl', () => {
     expect(url).toContain('skin=dark');
   });
 
+  it('sends the next languages comma-joined as `langs`, and omits an empty list', () => {
+    const url = buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'k', locale: 'zh-TW', nextLangs: ['ja', 'en'] });
+    expect(new URL(url).searchParams.get('locale')).toBe('zh-TW');
+    expect(new URL(url).searchParams.get('langs')).toBe('ja,en');
+    expect(buildBootstrapUrl({ apiHost: 'https://api.test', sitekey: 'k', nextLangs: [] })).not.toContain('langs=');
+  });
+
   it('omits empty / null locale + skin (the server falls back to bundled defaults)', () => {
     const url = buildBootstrapUrl({
       apiHost: 'https://api.test',

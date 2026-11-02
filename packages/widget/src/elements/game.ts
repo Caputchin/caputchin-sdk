@@ -19,7 +19,7 @@ import { runManual } from '../verify/run-manual.js';
 import { emitDegraded } from '../verify/events.js';
 import { fetchBootstrap, fetchBootstrapResilient } from '../bootstrap/client.js';
 import type { BootstrapResponse } from '../bootstrap/types.js';
-import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
+import { resolveLocaleSignal, resolveNextLangsSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 
 /**
@@ -134,6 +134,7 @@ export class CaputchinGame extends HTMLElement {
       game: state.config.game ?? null,
       games: state.config.games ?? null,
       locale: resolveLocaleSignal(state.config.locale),
+      nextLangs: resolveNextLangsSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
       signal: abort.signal,
     };
@@ -614,6 +615,7 @@ export class CaputchinGame extends HTMLElement {
       game: state.config.game ?? null,
       games: state.config.games ?? null,
       locale: resolveLocaleSignal(state.config.locale),
+      nextLangs: resolveNextLangsSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
       signal: abort.signal,
     }).then((result) => {

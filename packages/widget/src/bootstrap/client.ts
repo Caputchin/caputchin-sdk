@@ -42,6 +42,10 @@ export interface FetchBootstrapInput {
    *  inline JSON. Null means the element could not determine a value (no
    *  navigator); the server falls back to the bundled defaults. */
   locale?: string | null;
+  /** The visitor's next navigator languages, when the shell ships no language
+   *  for the primary one in `locale` (see `resolveNextLangsSignal`). The server
+   *  tries them in order when `locale` matches no preset. */
+  nextLangs?: readonly string[] | null;
   skin?: string | null;
   /** Per-request abort window. `undefined` → the default. A positive number
    *  → that window. `null` → NO timeout signal (the request runs until it
@@ -284,6 +288,7 @@ export function buildBootstrapUrl(input: FetchBootstrapInput): string {
   // skin / locale may be inline JSON; encode so a '#' hex color is not lost in
   // transit (see encodeInlineAxis). game / games / sitekey are plain ids.
   if (input.locale) params.set('locale', encodeInlineAxis(input.locale));
+  if (input.nextLangs && input.nextLangs.length > 0) params.set('langs', input.nextLangs.join(','));
   if (input.skin) params.set('skin', encodeInlineAxis(input.skin));
   return `${input.apiHost}/v1/widget/bootstrap?${params.toString()}`;
 }

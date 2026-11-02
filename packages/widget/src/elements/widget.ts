@@ -12,7 +12,7 @@ import { installWidgetMethods } from '../verify/methods-widget.js';
 import { runCap } from '../verify/run-cap.js';
 import { emitDegraded } from '../verify/events.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
-import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
+import { resolveLocaleSignal, resolveNextLangsSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
 import { findEnclosingForm, requestSubmitFrom } from '../form.js';
 
@@ -109,6 +109,7 @@ export class CaputchinWidget extends HTMLElement {
       apiHost,
       sitekey: state.config.sitekey,
       locale: resolveLocaleSignal(state.config.locale),
+      nextLangs: resolveNextLangsSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
       signal: abort.signal,
     }).then((result) => {
@@ -369,6 +370,7 @@ export class CaputchinWidget extends HTMLElement {
       apiHost: this.apiHost,
       sitekey: state.config.sitekey,
       locale: resolveLocaleSignal(state.config.locale),
+      nextLangs: resolveNextLangsSignal(state.config.locale),
       skin: resolveSkinSignal(state.config.skin),
       signal: abort.signal,
     }).then((result) => {
