@@ -102,9 +102,12 @@ describe('bootstrap degrade is observable (not silent)', () => {
     const reasons: string[] = [];
     el.addEventListener('degraded', (e) => reasons.push((e as CustomEvent).detail.reason));
     document.body.appendChild(el);
-    await flush();
-    expect(reasons).toContain('timeout');
-    el.remove();
+    try {
+      await flush();
+      expect(reasons).toContain('timeout');
+    } finally {
+      el.remove();
+    }
   });
 
   it('a degraded <caputchin-widget skin="dark"> mounts the bundled dark palette', async () => {
@@ -113,24 +116,32 @@ describe('bootstrap degrade is observable (not silent)', () => {
     const reasons: string[] = [];
     el.addEventListener('degraded', (e) => reasons.push((e as CustomEvent).detail.reason));
     document.body.appendChild(el);
-    await flush();
-    expect(reasons).toEqual(['http']);
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
-    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
-    el.remove();
+    try {
+      await flush();
+      expect(reasons).toEqual(['http']);
+      expect(el.getAttribute('data-skin-theme')).toBe('dark');
+      expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
+    } finally {
+      el.remove();
+    }
   });
 
   it('a degraded <caputchin-game skin="dark"> mounts the bundled dark palette', async () => {
     vi.mocked(fetch).mockRejectedValueOnce(Object.assign(new Error('aborted'), { name: 'AbortError' }));
     const el = getGame({ game: '@x/y', skin: 'dark' });
     document.body.appendChild(el);
-    await flush();
-    expect(el.getAttribute('data-skin-theme')).toBe('dark');
-    expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
-    el.remove();
+    try {
+      await flush();
+      expect(el.getAttribute('data-skin-theme')).toBe('dark');
+      expect(el.style.getPropertyValue('--cpt-skin-surface_bg')).toBe(widgetManifest.skins.presets.dark.surface_bg);
+    } finally {
+      el.remove();
+    }
   });
 
   it('a degraded widget with skin auto follows prefers-color-scheme: dark', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network'));
+    const el = getWidget({ sitekey: 'k' });
     const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
       (query: string) =>
         ({
@@ -141,13 +152,11 @@ describe('bootstrap degrade is observable (not silent)', () => {
         }) as unknown as MediaQueryList,
     );
     try {
-      vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network'));
-      const el = getWidget({ sitekey: 'k' });
       document.body.appendChild(el);
       await flush();
       expect(el.getAttribute('data-skin-theme')).toBe('dark');
-      el.remove();
     } finally {
+      el.remove();
       matchMedia.mockRestore();
     }
   });
