@@ -537,3 +537,39 @@ describe('<caputchin-game> shell skin reactivity', () => {
     }
   }, INLINE_GAME_TEST_TIMEOUT);
 });
+
+// The game element sends the same next-language signal as the widget, on the
+// mount bootstrap and on a reskin refetch, so a `zh-TW, ja` visitor's game can
+// resolve to Japanese rather than English.
+describe('<caputchin-game> next languages', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a Traditional Chinese visitor\'s next languages on mount and on a reskin', async () => {
+    const fn = themedFetch();
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-TW', 'ja', 'en', 'de']);
+    const el = getGame({ sitekey: 'cpt_pub_x', layout: 'inline' });
+    document.body.appendChild(el);
+    const urls = (): URLSearchParams[] =>
+      fn.mock.calls
+        .map((c) => String(c[0]))
+        .filter((u) => u.includes('/widget/bootstrap'))
+        .map((u) => new URL(u).searchParams);
+    try {
+      await vi.waitFor(() => expect(urls().length).toBeGreaterThan(0), INLINE_WAIT);
+      expect(urls()[0]!.get('locale')).toBe('zh-TW');
+      expect(urls()[0]!.get('langs')).toBe('ja,en');
+      await vi.waitFor(() => expect(gameFrame(el)).not.toBeNull(), INLINE_WAIT);
+      const before = urls().length;
+
+      el.setAttribute('skin', 'dark');
+
+      await vi.waitFor(() => expect(urls().length).toBe(before + 1), INLINE_WAIT);
+      expect(urls().at(-1)!.get('langs')).toBe('ja,en');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
+});
