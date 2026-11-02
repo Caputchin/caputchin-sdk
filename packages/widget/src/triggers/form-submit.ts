@@ -1,5 +1,5 @@
 import type { TriggerStrategy, TriggerContext } from './index.js';
-import { findEnclosingForm } from '../form.js';
+import { findEnclosingForm, requestSubmitFrom } from '../form.js';
 
 /**
  * `trigger="form-submit"` has DUAL behavior (click + submit):
@@ -34,6 +34,8 @@ export function createFormSubmitTrigger(): TriggerStrategy {
   // a submit was intercepted while unsettled; owe the form exactly one
   // requestSubmit() on settle
   let pendingSubmit = false;
+  // the held submit's button, replayed so its name/value still posts
+  let pendingSubmitter: HTMLElement | null = null;
 
   // Kick off the single verification (idempotent). Shared by the click path,
   // the submit path, and forceStart. On resolve, honor a pending submit exactly
@@ -53,7 +55,8 @@ export function createFormSubmitTrigger(): TriggerStrategy {
         settled = true;
         if (pendingSubmit) {
           pendingSubmit = false;
-          form?.requestSubmit();
+          if (form) requestSubmitFrom(form, pendingSubmitter);
+          pendingSubmitter = null;
         }
       })
       .catch(() => {
@@ -63,6 +66,7 @@ export function createFormSubmitTrigger(): TriggerStrategy {
         // through natively instead of re-verifying or hanging.
         settled = true;
         pendingSubmit = false;
+        pendingSubmitter = null;
       });
   }
 
@@ -94,6 +98,7 @@ export function createFormSubmitTrigger(): TriggerStrategy {
         e.preventDefault();
         e.stopImmediatePropagation();
         pendingSubmit = true;
+        pendingSubmitter = e.submitter;
         runVerify(ctx);
       };
 
@@ -111,6 +116,7 @@ export function createFormSubmitTrigger(): TriggerStrategy {
       started = false;
       settled = false;
       pendingSubmit = false;
+      pendingSubmitter = null;
     },
 
     forceStart(ctx: TriggerContext): void {
