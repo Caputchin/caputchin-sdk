@@ -42,9 +42,11 @@ export interface FetchBootstrapInput {
    *  inline JSON. Null means the element could not determine a value (no
    *  navigator); the server falls back to the bundled defaults. */
   locale?: string | null;
-  /** The visitor's next navigator languages, when the shell ships no language
-   *  for the primary one in `locale` (see `resolveNextLangsSignal`). The server
-   *  tries them in order when `locale` matches no preset. */
+  /** The visitor's next navigator languages: from `<caputchin-widget>` when
+   *  the shell ships no language for the primary one in `locale`, from
+   *  `<caputchin-game>` always (see `resolveNextLangsSignal`,
+   *  `resolveGameNextLangsSignal`). The server tries them in order when
+   *  `locale` matches no preset. */
   nextLangs?: readonly string[] | null;
   skin?: string | null;
   /** Per-request abort window. `undefined` → the default. A positive number

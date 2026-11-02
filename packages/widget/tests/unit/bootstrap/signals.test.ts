@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveLocaleSignal, resolveNextLangsSignal, resolveSkinSignal } from '../../../src/bootstrap/signals.js';
+import { resolveGameNextLangsSignal, resolveLocaleSignal, resolveNextLangsSignal, resolveSkinSignal } from '../../../src/bootstrap/signals.js';
 
 // The two helpers the elements run BEFORE the bootstrap call to pre-resolve
 // the `locale` / `skin` signal: when the attribute is missing / `auto`, fall
@@ -63,6 +63,40 @@ describe('resolveNextLangsSignal', () => {
     expect(resolveNextLangsSignal(null)).toBeNull();
     vi.stubGlobal('navigator', undefined);
     expect(resolveNextLangsSignal(null)).toBeNull();
+  });
+
+  it('skips next languages that share a match key with an earlier one', () => {
+    vi.stubGlobal('navigator', { languages: ['zh-TW', 'zh-HK', 'zh-Hant', 'ja', 'ja-JP', 'de'] });
+    expect(resolveNextLangsSignal(null)).toEqual(['ja', 'de']);
+  });
+});
+
+// The game's own presets decide the language and the element cannot know them
+// before the bootstrap, so the game sends the next languages after ANY primary.
+describe('resolveGameNextLangsSignal', () => {
+  it.each(['ko', 'en-US', 'zh-TW'])('sends the next two languages after %s', (primary) => {
+    vi.stubGlobal('navigator', { languages: [primary, 'ja', 'fr', 'de'] });
+    expect(resolveGameNextLangsSignal(null)).toEqual(['ja', 'fr']);
+    expect(resolveGameNextLangsSignal('auto')).toEqual(['ja', 'fr']);
+  });
+
+  it('sends nothing when every next language shares the primary one\'s match key', () => {
+    vi.stubGlobal('navigator', { languages: ['en-US', 'en', 'en-GB'] });
+    expect(resolveGameNextLangsSignal(null)).toBeNull();
+  });
+
+  it('keeps Traditional and Simplified Chinese apart', () => {
+    vi.stubGlobal('navigator', { languages: ['zh-TW', 'zh-CN'] });
+    expect(resolveGameNextLangsSignal(null)).toEqual(['zh-CN']);
+  });
+
+  it('sends nothing when the locale attribute is set, or there is no next language', () => {
+    vi.stubGlobal('navigator', { languages: ['ko', 'ja'] });
+    expect(resolveGameNextLangsSignal('ko')).toBeNull();
+    vi.stubGlobal('navigator', { languages: ['ko'], language: 'ko' });
+    expect(resolveGameNextLangsSignal(null)).toBeNull();
+    vi.stubGlobal('navigator', undefined);
+    expect(resolveGameNextLangsSignal(null)).toBeNull();
   });
 });
 
