@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveLocaleSignal, resolveSkinSignal } from '../../../src/bootstrap/signals.js';
+import { resolveLocaleSignal, resolveNextLangsSignal, resolveSkinSignal } from '../../../src/bootstrap/signals.js';
 
 // The two helpers the elements run BEFORE the bootstrap call to pre-resolve
 // the `locale` / `skin` signal: when the attribute is missing / `auto`, fall
@@ -33,6 +33,36 @@ describe('resolveLocaleSignal', () => {
   it('returns null when neither attribute nor navigator is available', () => {
     vi.stubGlobal('navigator', undefined);
     expect(resolveLocaleSignal(null)).toBeNull();
+  });
+});
+
+// The shell ships no Traditional Chinese, so a `zh-TW, ja` visitor also sends
+// `ja` and gets Japanese, not English. Everyone the shell already speaks to
+// sends one language, keeping the bootstrap cache key small.
+describe('resolveNextLangsSignal', () => {
+  it.each(['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-CN'])('sends the next two languages after %s', (primary) => {
+    vi.stubGlobal('navigator', { languages: [primary, 'ja', 'en', 'de'] });
+    expect(resolveNextLangsSignal(null)).toEqual(['ja', 'en']);
+    expect(resolveNextLangsSignal('auto')).toEqual(['ja', 'en']);
+  });
+
+  it('sends next languages after any language the shell does not ship', () => {
+    vi.stubGlobal('navigator', { languages: ['sv-SE', 'de'] });
+    expect(resolveNextLangsSignal(null)).toEqual(['de']);
+  });
+
+  it.each(['en-US', 'zh-CN', 'zh', 'zh-Hans-TW', 'pt-BR', 'ko'])('sends nothing after a shipped language (%s)', (primary) => {
+    vi.stubGlobal('navigator', { languages: [primary, 'ja'] });
+    expect(resolveNextLangsSignal(null)).toBeNull();
+  });
+
+  it('sends nothing when the locale attribute is set, or there is no next language', () => {
+    vi.stubGlobal('navigator', { languages: ['zh-TW', 'ja'] });
+    expect(resolveNextLangsSignal('zh-TW')).toBeNull();
+    vi.stubGlobal('navigator', { languages: ['zh-TW'], language: 'zh-TW' });
+    expect(resolveNextLangsSignal(null)).toBeNull();
+    vi.stubGlobal('navigator', undefined);
+    expect(resolveNextLangsSignal(null)).toBeNull();
   });
 });
 
