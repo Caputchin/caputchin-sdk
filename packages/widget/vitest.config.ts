@@ -23,6 +23,11 @@ export default defineConfig({
   plugins: [svgDataUri()],
   test: {
     environment: 'happy-dom',
+    // A game frame's `<script src=game-src>` would otherwise make happy-dom
+    // fetch the (fake) game URL over the real network with a blocking child
+    // process: slow, network-dependent and a flake source under load. Disabled,
+    // the script fails with an `error` event as an unreachable URL does.
+    environmentOptions: { happyDOM: { settings: { disableJavaScriptFileLoading: true } } },
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/setup.ts'],
     coverage: {

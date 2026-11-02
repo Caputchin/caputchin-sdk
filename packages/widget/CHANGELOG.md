@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.7.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.6.0...widget-v3.7.0) (2026-10-29)
+
+
+### Features
+
+* **widget:** scale a non-responsive game down with its aspect kept in a narrow container ([29cab3e](https://github.com/Caputchin/caputchin-sdk/commit/29cab3e30239e4a64e8a88aae7b56fd0e663d099))
+* **widget:** scale a non-responsive game down with its aspect kept in a narrow container ([f622df1](https://github.com/Caputchin/caputchin-sdk/commit/f622df19d36657a3619acb4df5c1f1f71d889eac))
+
+
+### Bug Fixes
+
+* **widget:** keep a customer inline max-width on an inline auto-width game host ([2954e82](https://github.com/Caputchin/caputchin-sdk/commit/2954e8279a4492fb98846bed8b8e70584fbf6854))
+* **widget:** re-pick the bundled skin on a failed reskin when the mount is on the bundled fallback ([f3260bc](https://github.com/Caputchin/caputchin-sdk/commit/f3260bc06779144d6535197b75faf6395f3a4752))
+* **widget:** re-pick the bundled skin on a skin change for a game-src-only game mount ([ca4e4e8](https://github.com/Caputchin/caputchin-sdk/commit/ca4e4e8a9ff9c7a3de6ebec5668446ebbcbc8129))
+* **widget:** render the bundled dark skin when a degraded bootstrap was asked for skin=dark ([62cb107](https://github.com/Caputchin/caputchin-sdk/commit/62cb107626d25a7ea0dedde475a4380140b857b9))
+* **widget:** render the bundled dark skin when the bootstrap degrades with skin=dark ([d265f39](https://github.com/Caputchin/caputchin-sdk/commit/d265f39391715de1571600b4e889a896615e3ff4))
+* **widget:** shrink an inline game wider than its container to fit instead of overflowing ([5cc60f2](https://github.com/Caputchin/caputchin-sdk/commit/5cc60f2ff6b334bc44b5c628f9c5e8850722494a))
+* **widget:** shrink an inline game wider than its container to fit instead of overflowing ([f9bf4d2](https://github.com/Caputchin/caputchin-sdk/commit/f9bf4d254bbcdb6e57e3e5896595bca36b4ad420))
+* **widget:** use informal register in the human-verification aria label across locales ([72528b2](https://github.com/Caputchin/caputchin-sdk/commit/72528b2d2d21a859352968ecc6c7024f3f9c591d))
+
 ## [3.6.0](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.5.0...widget-v3.6.0) (2026-07-05)
 
 

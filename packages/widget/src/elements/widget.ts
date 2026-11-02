@@ -14,6 +14,7 @@ import { emitDegraded } from '../verify/events.js';
 import { fetchBootstrap } from '../bootstrap/client.js';
 import { resolveLocaleSignal, resolveSkinSignal } from '../bootstrap/signals.js';
 import type { ResolvedAxes } from '../bootstrap/types.js';
+import { findEnclosingForm, requestSubmitFrom } from '../form.js';
 
 /**
  * `<caputchin-widget>`; cap PoW + instrumentation only. Default renders
@@ -51,6 +52,15 @@ export class CaputchinWidget extends HTMLElement {
   private reskinAbort: AbortController | null = null;
   /** OS color-scheme tracker, installed only when `skin` is auto/absent. */
   private skinMedia: MediaQueryList | null = null;
+  /** `trigger="form-submit"` submit guard for the bootstrap window: the
+   *  trigger's own submit listener attaches only in completeMount, so without
+   *  this a submit right after upgrade posts the form token-less. */
+  private preMountSubmit: {
+    form: HTMLFormElement;
+    handler: (e: SubmitEvent) => void;
+    held: boolean;
+    submitter: HTMLElement | null;
+  } | null = null;
 
   /** OS light/dark flip → live reskin, but only while `skin` is auto/absent
    *  (an explicit skin attribute wins and is handled by its own attr change). */
@@ -84,6 +94,7 @@ export class CaputchinWidget extends HTMLElement {
     // Shadow attaches synchronously so the host element keeps its layout
     // box during the bootstrap wait (empty box, no FOUC of bundled).
     this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    this.holdSubmitsUntilMounted();
 
     // Abort the in-flight bootstrap if the element is removed mid-flight.
     const abort = new AbortController();
@@ -174,6 +185,7 @@ export class CaputchinWidget extends HTMLElement {
     };
 
     state.trigger.activate(state.triggerCtx);
+    this.releaseHeldSubmit();
 
     // Track OS color scheme so `skin="auto"` (or absent) re-skins live on an OS
     // light/dark flip. Explicit skins ignore this (see onSkinMediaChange).
@@ -186,9 +198,43 @@ export class CaputchinWidget extends HTMLElement {
     if (this.dirtyAttrs.size > 0) this.applyAttrChanges();
   }
 
+  /** Hold any submit of the enclosing form until the trigger is active
+   *  (`trigger="form-submit"` only). */
+  private holdSubmitsUntilMounted(): void {
+    if (this.state.config?.trigger !== 'form-submit') return;
+    const form = findEnclosingForm(this);
+    if (!form) return;
+    const guard = {
+      form,
+      held: false,
+      submitter: null as HTMLElement | null,
+      handler: (e: SubmitEvent): void => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        guard.held = true;
+        guard.submitter = e.submitter;
+      },
+    };
+    form.addEventListener('submit', guard.handler, true);
+    this.preMountSubmit = guard;
+  }
+
+  /** Drop the bootstrap-window guard; a submit it held is replayed (with its
+   *  submit button) so the now active trigger intercepts it and verifies before
+   *  the form posts. On disconnect the held submit is dropped: the visitor
+   *  submits again rather than the form posting token-less. */
+  private releaseHeldSubmit(replay = true): void {
+    const guard = this.preMountSubmit;
+    if (!guard) return;
+    this.preMountSubmit = null;
+    guard.form.removeEventListener('submit', guard.handler, true);
+    if (replay && guard.held) requestSubmitFrom(guard.form, guard.submitter);
+  }
+
   /** @internal Custom Element lifecycle; the browser calls this on removal. */
   disconnectedCallback(): void {
     const s = this.state;
+    this.releaseHeldSubmit(false);
     // Stop any in-flight bootstrap before tearing down.
     s.bootstrapAbort?.abort();
     // Stop reactive machinery: OS tracker + any in-flight reskin refetch.
