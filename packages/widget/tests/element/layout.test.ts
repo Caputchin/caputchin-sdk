@@ -87,12 +87,15 @@ describe('CaputchinGame - preferred layout from bootstrap', () => {
     stubBootstrap({ layout: 'modal' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"][data-layout="modal"]')).not.toBeNull();
-    });
-    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).toBeNull();
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"][data-layout="modal"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).toBeNull();
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('embed layout="inline" overrides preferred.layout="modal"', async () => {
     stubBootstrap({ layout: 'modal' });
@@ -188,14 +191,17 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      const dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
-      expect(dialog).not.toBeNull();
-      expect(dialog!.dataset.fillX).toBe('true');
-      expect(dialog!.dataset.fillY).toBe('true');
-    });
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        const dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+        expect(dialog).not.toBeNull();
+        expect(dialog!.dataset.fillX).toBe('true');
+        expect(dialog!.dataset.fillY).toBe('true');
+      }, INLINE_WAIT);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('overlay: embed width="full" fills the ENTRY surface end-to-end (host + both wrappers, no collapse)', async () => {
     // Decoupled: the entry is driven by the customer `width` attr, NOT the
@@ -203,24 +209,27 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     stubBootstrap({ layout: 'modal' });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: 'full' });
     document.body.appendChild(el);
-    let container: HTMLElement | null = null;
-    let checkboxSlot: HTMLElement | null = null;
-    await vi.waitFor(() => {
-      container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
-      checkboxSlot = el.shadowRoot?.querySelector('[part="game-overlay-checkbox"]') as HTMLElement | null;
-      expect(container).not.toBeNull();
-      expect(checkboxSlot).not.toBeNull();
-    });
-    // The two wrappers default to display:inline-block (shrink-to-content); a
-    // percentage child collapses against them. The fix flips the whole chain to
-    // block + 100% so the entry checkbox actually spans the customer container.
-    expect(el.style.width).toBe('100%');
-    expect(container!.style.display).toBe('block');
-    expect(container!.style.width).toBe('100%');
-    expect(checkboxSlot!.style.display).toBe('block');
-    expect(checkboxSlot!.style.width).toBe('100%');
-    el.remove();
-  });
+    try {
+      let container: HTMLElement | null = null;
+      let checkboxSlot: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
+        checkboxSlot = el.shadowRoot?.querySelector('[part="game-overlay-checkbox"]') as HTMLElement | null;
+        expect(container).not.toBeNull();
+        expect(checkboxSlot).not.toBeNull();
+      }, INLINE_WAIT);
+      // The two wrappers default to display:inline-block (shrink-to-content); a
+      // percentage child collapses against them. The fix flips the whole chain to
+      // block + 100% so the entry checkbox actually spans the customer container.
+      expect(el.style.width).toBe('100%');
+      expect(container!.style.display).toBe('block');
+      expect(container!.style.width).toBe('100%');
+      expect(checkboxSlot!.style.display).toBe('block');
+      expect(checkboxSlot!.style.width).toBe('100%');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('overlay: a game preferred.width="full" fills the dialog but leaves the ENTRY auto (decoupled)', async () => {
     // The game prefers a full footprint; the customer set no width. The dialog
@@ -229,51 +238,60 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    let dialog: HTMLElement | null = null;
-    await vi.waitFor(() => {
-      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
-      expect(dialog).not.toBeNull();
-    });
-    expect(dialog!.dataset.fillX).toBe('true');
-    expect(dialog!.dataset.fillY).toBe('true');
-    // Entry NOT promoted by the game's preferred footprint.
-    expect(el.style.width).not.toBe('100%');
-    el.remove();
-  });
+    try {
+      let dialog: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+        expect(dialog).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(dialog!.dataset.fillX).toBe('true');
+      expect(dialog!.dataset.fillY).toBe('true');
+      // Entry NOT promoted by the game's preferred footprint.
+      expect(el.style.width).not.toBe('100%');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('overlay: overlay-width="full" fills the dialog while the entry stays auto', async () => {
     stubBootstrap({ layout: 'modal' });
     const el = getGame({ sitekey: 'k', game: '@x/y', 'overlay-width': 'full' });
     document.body.appendChild(el);
-    let dialog: HTMLElement | null = null;
-    await vi.waitFor(() => {
-      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
-      expect(dialog).not.toBeNull();
-    });
-    expect(dialog!.dataset.fillX).toBe('true');
-    expect(dialog!.dataset.fillY).toBeUndefined();
-    expect(el.style.width).not.toBe('100%'); // entry untouched
-    el.remove();
-  });
+    try {
+      let dialog: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+        expect(dialog).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(dialog!.dataset.fillX).toBe('true');
+      expect(dialog!.dataset.fillY).toBeUndefined();
+      expect(el.style.width).not.toBe('100%'); // entry untouched
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('overlay: width="500" entry + overlay-width="full" dialog (full decoupling)', async () => {
     stubBootstrap({ layout: 'modal' });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: '500', 'overlay-width': 'full' });
     document.body.appendChild(el);
-    let container: HTMLElement | null = null;
-    let dialog: HTMLElement | null = null;
-    await vi.waitFor(() => {
-      container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
-      dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
-      expect(container).not.toBeNull();
-      expect(dialog).not.toBeNull();
-    });
-    // Entry pinned to 500px; dialog fills its axis — two independent boxes.
-    expect(el.style.width).toBe('500px');
-    expect(container!.style.width).toBe('500px');
-    expect(dialog!.dataset.fillX).toBe('true');
-    el.remove();
-  });
+    try {
+      let container: HTMLElement | null = null;
+      let dialog: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        container = el.shadowRoot?.querySelector('[part="game-overlay-host"]') as HTMLElement | null;
+        dialog = el.shadowRoot?.querySelector('[part="game-overlay-dialog"]') as HTMLElement | null;
+        expect(container).not.toBeNull();
+        expect(dialog).not.toBeNull();
+      }, INLINE_WAIT);
+      // Entry pinned to 500px; dialog fills its axis — two independent boxes.
+      expect(el.style.width).toBe('500px');
+      expect(container!.style.width).toBe('500px');
+      expect(dialog!.dataset.fillX).toBe('true');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('inline: overlay-* are ignored and fire an invalid-config warning', async () => {
     stubBootstrap(null);
