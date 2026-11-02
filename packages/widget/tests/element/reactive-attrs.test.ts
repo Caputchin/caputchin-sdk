@@ -47,8 +47,10 @@ function themedFetch(): ReturnType<typeof vi.fn> {
   return fn;
 }
 
-const bootstrapCalls = (fn: ReturnType<typeof vi.fn>): number =>
-  fn.mock.calls.filter((c) => String(c[0]).includes('/widget/bootstrap')).length;
+const bootstrapUrls = (fn: ReturnType<typeof vi.fn>): string[] =>
+  fn.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/widget/bootstrap'));
+
+const bootstrapCalls = (fn: ReturnType<typeof vi.fn>): number => bootstrapUrls(fn).length;
 
 const gameFrame = (el: HTMLElement): Element | null =>
   el.shadowRoot!.querySelector('[part="game-frame"]');
@@ -448,7 +450,7 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
       expect(bootstrapCalls(fn)).toBe(before + 1);
       // The reskin refetch asked for the pinned id, and the id is still pinned
       // for the later overlay open.
-      const reskinUrl = fn.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/widget/bootstrap')).at(-1);
+      const reskinUrl = bootstrapUrls(fn).at(-1);
       expect(reskinUrl, 'reskin bootstrap call').toBeDefined();
       expect(reskinUrl).toContain('game=acme%2Fgames%2Fleaf');
       expect(gameId()).toBe('acme/games/leaf');
@@ -552,11 +554,7 @@ describe('<caputchin-game> next languages', () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-TW', 'ja', 'en', 'de']);
     const el = getGame({ sitekey: 'cpt_pub_x', layout: 'inline' });
     document.body.appendChild(el);
-    const urls = (): URLSearchParams[] =>
-      fn.mock.calls
-        .map((c) => String(c[0]))
-        .filter((u) => u.includes('/widget/bootstrap'))
-        .map((u) => new URL(u).searchParams);
+    const urls = (): URLSearchParams[] => bootstrapUrls(fn).map((u) => new URL(u).searchParams);
     try {
       await vi.waitFor(() => expect(urls().length).toBeGreaterThan(0), INLINE_WAIT);
       expect(urls()[0]!.get('locale')).toBe('zh-TW');
