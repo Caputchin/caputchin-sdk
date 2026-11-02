@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { getWidget, getGame } from '../fixtures/test-element.js';
+import { INLINE_WAIT, INLINE_GAME_TEST_TIMEOUT } from '../fixtures/inline-wait.js';
 import { injectHiddenInput } from '../../src/form.js';
 
 // Runtime attribute reactivity: `skin` / `locale` changes on a LIVE element
@@ -49,16 +50,6 @@ function themedFetch(): ReturnType<typeof vi.fn> {
 const bootstrapCalls = (fn: ReturnType<typeof vi.fn>): number =>
   fn.mock.calls.filter((c) => String(c[0]).includes('/widget/bootstrap')).length;
 
-// An inline <caputchin-game> mount is CPU-bound in happy-dom (its CSS
-// declaration parser re-runs on every skin var write): close to 1s per mount
-// alone and several times that under a loaded parallel run. Tests that mount
-// one inline (and the widget re-theme test, which slows the same way) wait on
-// the real state with this per-step budget instead of a fixed number of
-// flushes. The test timeout fits two such steps (a mount, then a re-mount or
-// reskin) at their full budget plus slack, so a stuck step fails with its
-// waitFor assertion rather than a bare test timeout.
-const INLINE_WAIT = { timeout: 7_000 };
-const INLINE_GAME_TEST_TIMEOUT = 2 * INLINE_WAIT.timeout + 5_000;
 const gameFrame = (el: HTMLElement): Element | null =>
   el.shadowRoot!.querySelector('[part="game-frame"]');
 
@@ -424,8 +415,10 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
   }, INLINE_GAME_TEST_TIMEOUT);
 
   it('preserves the gated gameId across a live skin reskin (gated overlay opens later)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-      widget: { resolved: { locale: { _lang: 'en', _direction: 'ltr' }, skin: { _theme: 'light', primary: '#2F6640' }, config: null } },
+    // The skin follows the request's `skin=` param, so the reskin refetch
+    // landing is observable as the host flipping to dark.
+    const fn = vi.fn(async (input: string | URL) => new Response(JSON.stringify({
+      widget: { resolved: { locale: { _lang: 'en', _direction: 'ltr' }, skin: { _theme: /[?&]skin=dark/.test(String(input)) ? 'dark' : 'light', primary: '#2F6640' }, config: null } },
       game: {
         url: 'https://games.test.com/leaf.js', integrity: 'sha384-x',
         runUrl: null, runIntegrity: null, runModules: null, preferred: null,
@@ -434,21 +427,33 @@ describe('<caputchin-game> geometry reactivity (re-mount)', () => {
       requiresGame: true,
       gameId: 'acme/games/leaf',
       ticket: 'enc.sig',
-    }), { status: 200 })));
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fn);
     // Gated modal: the iframe loads on click, so a skin change BEFORE opening must
     // not drop the id (else the later open goes gameless → fails closed).
     const el = getGame({ sitekey: 'cpt_pub_x', layout: 'modal' });
     document.body.appendChild(el);
-    await settle();
-    type GameState = { state: { config: { game: string | null } } };
-    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
+    type GameState = { state: { config: { game: string | null } | null } };
+    const gameId = (): string | null | undefined => (el as unknown as GameState).state.config?.game;
+    try {
+      // Stashed at mount from the server pick (no `game` attribute).
+      await vi.waitFor(() => expect(gameId()).toBe('acme/games/leaf'), INLINE_WAIT);
+      // The shell exists, so the reskin below runs now instead of being deferred.
+      await vi.waitFor(() => expect(el.shadowRoot!.querySelector('[part="game-overlay-dialog"]')).not.toBeNull(), INLINE_WAIT);
+      const before = bootstrapCalls(fn);
 
-    el.setAttribute('skin', 'dark'); // live reskin re-inspects config
-    await settle();
+      el.setAttribute('skin', 'dark'); // live reskin re-inspects config
 
-    expect((el as unknown as GameState).state.config.game).toBe('acme/games/leaf');
-    el.remove();
-  });
+      await vi.waitFor(() => expect(el.getAttribute('data-skin-theme')).toBe('dark'), INLINE_WAIT);
+      expect(bootstrapCalls(fn)).toBe(before + 1);
+      // The reskin refetch asked for the pinned id, and the id is still pinned
+      // for the later overlay open.
+      expect(String(fn.mock.calls.at(-1)![0])).toContain('game=acme%2Fgames%2Fleaf');
+      expect(gameId()).toBe('acme/games/leaf');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
 
 describe('<caputchin-game> shell skin reactivity', () => {

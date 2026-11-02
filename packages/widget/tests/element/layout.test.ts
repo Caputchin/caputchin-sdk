@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { CaputchinGame } from '../../src/elements/game.js';
 import { installCustomFetch } from '../../src/cap/custom-fetch.js';
 import { getGame } from '../fixtures/test-element.js';
+import { INLINE_WAIT, INLINE_GAME_TEST_TIMEOUT } from '../fixtures/inline-wait.js';
 
 (globalThis as Record<string, unknown>)['__CAPUTCHIN_API_HOST__'] = 'https://api.test.com';
 (globalThis as Record<string, unknown>)['__IFRAME_RUNTIME__'] = '';
@@ -97,23 +98,29 @@ describe('CaputchinGame - preferred layout from bootstrap', () => {
     stubBootstrap({ layout: 'modal' });
     const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('falls back to inline when preferred.layout is not a real layout', async () => {
     stubBootstrap({ layout: 'sidebar' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.shadowRoot?.querySelector('[part="game-overlay-dialog"]')).toBeNull();
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
 
 describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
@@ -134,42 +141,48 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     stubBootstrap({ width: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      // The isFullWidth shell branch fired: frame tagged + host stretched to
-      // 100%. Without this the iframe's 100% would collapse against a
-      // content-sized host.
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).not.toBeNull();
-    });
-    expect(el.style.width).toBe('100%');
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        // The isFullWidth shell branch fired: frame tagged + host stretched to
+        // 100%. Without this the iframe's 100% would collapse against a
+        // content-sized host.
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.style.width).toBe('100%');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('inline: width/height="full" tag the slot and inject clamping (min+max:100%) fill rules', async () => {
     stubBootstrap({ width: 'full', height: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    let slot: HTMLElement | null = null;
-    await vi.waitFor(() => {
-      slot = el.shadowRoot?.querySelector('[part="game-iframe-slot"]') as HTMLElement | null;
-      expect(slot).not.toBeNull();
-    });
-    // Per-axis fill flags drive the clamp rules below.
-    expect(slot!.dataset.fillX).toBe('true');
-    expect(slot!.dataset.fillY).toBe('true');
-    // The fill rules clamp (min AND max) so the iframe tracks a definite slot
-    // in BOTH directions and reflows a too-big game into it instead of the old
-    // floor-only behavior that let the grow-only auto-measure overflow the box.
-    const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
-      .map((s) => s.textContent ?? '')
-      .join('');
-    expect(css).toContain(
-      '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;max-width:100%',
-    );
-    expect(css).toContain(
-      '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;max-height:100%',
-    );
-    el.remove();
-  });
+    try {
+      let slot: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        slot = el.shadowRoot?.querySelector('[part="game-iframe-slot"]') as HTMLElement | null;
+        expect(slot).not.toBeNull();
+      }, INLINE_WAIT);
+      // Per-axis fill flags drive the clamp rules below.
+      expect(slot!.dataset.fillX).toBe('true');
+      expect(slot!.dataset.fillY).toBe('true');
+      // The fill rules clamp (min AND max) so the iframe tracks a definite slot
+      // in BOTH directions and reflows a too-big game into it instead of the old
+      // floor-only behavior that let the grow-only auto-measure overflow the box.
+      const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
+        .map((s) => s.textContent ?? '')
+        .join('');
+      expect(css).toContain(
+        '[part="game-iframe-slot"][data-fill-x="true"] iframe{min-width:100%;max-width:100%',
+      );
+      expect(css).toContain(
+        '[part="game-iframe-slot"][data-fill-y="true"] iframe{min-height:100%;max-height:100%',
+      );
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('overlay: preferred.width/height="full" set the dialog fill flags', async () => {
     stubBootstrap({ layout: 'modal', width: 'full', height: 'full' });
@@ -268,27 +281,33 @@ describe('CaputchinGame - preferred footprint "full" from bootstrap', () => {
     const errors: CustomEvent[] = [];
     el.addEventListener('error', (e) => errors.push(e as CustomEvent));
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    // No overlay box exists inline; the footprint attr does nothing to the panel.
-    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
-    expect(errors.some((e) => (e.detail as { message: string }).message.includes('overlay-width / overlay-height are ignored in inline layout'))).toBe(true);
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      // No overlay box exists inline; the footprint attr does nothing to the panel.
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
+      expect(errors.some((e) => (e.detail as { message: string }).message.includes('overlay-width / overlay-height are ignored in inline layout'))).toBe(true);
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('an explicit embed width overrides preferred.width="full"', async () => {
     stubBootstrap({ width: 'full' });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    // Customer px wins: the shell is sized to 500px, not stretched full.
-    expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
-    expect(el.style.width).toBe('500px');
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      // Customer px wins: the shell is sized to 500px, not stretched full.
+      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-width="full"]')).toBeNull();
+      expect(el.style.width).toBe('500px');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
 
 describe('CaputchinGame - inline auto width stays inside its container', () => {
@@ -312,45 +331,54 @@ describe('CaputchinGame - inline auto width stays inside its container', () => {
     stubBootstrap({ width: 600, height: 150 });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    expect(el.style.maxWidth).toBe('100%');
-    expect(el.style.width).toBe('');
-    const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
-      .map((s) => s.textContent ?? '')
-      .join('');
-    expect(css).toContain(
-      '[part="game-frame"][data-layout="inline"] [part="game-iframe-slot"] iframe{max-width:100%}',
-    );
-    el.remove();
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.style.maxWidth).toBe('100%');
+      expect(el.style.width).toBe('');
+      const css = Array.from(el.shadowRoot?.querySelectorAll('style') ?? [])
+        .map((s) => s.textContent ?? '')
+        .join('');
+      expect(css).toContain(
+        '[part="game-frame"][data-layout="inline"] [part="game-iframe-slot"] iframe{max-width:100%}',
+      );
+    } finally {
+      el.remove();
+    }
     expect(el.style.maxWidth).toBe('');
-  });
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('keeps a customer inline max-width and leaves it on unmount', async () => {
     stubBootstrap({ width: 600, height: 150 });
     const el = getGame({ sitekey: 'k', game: '@x/y' });
     el.style.maxWidth = '300px';
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.style.maxWidth).toBe('300px');
+    } finally {
+      el.remove();
+    }
     expect(el.style.maxWidth).toBe('300px');
-    el.remove();
-    expect(el.style.maxWidth).toBe('300px');
-  });
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('leaves a customer pixel width uncapped', async () => {
     stubBootstrap({ width: 600, height: 150 });
     const el = getGame({ sitekey: 'k', game: '@x/y', width: '500' });
     document.body.appendChild(el);
-    await vi.waitFor(() => {
-      expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
-    });
-    expect(el.style.width).toBe('500px');
-    expect(el.style.maxWidth).toBe('');
-    el.remove();
-  });
+    try {
+      await vi.waitFor(() => {
+        expect(el.shadowRoot?.querySelector('[part="game-frame"][data-layout="inline"]')).not.toBeNull();
+      }, INLINE_WAIT);
+      expect(el.style.width).toBe('500px');
+      expect(el.style.maxWidth).toBe('');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
 
 describe('CaputchinGame - fixed-aspect game from bootstrap', () => {
@@ -368,7 +396,7 @@ describe('CaputchinGame - fixed-aspect game from bootstrap', () => {
   async function slotPart(el: HTMLElement): Promise<string | null> {
     await vi.waitFor(() => {
       expect(el.shadowRoot?.querySelector('[part="game-iframe-slot"]')).not.toBeNull();
-    });
+    }, INLINE_WAIT);
     const state = (el as unknown as { state: { gamePresentation: { getIframeSlot(): HTMLElement | null } | null } }).state;
     return state.gamePresentation?.getIframeSlot()?.getAttribute('part') ?? null;
   }
@@ -378,24 +406,33 @@ describe('CaputchinGame - fixed-aspect game from bootstrap', () => {
       stubBootstrap({ preferred: { width: 640, height: 400 }, responsive: false });
       const el = getGame({ sitekey: 'k', game: '@x/y', layout });
       document.body.appendChild(el);
-      expect(await slotPart(el)).toBe('game-fit-box');
-      el.remove();
-    });
+      try {
+        expect(await slotPart(el)).toBe('game-fit-box');
+      } finally {
+        el.remove();
+      }
+    }, INLINE_GAME_TEST_TIMEOUT);
   }
 
   it('responsive:true keeps the plain slot (the game reflows)', async () => {
     stubBootstrap({ preferred: { width: 640, height: 400 }, responsive: true });
     const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
     document.body.appendChild(el);
-    expect(await slotPart(el)).toBe('game-iframe-slot');
-    el.remove();
-  });
+    try {
+      expect(await slotPart(el)).toBe('game-iframe-slot');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 
   it('a bootstrap without the field (older platform) counts as responsive', async () => {
     stubBootstrap({ preferred: { width: 640, height: 400 } });
     const el = getGame({ sitekey: 'k', game: '@x/y', layout: 'inline' });
     document.body.appendChild(el);
-    expect(await slotPart(el)).toBe('game-iframe-slot');
-    el.remove();
-  });
+    try {
+      expect(await slotPart(el)).toBe('game-iframe-slot');
+    } finally {
+      el.remove();
+    }
+  }, INLINE_GAME_TEST_TIMEOUT);
 });
