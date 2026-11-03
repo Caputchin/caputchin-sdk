@@ -143,28 +143,34 @@ describe('widget lang attribute', () => {
 
   it('with no locale attr a Traditional Chinese visitor also sends their next languages', async () => {
     const fetchFn = stubBootstrap({});
-    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-TW', 'ja', 'en', 'de']);
+    const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-TW', 'ja', 'en', 'de']);
     const el = getWidget({ sitekey: 'k', trigger: 'click' });
-    document.body.appendChild(el);
-    await flushMount();
-    const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
-    expect(params.get('locale')).toBe('zh-TW');
-    expect(params.get('langs')).toBe('ja,en');
-    vi.restoreAllMocks();
-    el.remove();
+    try {
+      document.body.appendChild(el);
+      await flushMount();
+      const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
+      expect(params.get('locale')).toBe('zh-TW');
+      expect(params.get('langs')).toBe('ja,en');
+    } finally {
+      languages.mockRestore();
+      el.remove();
+    }
   });
 
   it('with no locale attr a visitor whose language the shell ships sends no next languages', async () => {
     const fetchFn = stubBootstrap({});
-    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ko', 'ja']);
+    const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ko', 'ja']);
     const el = getWidget({ sitekey: 'k', trigger: 'click' });
-    document.body.appendChild(el);
-    await flushMount();
-    const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
-    expect(params.get('locale')).toBe('ko');
-    expect(params.get('langs')).toBeNull();
-    vi.restoreAllMocks();
-    el.remove();
+    try {
+      document.body.appendChild(el);
+      await flushMount();
+      const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
+      expect(params.get('locale')).toBe('ko');
+      expect(params.get('langs')).toBeNull();
+    } finally {
+      languages.mockRestore();
+      el.remove();
+    }
   });
 
   it('bundled English fallback when the server resolves nothing', async () => {
