@@ -157,6 +157,22 @@ describe('widget lang attribute', () => {
     }
   });
 
+  it('sends regional next languages as their match keys, once per key', async () => {
+    const fetchFn = stubBootstrap({});
+    const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-TW', 'ja-JP', 'JA', 'en-GB']);
+    const el = getWidget({ sitekey: 'k', trigger: 'click' });
+    try {
+      document.body.appendChild(el);
+      await flushMount();
+      const params = new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams;
+      expect(params.get('locale')).toBe('zh-TW');
+      expect(params.get('langs')).toBe('ja,en');
+    } finally {
+      languages.mockRestore();
+      el.remove();
+    }
+  });
+
   it('with no locale attr a visitor whose language the shell ships sends no next languages', async () => {
     const fetchFn = stubBootstrap({});
     const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ko', 'ja']);
