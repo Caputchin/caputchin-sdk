@@ -62,9 +62,12 @@ export function resolveLocaleSignal(attr: string | null | undefined): string | n
   return readNavLang();
 }
 
-/** The navigator languages after the primary one, at most two, skipping any
- *  that shares a match key with an earlier one (`en-US, en` adds nothing the
- *  server could match). Null when there are none. */
+/** The match keys of the navigator languages after the primary one, at most
+ *  two, skipping any that shares a key with an earlier one (`en-US, en` adds
+ *  nothing the server could match). Keys, not the raw tags: the server matches
+ *  next languages by key only and `langs` is part of the bootstrap's per-colo
+ *  cache key, so `ja`, `ja-JP` and `JA-jp` share one entry. Null when there are
+ *  none. */
 function nextNavLangs(): string[] | null {
   const langs = navigator.languages ?? [];
   const primary = langs[0];
@@ -75,7 +78,7 @@ function nextNavLangs(): string[] | null {
     const key = languageMatchKey(tag);
     if (seen.has(key)) continue;
     seen.add(key);
-    next.push(tag);
+    next.push(key);
     if (next.length === MAX_NEXT_LANGS) break;
   }
   return next.length > 0 ? next : null;

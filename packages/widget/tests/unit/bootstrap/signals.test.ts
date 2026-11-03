@@ -47,7 +47,7 @@ describe('resolveNextLangsSignal', () => {
   });
 
   it('sends next languages after any language the shell does not ship', () => {
-    vi.stubGlobal('navigator', { languages: ['sv-SE', 'de'] });
+    vi.stubGlobal('navigator', { languages: ['sv-SE', 'de-AT'] });
     expect(resolveNextLangsSignal(null)).toEqual(['de']);
   });
 
@@ -87,7 +87,16 @@ describe('resolveGameNextLangsSignal', () => {
 
   it('keeps Traditional and Simplified Chinese apart', () => {
     vi.stubGlobal('navigator', { languages: ['zh-TW', 'zh-CN'] });
-    expect(resolveGameNextLangsSignal(null)).toEqual(['zh-CN']);
+    expect(resolveGameNextLangsSignal(null)).toEqual(['zh-hans']);
+    vi.stubGlobal('navigator', { languages: ['zh-CN', 'zh-HK'] });
+    expect(resolveGameNextLangsSignal(null)).toEqual(['zh-hant']);
+  });
+
+  it('sends match keys, so every spelling of a language is one cache key', () => {
+    for (const tag of ['ja', 'ja-JP', 'JA-jp', 'ja_JP']) {
+      vi.stubGlobal('navigator', { languages: ['ko', tag, 'pt-BR'] });
+      expect(resolveGameNextLangsSignal(null)).toEqual(['ja', 'pt']);
+    }
   });
 
   it('sends nothing when the locale attribute is set, or there is no next language', () => {
