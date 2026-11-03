@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.7.2](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.7.1...widget-v3.7.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **widget:** send next languages as match keys and restore the languages spy in finally (CAP-307) ([ad87803](https://github.com/Caputchin/caputchin-sdk/commit/ad87803564bc0f754672a15afda63f0342b659f2))
+* **widget:** send next languages as match keys to bound bootstrap cache keys ([b9910e0](https://github.com/Caputchin/caputchin-sdk/commit/b9910e0d0a85758106d092ee063e542edfbf7d21))
+* **widget:** send the game element's next languages whatever the shell ships (CAP-280) ([dedcbcd](https://github.com/Caputchin/caputchin-sdk/commit/dedcbcd3cf6d4e03b3536391f85bf7f19412471a))
+* **widget:** send the game element's next languages whatever the shell ships (CAP-280) ([4524cfc](https://github.com/Caputchin/caputchin-sdk/commit/4524cfc7454670d52281bf5562b9a6c5dd94b9e3))
+
 ## [3.7.1](https://github.com/Caputchin/caputchin-sdk/compare/widget-v3.7.0...widget-v3.7.1) (2026-11-02)
 
 
